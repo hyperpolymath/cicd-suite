@@ -7,12 +7,13 @@ Composite GitHub Actions for estate-wide CI/CD auditing. Consumed by
 `.github/workflows/main-estate-audit.yml`, which `rollout_estate.sh` copies into
 each repository.
 
-## Status: published so consumers can resolve it — **not yet ready to enforce**
+## Status
 
-This repository was written but never published, so every consuming workflow
-referenced `hyperpolymath/cicd-suite/actions/*@main` against a 404. Publishing it
-makes those references resolvable. **It does not make them correct.** Read the
-next two sections before wiring this into anything.
+Published 2026-08-07. Three of the four defects listed below are **fixed and
+verified against two live estate repositories**; the advisory/enforcing split
+(13 of 26 cannot fail) is still open.
+
+Before wiring this into a repository, read *Known defects* — one item remains.
 
 ## What actually enforces
 
@@ -36,57 +37,51 @@ A gate that cannot fail is worse than no gate, because it is credited as
 assurance. The advisory 13 should either grow teeth or be renamed so nobody reads
 their green tick as a guarantee.
 
-## Known defects — fix before rollout
+## Known defects
 
-**1. The suite contradicts itself.** `required-files-check` **hard-fails** a repo
-that lacks `GOVERNANCE.md`, `ARCHITECTURE.md` and `MAINTAINERS.adoc`, while
-`formatting-check` **warns** that `GOVERNANCE.md` and `ARCHITECTURE.md` should be
-`.adoc`. A repo cannot satisfy both. Several estate repos have an `.adoc`-only
-doc policy, which `required-files-check` fails them for following.
+**1. FIXED — `code-hygiene-check` scanned for the word, not the marker.** It ran
+one case-insensitive, unanchored `git grep` over the whole tree, so "admit"
+matched "admitted", "sorry" matched ordinary English, any document *discussing* a
+marker failed, and `believe_me` failed repos whose sanctioned axioms are their
+declared trusted base. Measured **112** matching files in one repo and **313** in
+another. Now two scans with different semantics — debt markers case-sensitive and
+whole-word in source only; circumventions in proof languages only, with comments
+filtered. Repos may exempt paths via `.cicd-hygiene-allow`. Result: **112 → 2**
+and **313 → 3**, all true positives.
 
-**2. `required-files-check` manufactures filler.** Because it checks only for
-*presence*, satisfying it produces content-free template files. This has already
-happened: a branch in `boj-server` carried an `ARCHITECTURE.md` describing a
-directory layout that repo does not have, a `MAINTAINERS` naming the wrong owner,
-and a `mise.toml` pinning `zig = "latest"` in direct conflict with the repo's
-`.tool-versions`. Presence checks reward filler; content checks don't.
+**2. FIXED — `required-files-check` manufactured filler.** Presence-only checking
+meant the cheapest way to pass was template boilerplate, and that is exactly what
+happened in the estate. It now checks presence, then format, then substance:
+documents need real content and no placeholders, `ARCHITECTURE` must name a
+directory that actually exists, and `MAINTAINERS` must mention the repository
+owner — which catches a template shipping its author's handle. `CODEOWNERS` is
+judged on whether it assigns an owner, not on length.
 
-**3. `code-hygiene-check` fails on legitimate code.** It runs:
+**3. FIXED — the suite contradicted itself.** `required-files-check` hard-failed a
+repo for lacking `GOVERNANCE.md` while `formatting-check` warned that same file
+should be `.adoc`. Required-files now accepts every policy-legal form, and
+formatting-check owns the preference. Verified: a repo passes both gates with
+`.adoc` (silently) or with `.md` (with a nudge).
 
-```sh
-git grep -E -i 'TODO|FIXME|STUB|sorry|believe_me|admit'
-```
-
-Case-insensitive, unanchored, across the whole repository including prose. So:
-
-- `believe_me` fails `boj-server` **permanently** on its four *sanctioned,
-  documented, separately CI-counted* Idris2 axioms — the repo's declared trusted
-  base, not debt.
-- `admit` matches "admitted", "admittedly"; `sorry` matches ordinary English.
-- Any document that *discusses* these markers fails — including a debt register
-  that exists to track them, and this README.
-
-It needs to scan source only, honour an allowlist for sanctioned axioms, and
-match whole tokens.
-
-**4. Seven actions use bare `git grep`** over the entire tree with no path
-restriction (`code-hygiene`, `idris2-abi`, `metrics`, `secrets`, `spdx-license`,
-`vaulted-tokens`, `zig-hexadeca`), so all inherit the class of problem in (3) to
-some degree.
+**4. OPEN — 13 of 26 actions still cannot fail.** See the table above. They should
+either grow teeth or be renamed, so nobody reads their green tick as a guarantee.
+Seven actions also use bare `git grep` with no path restriction
+(`idris2-abi`, `metrics`, `secrets`, `spdx-license`, `vaulted-tokens`,
+`zig-hexadeca`) and may inherit a milder form of defect (1).
 
 ## Blast radius
 
 `rollout_estate.sh` has already copied `main-estate-audit.yml` into **199
 repositories**; in **198** of them the file is untracked and has therefore never
-run. Committing it in those repos is what arms these gates. Given (1)–(3), that
-should follow fixing them, not precede it.
+run. Committing it in those repos is what arms these gates — so it should follow
+closing (4), the last open defect, not precede it.
 
 The workflow also has no `permissions:` block and pins `actions/checkout` by tag
 rather than SHA.
 
 ## Consuming it
 
-Once the defects above are resolved, pin by commit SHA rather than `@main`:
+Once (4) is resolved, pin by commit SHA rather than `@main`:
 
 ```yaml
 - uses: hyperpolymath/cicd-suite/actions/required-files-check@<sha>  # vX.Y.Z
