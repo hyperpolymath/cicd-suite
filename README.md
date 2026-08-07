@@ -17,13 +17,19 @@ Before wiring this into a repository, read *Known defects* — one item remains.
 
 ## What actually enforces
 
-Of 26 actions, **13 can fail a build and 13 cannot.** The 13 advisory ones emit
-`::warning::` and end with a success exit — they are named "Gate" but report green
-regardless of what they find.
+Of 26 actions, **15 can fail a build and 11 cannot** — and the 11 are not one
+kind of thing. Conflating them was the original error.
 
-| Enforcing (can `exit 1`) | Advisory only (cannot fail) |
-|---|---|
-| affirmation · boj-cartridge · code-hygiene · idris2-abi · linguist · manifest · proof-runner · referencing · required-files · secrets · spdx-license · vaulted-tokens · zig-hexadeca | badges · contractile-validation · custom-tools · formatting · gitsea · hosting · metrics · prat · recipes-set · semantic-audit · tests-benches · trust-humans · www-compliance |
+| Class | Actions | Meaning |
+|---|---|---|
+| **Enforcing** (15) | affirmation · boj-cartridge · code-hygiene · **formatting** · idris2-abi · linguist · manifest · proof-runner · **recipes-set** · referencing · required-files · secrets · spdx-license · vaulted-tokens · zig-hexadeca | Can fail. A green tick means something. |
+| **Advisory** (9) | badges · contractile-validation · custom-tools · gitsea · hosting · metrics · tests-benches · trust-humans · www-compliance | Do real work, warn on genuinely soft findings. Failing the estate over a missing Keybase link would be worse than not checking. |
+| **Unimplemented** (2) | prat · semantic-audit | Stubs. See below. |
+
+`formatting` and `recipes-set` moved out of the toothless column; the remaining
+advisory nine are advisory *by design*, which is defensible — provided nobody
+reads their green tick as a guarantee. Renaming them `*-advisory` would settle
+that permanently.
 
 Verify at any time:
 
@@ -63,9 +69,28 @@ should be `.adoc`. Required-files now accepts every policy-legal form, and
 formatting-check owns the preference. Verified: a repo passes both gates with
 `.adoc` (silently) or with `.md` (with a nudge).
 
-**4. OPEN — 13 of 26 actions still cannot fail.** See the table above. They should
-either grow teeth or be renamed, so nobody reads their green tick as a guarantee.
-Seven actions also use bare `git grep` with no path restriction
+**4. PARTLY FIXED — the toothless column is down from 13 to 11, and now triaged.**
+`recipes-set` was a stub that printed "Checking Justfile syntax..." with the
+command commented out and then declared success; it now parse-checks Justfiles and
+Makefiles and fails on a file that does not parse. `formatting` gained teeth in
+(3). The nine remaining advisories are advisory by design and defensible; the
+honest fix for them is a rename to `*-advisory`, not teeth.
+
+**5. OPEN — two actions are unimplemented stubs.**
+
+- `semantic-audit` is pure `echo` with "Placeholder for actual invocation"; its
+  real body is `cicd-squabbler audit --semantic`, and **`cicd-squabbler` does not
+  exist yet**. It cannot be implemented, only parked.
+- `prat` claims to validate "PRAT testing", but **PRAT is defined nowhere in the
+  estate** — a search of every repository turns up only further copies of the
+  workflow that calls it. Its current check passes any repository that has a
+  `tests/` directory *or* contains the letters "prat" anywhere. It cannot be
+  honestly implemented until somebody says what PRAT is.
+
+Both should move to a `draft/` directory so the workflow cannot reference them.
+A stub you cannot call cannot mislead.
+
+**6. OPEN — six actions use bare `git grep`** with no path restriction
 (`idris2-abi`, `metrics`, `secrets`, `spdx-license`, `vaulted-tokens`,
 `zig-hexadeca`) and may inherit a milder form of defect (1).
 
