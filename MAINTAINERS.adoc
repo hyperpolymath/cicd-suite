@@ -1,0 +1,22 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Maintainers
+
+== Active
+
+|===
+| Name | GitHub | Scope
+
+| Jonathan D.A. Jewell | @hyperpolymath | All actions, the audit workflow, and rollout
+|===
+
+== Responsibilities
+
+Because a change here propagates to every repository that consumes these
+actions, the maintainer's job is mostly to refuse changes: to reject a gate that
+cannot fail, a required-file check with no substance check behind it, and any
+widening of a rule made to get a specific repository green.
+
+== Contact
+
+Open an issue on this repository. For a gate misfiring in a consuming repo,
+include the repository, the gate name, and the run URL.

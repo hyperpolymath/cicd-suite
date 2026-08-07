@@ -1,0 +1,4 @@
+# A change to any action here changes a gate in every repository that consumes
+# it — currently 199. Review is not optional.
+* @hyperpolymath
+/actions/ @hyperpolymath

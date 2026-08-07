@@ -1,0 +1,9 @@
+# Paths excluded from code-hygiene-check, with the reason each is exempt.
+# An entry here claims the file NAMES a marker rather than COMMITTING one.
+
+# The scanners themselves. code-hygiene-check searches for TODO/FIXME/STUB, and
+# required-files-check searches for template placeholders, so both necessarily
+# contain the strings they hunt. This is the same exemption the estate grants a
+# secret scanner for containing credential-shaped regexes.
+actions/code-hygiene-check/action.yml
+actions/required-files-check/action.yml

@@ -1,0 +1,46 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Architecture
+
+== Shape
+
+One repository, one directory per gate. There is no build, no runtime and no
+shared library: each gate is a self-contained GitHub composite action whose
+entire implementation is the bash in its `action.yml`.
+
+....
+actions/<name>-check/action.yml   one composite action per gate (26)
+.github/workflows/               the audit workflow consumers copy
+rollout_estate.sh                copies that workflow into every estate repo
+....
+
+Consumers do not depend on this repository as a whole. They reference
+individual actions by path, so a broken gate affects only the repositories that
+name it.
+
+== Why composite, and why bash
+
+A composite action needs no packaging, no container pull and no marketplace
+release. The cost is that the implementation is shell, so every gate must be
+written defensively: quoted expansions, no reliance on a tool being present
+without checking, and no silent success when a check cannot run.
+
+== The one invariant
+
+A gate either enforces or advises, and it must be obvious which. Three
+categories exist and are listed in the README with a one-liner to re-derive
+them:
+
+* *enforcing* — can `exit 1`; a green tick means something
+* *advisory* — does real work, reports findings, never fails
+* *unimplemented* — a stub; must not be referenced by the workflow
+
+The failure this design keeps having is category drift: a stub or an advisory
+acquiring the word "Gate" in its name and being read as assurance. That is why
+the README carries the classification and not just prose.
+
+== Blast radius
+
+`rollout_estate.sh` copies the audit workflow into every repository in the
+estate. A change to an action here therefore changes CI behaviour across all of
+them at once, which is why consumers should pin by commit SHA rather than
+`@main`, and why `CODEOWNERS` requires review on everything under `actions/`.

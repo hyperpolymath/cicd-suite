@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Governance
+
+== Scope
+
+This repository defines CI gates for the whole estate. A merge here can turn
+199 repositories red. Governance is proportionate to that, not to the size of
+the diff.
+
+== Changing a gate
+
+. *Say which category the gate is in* — enforcing, advisory, or unimplemented
+  (see `ARCHITECTURE.adoc`). Moving between categories is the change most likely
+  to surprise people and must be stated in the PR, not inferred from the diff.
+. *Run it against at least two real repositories* before merging, and put the
+  before/after counts in the PR. A gate that has only been reasoned about has
+  not been tested.
+. *Never make a check that cannot fail.* If a gate cannot verify its subject —
+  its tool is missing, its target directory is absent — it must say so and fail,
+  not pass quietly. A gate that cannot fail is worse than no gate, because it is
+  credited as assurance.
+. *Never widen a gate to make a repository pass.* If the estate cannot satisfy a
+  gate, either the gate is wrong or the estate is; decide which, in the PR.
+
+== Adding a required file to a gate
+
+Presence checks reward filler. `required-files-check` learned this the hard way:
+demanding `ARCHITECTURE.md` produced an `ARCHITECTURE.md` describing a directory
+layout its repository did not have. Any new required file must come with a
+substance check that a plausible template would fail.
+
+== Deprecating a gate
+
+Delete it, or move it to `draft/`. Do not leave it referenced-but-inert: a stub
+the workflow can still call is indistinguishable from a passing gate.
+
+== Decisions
+
+Recorded in the PR that makes them. This repository is small enough that a
+separate decision log would drift from the code faster than it would inform
+anyone.

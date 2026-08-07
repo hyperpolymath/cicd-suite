@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: CC-BY-SA-4.0
+* text=auto eol=lf
+*.yml text eol=lf
+*.sh text eol=lf
+*.adoc text eol=lf
+*.md text eol=lf
+LICENSE text eol=lf
