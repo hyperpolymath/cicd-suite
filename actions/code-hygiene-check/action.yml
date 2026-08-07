@@ -1,0 +1,15 @@
+name: 'Code Hygiene Check'
+description: 'Fails the build if TODO, FIXME, STUB, sorry, believe_me, or admit are found.'
+runs:
+  using: 'composite'
+  steps:
+    - name: Run Hygiene Check
+      shell: bash
+      run: |
+        echo "Scanning for prohibited markers (TODO, FIXME, STUB, sorry, believe_me, admit)..."
+        if git grep -E -i 'TODO|FIXME|STUB|sorry|believe_me|admit'; then
+          echo "::error::Prohibited markers found in codebase! Technical debt and proof circumventions are not permitted in mainline."
+          exit 1
+        else
+          echo "Hygiene check passed."
+        fi

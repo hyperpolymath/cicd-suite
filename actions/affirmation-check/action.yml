@@ -1,0 +1,43 @@
+name: 'Affirmation Document Gate'
+description: 'Validates that the AFFIRMATION document is signed and updated within the last 28 days.'
+runs:
+  using: 'composite'
+  steps:
+    - name: Run Affirmation Check
+      shell: bash
+      run: |
+        echo "Validating AFFIRMATION Document..."
+        
+        # Check for existence (can be .md, .adoc, etc.)
+        aff_file=$(find . -maxdepth 1 -name "AFFIRMATION*" | head -n 1)
+        if [ -z "$aff_file" ]; then
+          echo "::error::AFFIRMATION document not found in the repository root."
+          exit 1
+        fi
+        
+        echo "Found AFFIRMATION document: $aff_file"
+        
+        # Check signature (heuristic: look for 'Signed:', 'Signature:', or PGP block)
+        if ! grep -E -i 'signed:|signature:|BEGIN PGP SIGNATURE' "$aff_file" > /dev/null; then
+           echo "::error::AFFIRMATION document does not appear to be signed."
+           exit 1
+        fi
+        
+        # Check date (updated within last 28 days)
+        # First check git log for the file (if it is tracked in git)
+        last_update_ts=$(git log -1 --format="%at" -- "$aff_file" 2>/dev/null)
+        
+        if [ -z "$last_update_ts" ]; then
+          # Fallback to filesystem mtime if not in git (e.g. during initial setup)
+          last_update_ts=$(stat -c %Y "$aff_file")
+        fi
+        
+        current_ts=$(date +%s)
+        diff_days=$(( (current_ts - last_update_ts) / 86400 ))
+        
+        if [ "$diff_days" -gt 28 ]; then
+           echo "::error::AFFIRMATION document is out of date! Last updated $diff_days days ago. Must be updated within 28 days."
+           exit 1
+        fi
+        
+        echo "AFFIRMATION Document validation passed. (Updated $diff_days days ago)."

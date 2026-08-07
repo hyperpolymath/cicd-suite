@@ -1,0 +1,25 @@
+name: 'Academic Referencing Gate'
+description: 'Validates presence of CITATION.cff, Zotero compatibility, and CiteThemRight standard.'
+runs:
+  using: 'composite'
+  steps:
+    - name: Run Referencing Check
+      shell: bash
+      run: |
+        echo "Validating Academic Referencing Files..."
+        
+        cff_file=$(find . -maxdepth 2 -name "CITATION.cff" | head -n 1)
+        if [ -z "$cff_file" ]; then
+          echo "::error::CITATION.cff not found. A dedicated referencing file must be present."
+          exit 1
+        fi
+        
+        echo "Found referencing file: $cff_file"
+        
+        # Check for Zotero compatibility / CiteThemRight mention
+        # CFF is natively Zotero compatible. We check for a mention of the standard if applicable.
+        if ! grep -i -q "CiteThemRight" "$cff_file" && ! grep -i -q "CiteThemRight" "README.md" 2>/dev/null; then
+          echo "::warning::CiteThemRight latest edition should be provided as standard for academic references."
+        fi
+        
+        echo "Academic Referencing Validation Passed."

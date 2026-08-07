@@ -1,0 +1,26 @@
+name: 'Formatting Validation Gate'
+description: 'Validates that wiki files use .md and main documents use .adoc.'
+runs:
+  using: 'composite'
+  steps:
+    - name: Run Formatting Check
+      shell: bash
+      run: |
+        echo "Validating document formatting extensions..."
+        
+        # Check main documents are .adoc
+        for doc in README GOVERNANCE ARCHITECTURE MAINTAINERS; do
+          if [ -f "${doc}.md" ]; then
+             echo "::warning::${doc}.md found. Main documents should use .adoc formatting, not .md."
+          fi
+        done
+        
+        # Check wiki folder for .md
+        if [ -d "wiki" ]; then
+           non_md=$(find wiki -type f -not -name "*.md" | wc -l)
+           if [ "$non_md" -gt 0 ]; then
+              echo "::warning::Found non-markdown files in the wiki directory. The wiki should be formatted as .md."
+           fi
+        fi
+        
+        echo "Formatting validation complete."

@@ -1,0 +1,41 @@
+name: 'Required Files Gate'
+description: 'Ensures that all key structural and governance files are present in the repository.'
+runs:
+  using: 'composite'
+  steps:
+    - name: Run Required Files Check
+      shell: bash
+      run: |
+        echo "Verifying presence of essential repository files..."
+        missing=0
+        
+        # Array of required files
+        declare -a required_files=(
+          ".editorconfig"
+          ".gitignore"
+          ".gitattributes"
+          "CODEOWNERS"
+          "GOVERNANCE.md"
+          "ARCHITECTURE.md"
+          "MAINTAINERS.adoc"
+        )
+        
+        for file in "${required_files[@]}"; do
+          if [ ! -f "$file" ]; then
+            echo "::error::Missing required structural file: $file"
+            missing=1
+          fi
+        done
+        
+        # Special check for toolchain file (mise.toml or .tool-versions)
+        if [ ! -f "mise.toml" ] && [ ! -f ".tool-versions" ]; then
+          echo "::error::Missing required toolchain file (mise.toml or .tool-versions)"
+          missing=1
+        fi
+        
+        if [ $missing -eq 1 ]; then
+          echo "::error::Required files gate failed. Please add the missing structural/governance files."
+          exit 1
+        else
+          echo "All required files are present."
+        fi
