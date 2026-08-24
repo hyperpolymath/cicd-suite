@@ -1,0 +1,139 @@
+== cicd-suite
+
+Composite GitHub Actions for estate-wide CI/CD auditing. Consumed by
+`+.github/workflows/main-estate-audit.yml+`, which `+rollout_estate.sh+`
+copies into each repository.
+
+=== Status
+
+Published 2026-08-07. Three of the four defects listed below are *fixed
+and verified against two live estate repositories*; the
+advisory/enforcing split (13 of 26 cannot fail) is still open.
+
+Before wiring this into a repository, read _Known defects_ — one item
+remains.
+
+=== What actually enforces
+
+Of 26 actions, *15 can fail a build and 11 cannot* — and the 11 are not
+one kind of thing. Conflating them was the original error.
+
+[width="100%",cols="34%,33%,33%",options="header",]
+|===
+|Class |Actions |Meaning
+|*Enforcing* (15) |affirmation · boj-cartridge · code-hygiene ·
+*formatting* · idris2-abi · linguist · manifest · proof-runner ·
+*recipes-set* · referencing · required-files · secrets · spdx-license ·
+vaulted-tokens · zig-hexadeca |Can fail. A green tick means something.
+
+|*Advisory* (9) |badges · contractile-validation · custom-tools · gitsea
+· hosting · metrics · tests-benches · trust-humans · www-compliance |Do
+real work, warn on genuinely soft findings. Failing the estate over a
+missing Keybase link would be worse than not checking.
+
+|*Unimplemented* (2) |prat · semantic-audit |Stubs. See below.
+|===
+
+`+formatting+` and `+recipes-set+` moved out of the toothless column;
+the remaining advisory nine are advisory _by design_, which is
+defensible — provided nobody reads their green tick as a guarantee.
+Renaming them `+*-advisory+` would settle that permanently.
+
+Verify at any time:
+
+[source,sh]
+----
+for a in actions/*/; do
+  grep -q 'exit 1' "$a/action.yml" && echo "ENFORCE $(basename $a)" || echo "advise  $(basename $a)"
+done
+----
+
+A gate that cannot fail is worse than no gate, because it is credited as
+assurance. The advisory 13 should either grow teeth or be renamed so
+nobody reads their green tick as a guarantee.
+
+=== Known defects
+
+*1. FIXED — `+code-hygiene-check+` scanned for the word, not the
+marker.* It ran one case-insensitive, unanchored `+git grep+` over the
+whole tree, so "`admit`" matched "`admitted`", "`sorry`" matched
+ordinary English, any document _discussing_ a marker failed, and
+`+believe_me+` failed repos whose sanctioned axioms are their declared
+trusted base. Measured *112* matching files in one repo and *313* in
+another. Now two scans with different semantics — debt markers
+case-sensitive and whole-word in source only; circumventions in proof
+languages only, with comments filtered. Repos may exempt paths via
+`+.cicd-hygiene-allow+`. Result: *112 → 2* and *313 → 3*, all true
+positives.
+
+*2. FIXED — `+required-files-check+` manufactured filler.* Presence-only
+checking meant the cheapest way to pass was template boilerplate, and
+that is exactly what happened in the estate. It now checks presence,
+then format, then substance: documents need real content and no
+placeholders, `+ARCHITECTURE+` must name a directory that actually
+exists, and `+MAINTAINERS+` must mention the repository owner — which
+catches a template shipping its author’s handle. `+CODEOWNERS+` is
+judged on whether it assigns an owner, not on length.
+
+*3. FIXED — the suite contradicted itself.* `+required-files-check+`
+hard-failed a repo for lacking `+GOVERNANCE.md+` while
+`+formatting-check+` warned that same file should be `+.adoc+`.
+Required-files now accepts every policy-legal form, and formatting-check
+owns the preference. Verified: a repo passes both gates with `+.adoc+`
+(silently) or with `+.md+` (with a nudge).
+
+*4. PARTLY FIXED — the toothless column is down from 13 to 11, and now
+triaged.* `+recipes-set+` was a stub that printed "`Checking Justfile
+syntax…`" with the command commented out and then declared success; it
+now parse-checks Justfiles and Makefiles and fails on a file that does
+not parse. `+formatting+` gained teeth in (3). The nine remaining
+advisories are advisory by design and defensible; the honest fix for
+them is a rename to `+*-advisory+`, not teeth.
+
+*5. OPEN — two actions are unimplemented stubs.*
+
+* `+semantic-audit+` is pure `+echo+` with "`Placeholder for actual
+invocation`"; its real body is `+cicd-squabbler audit --semantic+`, and
+*`+cicd-squabbler+` does not exist yet*. It cannot be implemented, only
+parked.
+* `+prat+` claims to validate "`PRAT testing`", but *PRAT is defined
+nowhere in the estate* — a search of every repository turns up only
+further copies of the workflow that calls it. Its current check passes
+any repository that has a `+tests/+` directory _or_ contains the letters
+"`prat`" anywhere. It cannot be honestly implemented until somebody says
+what PRAT is.
+
+Both should move to a `+draft/+` directory so the workflow cannot
+reference them. A stub you cannot call cannot mislead.
+
+*6. OPEN — six actions use bare `+git grep+`* with no path restriction
+(`+idris2-abi+`, `+metrics+`, `+secrets+`, `+spdx-license+`,
+`+vaulted-tokens+`, `+zig-hexadeca+`) and may inherit a milder form of
+defect (1).
+
+=== Blast radius
+
+`+rollout_estate.sh+` has already copied `+main-estate-audit.yml+` into
+*199 repositories*; in *198* of them the file is untracked and has
+therefore never run. Committing it in those repos is what arms these
+gates — so it should follow closing (4), the last open defect, not
+precede it.
+
+The workflow also has no `+permissions:+` block and pins
+`+actions/checkout+` by tag rather than SHA.
+
+=== Consuming it
+
+Once (4) is resolved, pin by commit SHA rather than `+@main+`:
+
+[source,yaml]
+----
+- uses: hyperpolymath/cicd-suite/actions/required-files-check@<sha>  # vX.Y.Z
+----
+
+`+@main+` is a moving target: a change here silently changes the gate in
+every consuming repository at once.
+
+=== Licence
+
+Code MPL-2.0, prose CC-BY-SA-4.0. See link:LICENSE[`+LICENSE+`].
