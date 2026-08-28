@@ -1,0 +1,5 @@
+[tools]
+# = "The actions in this repository are bash + composite YAML and need no build"
+# = "toolchain of their own. `just` is pinned because recipes-set-check installs"
+# = "and invokes it, so this is the version that gate is tested against."
+just = "1.36.0"
