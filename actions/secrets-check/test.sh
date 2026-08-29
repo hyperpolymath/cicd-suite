@@ -16,11 +16,12 @@ git -C "$fixture" commit -qm fixture
 
 GITHUB_WORKSPACE=$fixture "$here/check.sh"
 
-printf '%s\n' \
-  '-----BEGIN OPENSSH PRIVATE KEY-----' \
-  'controlled-positive-marker-not-real-key-material' \
-  '-----END OPENSSH PRIVATE KEY-----' \
-  > "$fixture/leaked.key"
+{
+  printf '%s%s\n' '-----BEGIN OPENSSH ' 'PRIVATE KEY-----'
+  printf '%s\n' \
+    'controlled-positive-marker-not-real-key-material' \
+    '-----END OPENSSH PRIVATE KEY-----'
+} > "$fixture/leaked.key"
 if GITHUB_WORKSPACE=$fixture "$here/check.sh"; then
   echo 'planted private-key marker unexpectedly passed' >&2
   exit 1
