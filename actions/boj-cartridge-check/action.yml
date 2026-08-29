@@ -1,19 +1,15 @@
 name: 'BoJ Cartridge Gate'
-description: 'Validates that a cartridge is present for use with the BoJ server.'
+description: 'Checks for a BoJ cartridge when BoJ integration is applicable.'
+inputs:
+  required:
+    description: 'Set true when this repository declares BoJ integration.'
+    required: false
+    default: 'false'
 runs:
   using: 'composite'
   steps:
     - name: Run BoJ Cartridge Check
       shell: bash
-      run: |
-        echo "Validating BoJ Cartridge presence..."
-        
-        # Check for typical cartridge files
-        if [ -f "cartridge.json" ] || [ -f "cartridge.yml" ] || [ -f "cartridge.yaml" ] || [ -d ".cartridges" ] || find . -maxdepth 2 -name "*cartridge*" | grep -q .; then
-          echo "BoJ cartridge detected."
-        else
-          echo "::error::No BoJ cartridge found. A cartridge should be present for use of the tool in full with the BoJ server."
-          exit 1
-        fi
-        
-        echo "BoJ Cartridge validation passed."
+      env:
+        BOJ_CARTRIDGE_REQUIRED: ${{ inputs.required }}
+      run: "${{ github.action_path }}/check.sh"
