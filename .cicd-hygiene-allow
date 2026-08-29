@@ -8,3 +8,4 @@
 actions/code-hygiene-check/check.sh
 actions/code-hygiene-check/test.sh
 actions/required-files-check/action.yml
+actions/affirmation-check/check.sh

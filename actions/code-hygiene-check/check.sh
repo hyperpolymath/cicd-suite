@@ -35,7 +35,7 @@ source_paths=(
 )
 
 echo 'Scanning implementation source for untracked debt markers...'
-debt="$({ git grep -n -E -w 'TODO|FIXME|XXX|HACK|STUB' -- \
+debt="$({ git grep --untracked -n -E -w 'TODO|FIXME|XXX|HACK|STUB' -- \
   "${source_paths[@]}" "${allow_args[@]+"${allow_args[@]}"}" || true; } \
   | perl -ne 'print if /\b(?:TODO|FIXME|XXX|HACK|STUB)\b(?!\(#[0-9]+\))/')"
 if [[ -n "$debt" ]]; then
@@ -48,7 +48,7 @@ else
 fi
 
 echo 'Scanning proof code for undeclared circumventions...'
-circ="$({ git grep -n -E -w 'sorry|believe_me|admit|postulate|assert_total' -- \
+circ="$({ git grep --untracked -n -E -w 'sorry|believe_me|admit|postulate|assert_total' -- \
   '*.idr' '*.lean' '*.v' '*.agda' '*.thy' \
   "${allow_args[@]+"${allow_args[@]}"}" || true; } \
   | grep -vE ':[0-9]+:[[:space:]]*(\|\|\||--|//|\(\*)' || true)"

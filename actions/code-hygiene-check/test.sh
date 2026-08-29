@@ -22,24 +22,20 @@ git -C "$fixture" commit -qm fixture
 (cd "$fixture" && bash "$checker")
 
 printf '%s\n' '// TODO: untracked implementation debt' > "$fixture/src/main.rs"
-git -C "$fixture" add src/main.rs
 if (cd "$fixture" && bash "$checker"); then
   echo 'FAIL: untracked source debt was accepted' >&2
   exit 1
 fi
 
 printf '%s\n' '// TODO(#123): tracked implementation debt' > "$fixture/src/main.rs"
-git -C "$fixture" add src/main.rs
 (cd "$fixture" && bash "$checker")
 
 printf '%s\n' 'proof = believe_me value' > "$fixture/src/Safety.idr"
-git -C "$fixture" add src/Safety.idr
 if (cd "$fixture" && bash "$checker"); then
   echo 'FAIL: proof circumvention was accepted' >&2
   exit 1
 fi
 
 printf '%s\n' 'src/Safety.idr' > "$fixture/.cicd-hygiene-allow"
-git -C "$fixture" add .cicd-hygiene-allow
 (cd "$fixture" && bash "$checker")
 echo 'All code-hygiene positive and negative controls passed.'
