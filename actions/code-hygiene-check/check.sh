@@ -10,7 +10,7 @@ readonly allow_file='.cicd-hygiene-allow'
 allow_args=()
 if [[ -f "$allow_file" ]]; then
   echo "Using allowlist $allow_file:"
-  while IFS= read -r pat; do
+  while IFS= read -r pat || [[ -n "$pat" ]]; do
     case "$pat" in ''|'#'*) continue ;; esac
     echo "  exclude: $pat"
     allow_args+=(":(exclude)$pat")
