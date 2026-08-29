@@ -37,7 +37,7 @@ source_paths=(
 echo 'Scanning implementation source for untracked debt markers...'
 debt="$({ git grep --untracked -n -E -w 'TODO|FIXME|XXX|HACK|STUB' -- \
   "${source_paths[@]}" "${allow_args[@]+"${allow_args[@]}"}" || true; } \
-  | perl -ne 'print if /\b(?:TODO|FIXME|XXX|HACK|STUB)\b(?!\(#[0-9]+\))/')"
+ perl -ne 'print if /:[0-9]+:.*\b(?:TODO|FIXME|XXX|HACK|STUB)\b(?!\(#[0-9]+\))/')"
 if [[ -n "$debt" ]]; then
   echo '::error::Untracked debt markers found in implementation source:'
   printf '%s\n' "$debt"
