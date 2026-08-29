@@ -7,12 +7,16 @@ on:
       - 'actions/code-hygiene-check/**'
       - 'actions/affirmation-check/**'
       - 'actions/referencing-check/**'
+      - 'actions/secrets-check/**'
+      - 'actions/boj-cartridge-check/**'
       - '.github/workflows/code-hygiene-self-test.yml'
   pull_request:
     paths:
       - 'actions/code-hygiene-check/**'
       - 'actions/affirmation-check/**'
       - 'actions/referencing-check/**'
+      - 'actions/secrets-check/**'
+      - 'actions/boj-cartridge-check/**'
       - '.github/workflows/code-hygiene-self-test.yml'
 
 permissions:
@@ -26,3 +30,5 @@ jobs:
       - run: bash actions/code-hygiene-check/test.sh
       - run: bash actions/affirmation-check/test.sh
       - run: bash actions/referencing-check/test.sh
+      - run: bash actions/secrets-check/test.sh
+      - run: bash actions/boj-cartridge-check/test.sh
