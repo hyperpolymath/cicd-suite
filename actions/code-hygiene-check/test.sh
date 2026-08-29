@@ -14,12 +14,21 @@ mkdir -p "$fixture/src" "$fixture/docs" "$fixture/.github/workflows" \
 
 printf '%s\n' '// clean source' > "$fixture/src/main.rs"
 printf '%s\n' 'TODO in documentation is explanatory.' > "$fixture/docs/design.md"
+printf '%s\n' 'example = believe_me value' > "$fixture/docs/example.idr"
+printf '%s\n' '// marker in the filename is not debt' > "$fixture/src/TODO.rs"
 printf '%s\n' '# TODO: workflow follow-up' > "$fixture/.github/workflows/ci.yml"
 printf '%s\n' 'TODO: fill this template' > "$fixture/.machine_readable/templates/example.ncl"
 git -C "$fixture" add .
 git -C "$fixture" commit -qm fixture
 
 (cd "$fixture" && bash "$checker")
+
+printf '%s\n' '// TODO: TypeScript implementation debt' > "$fixture/src/app.ts"
+if (cd "$fixture" && bash "$checker"); then
+  echo 'FAIL: untracked TypeScript debt was accepted' >&2
+  exit 1
+fi
+printf '%s\n' '// clean TypeScript source' > "$fixture/src/app.ts"
 
 printf '%s\n' '// TODO: untracked implementation debt' > "$fixture/src/main.rs"
 if (cd "$fixture" && bash "$checker"); then
@@ -36,6 +45,6 @@ if (cd "$fixture" && bash "$checker"); then
   exit 1
 fi
 
-printf '%s\n' 'src/Safety.idr' > "$fixture/.cicd-hygiene-allow"
+printf '%s' 'src/Safety.idr' > "$fixture/.cicd-hygiene-allow"
 (cd "$fixture" && bash "$checker")
 echo 'All code-hygiene positive and negative controls passed.'

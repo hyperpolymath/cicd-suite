@@ -13,6 +13,8 @@ jobs:
       # Test the actions from this revision, not the older implementations on
       # main. The pinned checkout is the only remote action this job needs.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       
       - name: Required Files Gate
         uses: ./actions/required-files-check
