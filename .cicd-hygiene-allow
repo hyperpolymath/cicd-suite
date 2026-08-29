@@ -5,5 +5,6 @@
 # required-files-check searches for template placeholders, so both necessarily
 # contain the strings they hunt. This is the same exemption the estate grants a
 # secret scanner for containing credential-shaped regexes.
-actions/code-hygiene-check/action.yml
+actions/code-hygiene-check/check.sh
+actions/code-hygiene-check/test.sh
 actions/required-files-check/action.yml
