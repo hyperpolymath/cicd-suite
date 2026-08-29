@@ -37,7 +37,7 @@ runs:
           "GOVERNANCE:GOVERNANCE.adoc,GOVERNANCE.md"
           "ARCHITECTURE:ARCHITECTURE.adoc,ARCHITECTURE.md,docs/architecture/README.adoc,TOPOLOGY.adoc,TOPOLOGY.md"
           "MAINTAINERS:MAINTAINERS,MAINTAINERS.adoc,MAINTAINERS.md"
-          "toolchain:.tool-versions,mise.toml"
+          "toolchain:.tool-versions,.mise.toml,mise.toml"
         )
 
         declare -A found=()
