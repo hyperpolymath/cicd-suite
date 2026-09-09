@@ -50,7 +50,9 @@ jobs:
           printf '%s\n' '# SPDX-License-Identifier: MPL-2.0' 'agent-id = "ci-control"' 'version = "1.0.0"' > "$root/valid/control.a2ml"
           printf '%s\n' 'K9!' '# SPDX-License-Identifier: MPL-2.0' 'pedigree = {' '  metadata = { name = "ci-control", version = "1.0.0" },' "  security = { leash = 'Kennel }," '}' > "$root/valid/control.k9.ncl"
           printf '%s\n' 'invalid manifest' > "$root/bad-a2ml/control.a2ml"
-          printf '%s\n' 'invalid manifest' > "$root/bad-k9/control.k9.ncl"
+          # K9-suffixed library modules are outside pedigree validation. Give
+          # this negative control a real contract marker and omit its pedigree.
+          printf '%s\n' 'K9!' '# SPDX-License-Identifier: MPL-2.0' 'invalid manifest' > "$root/bad-k9/control.k9.ncl"
           echo "root=$root" >> "$GITHUB_OUTPUT"
       - name: Valid manifests must pass
         uses: ./actions/manifest-check
