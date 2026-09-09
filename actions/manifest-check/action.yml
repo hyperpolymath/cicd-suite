@@ -1,27 +1,28 @@
+# SPDX-License-Identifier: MPL-2.0
 name: 'Manifest Validation Gate'
-description: 'Strict parsing of .a2ml and .k9 files to guarantee they align with grammars and are fully populated.'
+description: 'Validate A2ML/DEED and K9 manifest structure using the maintained format validators.'
+inputs:
+  path:
+    description: 'Directory containing manifests to validate.'
+    required: false
+    default: '.'
+  strict:
+    description: 'Promote validator warnings to failures.'
+    required: false
+    default: 'false'
 runs:
   using: 'composite'
   steps:
-    - name: Run Manifest Check
-      shell: bash
-      run: |
-        echo "Validating A2ML and K9 manifests..."
-        
-        # We would use the a2ml-tool or k9-validate here
-        manifests=$(find . -name "*.a2ml" -o -name "*.k9" 2>/dev/null)
-        if [ -n "$manifests" ]; then
-          for m in $manifests; do
-             echo "Checking $m..."
-             # Check for unpopulated null points
-             if grep -qE '""|\[\]|\{\}|null' "$m"; then
-               echo "::warning::Manifest $m contains empty or null points. Ensure it is fully populated with explicit values or null markers."
-             fi
-             
-             # Placeholder for actual parser invocation
-             # a2ml-tool validate "$m" || exit 1
-          done
-          echo "Manifest validation passed."
-        else
-          echo "No .a2ml or .k9 manifests found."
-        fi
+    - name: Validate A2ML and DEED manifests
+      uses: hyperpolymath/deed-ecosystem/validate-action@f7a40a4d5cc82b2e73f861119baa6818d77a448d
+      with:
+        path: ${{ inputs.path }}
+        strict: ${{ inputs.strict }}
+    - name: Validate K9 manifests
+      uses: hyperpolymath/k9-ecosystem/validate-action@347ee5d6a1b77831de56fe8da21a473724e4cac2
+      with:
+        path: ${{ inputs.path }}
+        strict: ${{ inputs.strict }}
+# These validators check manifest structure. Executable Nickel contracts need
+# a separate Nickel evaluation step; neither an empty-field grep nor this
+# structural check establishes that a contract evaluates or a proof holds.
