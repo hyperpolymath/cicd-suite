@@ -9,6 +9,7 @@ on:
       - 'actions/referencing-check/**'
       - 'actions/secrets-check/**'
       - 'actions/boj-cartridge-check/**'
+      - 'actions/manifest-check/**'
       - '.github/workflows/code-hygiene-self-test.yml'
   pull_request:
     paths:
@@ -17,6 +18,7 @@ on:
       - 'actions/referencing-check/**'
       - 'actions/secrets-check/**'
       - 'actions/boj-cartridge-check/**'
+      - 'actions/manifest-check/**'
       - '.github/workflows/code-hygiene-self-test.yml'
 
 permissions:
@@ -39,3 +41,37 @@ jobs:
       - run: bash actions/referencing-check/test.sh
       - run: bash actions/secrets-check/test.sh
       - run: bash actions/boj-cartridge-check/test.sh
+      - name: Create manifest controls
+        id: fixtures
+        shell: bash
+        run: |
+          root="$RUNNER_TEMP/manifest-controls"
+          mkdir -p "$root/valid" "$root/bad-a2ml" "$root/bad-k9"
+          printf '%s\n' '# SPDX-License-Identifier: MPL-2.0' 'agent-id = "ci-control"' 'version = "1.0.0"' > "$root/valid/control.a2ml"
+          printf '%s\n' 'K9!' '# SPDX-License-Identifier: MPL-2.0' 'pedigree = {' '  metadata = { name = "ci-control", version = "1.0.0" },' "  security = { leash = 'Kennel }," '}' > "$root/valid/control.k9.ncl"
+          printf '%s\n' 'invalid manifest' > "$root/bad-a2ml/control.a2ml"
+          # K9-suffixed library modules are outside pedigree validation. Give
+          # this negative control a real contract marker and omit its pedigree.
+          printf '%s\n' 'K9!' '# SPDX-License-Identifier: MPL-2.0' 'invalid manifest' > "$root/bad-k9/control.k9.ncl"
+          echo "root=$root" >> "$GITHUB_OUTPUT"
+      - name: Valid manifests must pass
+        uses: ./actions/manifest-check
+        with:
+          path: ${{ steps.fixtures.outputs.root }}/valid
+      - name: Invalid A2ML must fail
+        id: bad-a2ml
+        continue-on-error: true
+        uses: ./actions/manifest-check
+        with:
+          path: ${{ steps.fixtures.outputs.root }}/bad-a2ml
+      - name: Invalid K9 Nickel manifest must fail
+        id: bad-k9
+        continue-on-error: true
+        uses: ./actions/manifest-check
+        with:
+          path: ${{ steps.fixtures.outputs.root }}/bad-k9
+      - name: Verify both negative controls failed
+        env:
+          A2ML_OUTCOME: ${{ steps.bad-a2ml.outcome }}
+          K9_OUTCOME: ${{ steps.bad-k9.outcome }}
+        run: test "$A2ML_OUTCOME" = failure && test "$K9_OUTCOME" = failure
