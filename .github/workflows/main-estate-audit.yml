@@ -1,3 +1,5 @@
+# This workflow is managed by gh actions-lock.
+
 name: Central Estate CI/CD Audit
 
 on:
@@ -12,84 +14,84 @@ jobs:
     steps:
       # Test the actions from this revision, not the older implementations on
       # main. The pinned checkout is the only remote action this job needs.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       
       - name: Required Files Gate
-        uses: ./actions/required-files-check
+        uses: $/actions/required-files-check
         
       - name: Code Hygiene Gate
-        uses: ./actions/code-hygiene-check
+        uses: $/actions/code-hygiene-check
         
       - name: Manifest Validation Gate
-        uses: ./actions/manifest-check
+        uses: $/actions/manifest-check
         
       - name: Idris2 ABI Purity Gate
-        uses: ./actions/idris2-abi-check
+        uses: $/actions/idris2-abi-check
         
       - name: Zig Hexadeca API Gate
-        uses: ./actions/zig-hexadeca-check
+        uses: $/actions/zig-hexadeca-check
         
       - name: Contractile Validation Gate
-        uses: ./actions/contractile-validation-check
+        uses: $/actions/contractile-validation-check
         
       - name: Recipes Set Validation Gate
-        uses: ./actions/recipes-set-check
+        uses: $/actions/recipes-set-check
         
       - name: Affirmation Document Gate
-        uses: ./actions/affirmation-check
+        uses: $/actions/affirmation-check
         
       - name: Academic Referencing Gate
-        uses: ./actions/referencing-check
+        uses: $/actions/referencing-check
         
       - name: Semantic Audit Gate
-        uses: ./actions/semantic-audit-check
+        uses: $/actions/semantic-audit-check
         
       - name: SPDX License Gate
-        uses: ./actions/spdx-license-check
+        uses: $/actions/spdx-license-check
         
       - name: Proof Runner Gate
-        uses: ./actions/proof-runner-check
+        uses: $/actions/proof-runner-check
         
       - name: PRAT Testing Gate
-        uses: ./actions/prat-check
+        uses: $/actions/prat-check
         
       - name: Panic Attack & Pons Gate
-        uses: ./actions/custom-tools-check
+        uses: $/actions/custom-tools-check
         
       - name: WWW & Well-Known Compliance Gate
-        uses: ./actions/www-compliance-check
+        uses: $/actions/www-compliance-check
         
       - name: BoJ Cartridge Validation Gate
-        uses: ./actions/boj-cartridge-check
+        uses: $/actions/boj-cartridge-check
         
       - name: Formatting Validation Gate
-        uses: ./actions/formatting-check
+        uses: $/actions/formatting-check
         
       - name: Accreditations & Badges Gate
-        uses: ./actions/badges-check
+        uses: $/actions/badges-check
         
       - name: Metrics Extraction Gate
-        uses: ./actions/metrics-check
+        uses: $/actions/metrics-check
         
       - name: Linguist & Banned Languages Gate
-        uses: ./actions/linguist-check
+        uses: $/actions/linguist-check
         
       - name: Test & Benchmarks Dashboard Gate
-        uses: ./actions/tests-benches-check
+        uses: $/actions/tests-benches-check
         
       - name: Hosting & Site Status Gate
-        uses: ./actions/hosting-check
+        uses: $/actions/hosting-check
         
       - name: Git-Sea Analytics Gate
-        uses: ./actions/gitsea-check
+        uses: $/actions/gitsea-check
         
       - name: Trust & Humans Validation Gate
-        uses: ./actions/trust-humans-check
+        uses: $/actions/trust-humans-check
         
       - name: Are We UnAPI Gate (Secret Scanning)
-        uses: ./actions/secrets-check
+        uses: $/actions/secrets-check
         
       - name: Reasonably Good Token Validation Gate
-        uses: ./actions/vaulted-tokens-check
+        uses: $/actions/vaulted-tokens-check

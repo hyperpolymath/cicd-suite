@@ -1,3 +1,6 @@
+# This workflow is managed by gh actions-lock.
+
+# SPDX-License-Identifier: MPL-2.0
 name: Code Hygiene Self-Test
 
 on:
@@ -32,8 +35,9 @@ jobs:
   test:
     name: Gate controls
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - run: bash actions/code-hygiene-check/test.sh
@@ -55,19 +59,19 @@ jobs:
           printf '%s\n' 'K9!' '# SPDX-License-Identifier: MPL-2.0' 'invalid manifest' > "$root/bad-k9/control.k9.ncl"
           echo "root=$root" >> "$GITHUB_OUTPUT"
       - name: Valid manifests must pass
-        uses: ./actions/manifest-check
+        uses: $/actions/manifest-check
         with:
           path: ${{ steps.fixtures.outputs.root }}/valid
       - name: Invalid A2ML must fail
         id: bad-a2ml
         continue-on-error: true
-        uses: ./actions/manifest-check
+        uses: $/actions/manifest-check
         with:
           path: ${{ steps.fixtures.outputs.root }}/bad-a2ml
       - name: Invalid K9 Nickel manifest must fail
         id: bad-k9
         continue-on-error: true
-        uses: ./actions/manifest-check
+        uses: $/actions/manifest-check
         with:
           path: ${{ steps.fixtures.outputs.root }}/bad-k9
       - name: Verify both negative controls failed
