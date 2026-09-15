@@ -19,7 +19,7 @@ dependencies:
         repo_id: 197814629
     'hyperpolymath/deed-ecosystem@main':
         ref: 'main'
-        commit: 'sha1-f7a40a4d5cc82b2e73f861119baa6818d77a448d'
+        commit: 'sha1-f9d999b60cb5f383679ea19912bcdc49c944973a'
         owner_id: 6759885
         repo_id: 1275649586
     'hyperpolymath/k9-ecosystem@main':
