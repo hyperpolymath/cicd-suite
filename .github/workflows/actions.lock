@@ -7,10 +7,6 @@ workflows:
         - 'actions/checkout@v7.0.1'
         - 'hyperpolymath/deed-ecosystem@main'
         - 'hyperpolymath/k9-ecosystem@main'
-    '.github/workflows/main-estate-audit.yml':
-        - 'actions/checkout@v7.0.1'
-        - 'hyperpolymath/deed-ecosystem@main'
-        - 'hyperpolymath/k9-ecosystem@main'
 dependencies:
     'actions/checkout@v7.0.1':
         ref: 'v7.0.1'
