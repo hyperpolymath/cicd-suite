@@ -14,12 +14,12 @@ runs:
   using: 'composite'
   steps:
     - name: Validate A2ML and DEED manifests
-      uses: hyperpolymath/deed-ecosystem/validate-action@main
+      uses: hyperpolymath/deed-ecosystem/validate-action@f9d999b60cb5f383679ea19912bcdc49c944973a # main @ 2026-09-17
       with:
         path: ${{ inputs.path }}
         strict: ${{ inputs.strict }}
     - name: Validate K9 manifests
-      uses: hyperpolymath/k9-ecosystem/validate-action@main
+      uses: hyperpolymath/k9-ecosystem/validate-action@2155aa26a21758f2ba119f61bc7e0e1981c106fb # main @ 2026-09-17
       with:
         path: ${{ inputs.path }}
         strict: ${{ inputs.strict }}
