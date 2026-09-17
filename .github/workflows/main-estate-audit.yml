@@ -32,10 +32,13 @@ jobs:
       # De-onboarded + ./ is the only form that works locally AND cross-repo.
       # Supply-chain posture: the only remote action here is checkout,
       # SHA-pinned in-file; the 26 composites carry no remote refs except
-      # manifest-check (deed/k9 @main), whose internals remain lockfile-
-      # enforced through code-hygiene-self-test.yml (onboarded, calls
-      # manifest-check via $/). Re-onboard when the tool supports local-path
-      # actions or $/ survives workflow_call.
+      # manifest-check, whose deed/k9 validate-action internals are SHA-pinned
+      # in-file (sha_pinning_required: branch refs without lockfile coverage
+      # are rejected at action-download — run 35278067796 step 5). The
+      # onboarded code-hygiene-self-test.yml exercises the same composite via
+      # $/actions/manifest-check and resolves those SHA refs through the
+      # SHA-keyed entries in actions.lock. Re-onboard this workflow when the
+      # tool supports local-path actions or $/ survives workflow_call.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (SHA-pinned in-file: this workflow is de-onboarded from actions.lock — see below)
         with:
           persist-credentials: false
