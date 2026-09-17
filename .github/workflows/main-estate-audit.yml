@@ -20,73 +20,85 @@ jobs:
   estate-audit:
     runs-on: ubuntu-latest
     steps:
-      # Remote-form refs to THIS repo's actions, covered by the
-      # 'hyperpolymath/cicd-suite@main' lockfile key (repo-level keys cover
-      # subpaths — the codeql-action/deed-ecosystem precedent in estate
-      # lockfiles). This is the only form that works BOTH locally and in a
-      # cross-repo workflow_call: $/ resolves at the running commit (= the
-      # CALLER's commit cross-repo — run 35277504987, 0-job) and ./ resolves
-      # against the CALLER's repository (run 35279718644 — "Can't find
-      # action.yml under .../rsr-template-repo/actions/required-files-check").
-      # The bare checkout below fetches the CALLING repo cross-repo, so the
-      # gates audit the caller's estate — the intended design. Trade-off vs
-      # the $/ era: gate IMPLEMENTATIONS come from cicd-suite@main (locked
-      # commit), not the running revision; changes to actions/** are covered
-      # by code-hygiene-self-test.yml (onboarded, $/ form). Revisit when
+      # Remote-form refs to THIS repo's actions at a FULL COMMIT SHA, with
+      # this workflow DE-ONBOARDED from actions.lock. The empirical cross-repo
+      # matrix (all witnessed 2026-09-17, runs 35277504987 / 35277227942 /
+      # 35278067796 / 35279718644 / 35280642055 / 35280317253):
+      #   $/actions/*            -> resolves at the RUNNING commit = the
+      #                             CALLER's commit cross-repo: 0-job death.
+      #   ./actions/* + lock     -> "local path actions not supported": 0-job.
+      #   ./actions/* de-onboard -> jobs spawn, but ./ resolves against the
+      #                             CALLER's repo: "Can't find action.yml".
+      #   remote @main/tag + lock (onboarded) -> 0-job startup_failure
+      #                             cross-repo (creation-time enforcement under
+      #                             the CALLER's jurisdiction; silent).
+      #   remote @SHA + de-onboarded -> BOTH components proven: creation
+      #                             passes de-onboarded (35279718644 spawned),
+      #                             prepare downloads remote SHA composites
+      #                             under the caller's sha_pinning_required
+      #                             (same run: deed/k9@SHA fetched fine).
+      # The bare-by-SHA checkout fetches the CALLING repo cross-repo, so the
+      # 26 gates audit the caller's estate — the design intent. Trade-offs,
+      # disclosed: gate IMPLEMENTATIONS are pinned to the SHA above (repin
+      # when actions/** change; the onboarded code-hygiene-self-test.yml —
+      # $/ form, full lockfile enforcement — covers composite changes), and
+      # this workflow sits in the gh-actions-lock local-path/remote-self
+      # coverage gap ("1 workflow skipped", tolerated not enforced). Revisit
+      # when the Technical Preview supports $/ across workflow_call. Revisit when
       # gh-actions-lock supports local-path actions or $/ across calls.
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       
       - name: Required Files Gate
-        uses: hyperpolymath/cicd-suite/actions/required-files-check@main
+        uses: hyperpolymath/cicd-suite/actions/required-files-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Code Hygiene Gate
-        uses: hyperpolymath/cicd-suite/actions/code-hygiene-check@main
+        uses: hyperpolymath/cicd-suite/actions/code-hygiene-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Manifest Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/manifest-check@main
+        uses: hyperpolymath/cicd-suite/actions/manifest-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Idris2 ABI Purity Gate
-        uses: hyperpolymath/cicd-suite/actions/idris2-abi-check@main
+        uses: hyperpolymath/cicd-suite/actions/idris2-abi-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Zig Hexadeca API Gate
-        uses: hyperpolymath/cicd-suite/actions/zig-hexadeca-check@main
+        uses: hyperpolymath/cicd-suite/actions/zig-hexadeca-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Contractile Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/contractile-validation-check@main
+        uses: hyperpolymath/cicd-suite/actions/contractile-validation-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Recipes Set Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/recipes-set-check@main
+        uses: hyperpolymath/cicd-suite/actions/recipes-set-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Affirmation Document Gate
-        uses: hyperpolymath/cicd-suite/actions/affirmation-check@main
+        uses: hyperpolymath/cicd-suite/actions/affirmation-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Academic Referencing Gate
-        uses: hyperpolymath/cicd-suite/actions/referencing-check@main
+        uses: hyperpolymath/cicd-suite/actions/referencing-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Semantic Audit Gate
-        uses: hyperpolymath/cicd-suite/actions/semantic-audit-check@main
+        uses: hyperpolymath/cicd-suite/actions/semantic-audit-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: SPDX License Gate
-        uses: hyperpolymath/cicd-suite/actions/spdx-license-check@main
+        uses: hyperpolymath/cicd-suite/actions/spdx-license-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Proof Runner Gate
-        uses: hyperpolymath/cicd-suite/actions/proof-runner-check@main
+        uses: hyperpolymath/cicd-suite/actions/proof-runner-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: PRAT Testing Gate
-        uses: hyperpolymath/cicd-suite/actions/prat-check@main
+        uses: hyperpolymath/cicd-suite/actions/prat-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Panic Attack & Pons Gate
-        uses: hyperpolymath/cicd-suite/actions/custom-tools-check@main
+        uses: hyperpolymath/cicd-suite/actions/custom-tools-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: WWW & Well-Known Compliance Gate
-        uses: hyperpolymath/cicd-suite/actions/www-compliance-check@main
+        uses: hyperpolymath/cicd-suite/actions/www-compliance-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: BoJ Cartridge Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/boj-cartridge-check@main
+        uses: hyperpolymath/cicd-suite/actions/boj-cartridge-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Formatting Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/formatting-check@main
+        uses: hyperpolymath/cicd-suite/actions/formatting-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Accreditations & Badges Gate
-        uses: hyperpolymath/cicd-suite/actions/badges-check@main
+        uses: hyperpolymath/cicd-suite/actions/badges-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Metrics Extraction Gate
-        uses: hyperpolymath/cicd-suite/actions/metrics-check@main
+        uses: hyperpolymath/cicd-suite/actions/metrics-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Linguist & Banned Languages Gate
-        uses: hyperpolymath/cicd-suite/actions/linguist-check@main
+        uses: hyperpolymath/cicd-suite/actions/linguist-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Test & Benchmarks Dashboard Gate
-        uses: hyperpolymath/cicd-suite/actions/tests-benches-check@main
+        uses: hyperpolymath/cicd-suite/actions/tests-benches-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Hosting & Site Status Gate
-        uses: hyperpolymath/cicd-suite/actions/hosting-check@main
+        uses: hyperpolymath/cicd-suite/actions/hosting-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Git-Sea Analytics Gate
-        uses: hyperpolymath/cicd-suite/actions/gitsea-check@main
+        uses: hyperpolymath/cicd-suite/actions/gitsea-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Trust & Humans Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/trust-humans-check@main
+        uses: hyperpolymath/cicd-suite/actions/trust-humans-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Are We UnAPI Gate (Secret Scanning)
-        uses: hyperpolymath/cicd-suite/actions/secrets-check@main
+        uses: hyperpolymath/cicd-suite/actions/secrets-check@af7062381f7ae5f731c12051a671a373c72d7541
       - name: Reasonably Good Token Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/vaulted-tokens-check@main
+        uses: hyperpolymath/cicd-suite/actions/vaulted-tokens-check@af7062381f7ae5f731c12051a671a373c72d7541
