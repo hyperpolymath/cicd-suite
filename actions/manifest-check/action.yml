@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MPL-2.0
 name: 'Manifest Validation Gate'
-description: 'Validate A2ML/DEED and K9 manifest structure using the maintained format validators.'
+description: 'Validate DEED and K9 manifest structure using the maintained format validators.'
 inputs:
   path:
     description: 'Directory containing manifests to validate.'
@@ -13,13 +13,13 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Validate A2ML and DEED manifests
-      uses: hyperpolymath/deed-ecosystem/validate-action@f9d999b60cb5f383679ea19912bcdc49c944973a # main @ 2026-09-17
+    - name: Validate DEED manifests
+      uses: hyperpolymath/deed-ecosystem/validate-action@main
       with:
         path: ${{ inputs.path }}
         strict: ${{ inputs.strict }}
     - name: Validate K9 manifests
-      uses: hyperpolymath/k9-ecosystem/validate-action@2155aa26a21758f2ba119f61bc7e0e1981c106fb # main @ 2026-09-17
+      uses: hyperpolymath/k9-ecosystem/validate-action@main
       with:
         path: ${{ inputs.path }}
         strict: ${{ inputs.strict }}
