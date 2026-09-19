@@ -53,7 +53,10 @@ runs:
         fi
 
         # --- hard: wiki content must be .md ---------------------------------
-        badwiki=$(git ls-files | grep -E "$WIKI_DIRS" | grep -vE '\.md$' | grep -vE '/(_Sidebar|_Footer|\.gitkeep)$' || true)
+        # Ply manifests are machine-readable metadata, not wiki prose: the
+        # ply scheme requires them INSIDE the directory they describe, so a
+        # wiki home always carries one. Exempt exactly like _Sidebar/_Footer.
+        badwiki=$(git ls-files | grep -E "$WIKI_DIRS" | grep -vE '\.md$' | grep -vE '/(_Sidebar|_Footer|\.gitkeep)$' | grep -vE '(^|/)0\.[0-9]+-AI-MANIFEST\.(a2ml|deed)$' || true)
         if [ -n "$badwiki" ]; then
           echo "::error::Wiki content must be .md (wikis are the one .md home):"
           printf '%s\n' "$badwiki"
