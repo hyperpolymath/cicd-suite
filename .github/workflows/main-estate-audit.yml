@@ -51,54 +51,54 @@ jobs:
           persist-credentials: false
       
       - name: Required Files Gate
-        uses: hyperpolymath/cicd-suite/actions/required-files-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/required-files-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Code Hygiene Gate
-        uses: hyperpolymath/cicd-suite/actions/code-hygiene-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/code-hygiene-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Manifest Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/manifest-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/manifest-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Idris2 ABI Purity Gate
-        uses: hyperpolymath/cicd-suite/actions/idris2-abi-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/idris2-abi-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Zig Hexadeca API Gate
-        uses: hyperpolymath/cicd-suite/actions/zig-hexadeca-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/zig-hexadeca-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Contractile Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/contractile-validation-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/contractile-validation-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Recipes Set Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/recipes-set-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/recipes-set-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Affirmation Document Gate
-        uses: hyperpolymath/cicd-suite/actions/affirmation-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/affirmation-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Academic Referencing Gate
-        uses: hyperpolymath/cicd-suite/actions/referencing-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/referencing-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Semantic Audit Gate
-        uses: hyperpolymath/cicd-suite/actions/semantic-audit-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/semantic-audit-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: SPDX License Gate
-        uses: hyperpolymath/cicd-suite/actions/spdx-license-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/spdx-license-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Proof Runner Gate
-        uses: hyperpolymath/cicd-suite/actions/proof-runner-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/proof-runner-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: PRAT Testing Gate
-        uses: hyperpolymath/cicd-suite/actions/prat-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/prat-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Panic Attack & Pons Gate
-        uses: hyperpolymath/cicd-suite/actions/custom-tools-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/custom-tools-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: WWW & Well-Known Compliance Gate
-        uses: hyperpolymath/cicd-suite/actions/www-compliance-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/www-compliance-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: BoJ Cartridge Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/boj-cartridge-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/boj-cartridge-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Formatting Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/formatting-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/formatting-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Accreditations & Badges Gate
-        uses: hyperpolymath/cicd-suite/actions/badges-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/badges-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Metrics Extraction Gate
-        uses: hyperpolymath/cicd-suite/actions/metrics-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/metrics-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Linguist & Banned Languages Gate
-        uses: hyperpolymath/cicd-suite/actions/linguist-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/linguist-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Test & Benchmarks Dashboard Gate
-        uses: hyperpolymath/cicd-suite/actions/tests-benches-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/tests-benches-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Hosting & Site Status Gate
-        uses: hyperpolymath/cicd-suite/actions/hosting-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/hosting-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Git-Sea Analytics Gate
-        uses: hyperpolymath/cicd-suite/actions/gitsea-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/gitsea-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Trust & Humans Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/trust-humans-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/trust-humans-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Are We UnAPI Gate (Secret Scanning)
-        uses: hyperpolymath/cicd-suite/actions/secrets-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/secrets-check@0da816c05ae7486671d863e07935f93981c0c2d5
       - name: Reasonably Good Token Validation Gate
-        uses: hyperpolymath/cicd-suite/actions/vaulted-tokens-check@6c2858882c97c66cbc198ebced3b9ede67ff5906
+        uses: hyperpolymath/cicd-suite/actions/vaulted-tokens-check@0da816c05ae7486671d863e07935f93981c0c2d5
