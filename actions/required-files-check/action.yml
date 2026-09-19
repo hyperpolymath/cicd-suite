@@ -78,8 +78,13 @@ runs:
         # --- substance: a file that exists but says nothing is not a file --
         PLACEHOLDERS_BASE='TODO: update|<PROJECT|YOUR_PROJECT|lorem ipsum|example\.com'
         if [ "$TEMPLATE_MODE" -eq 1 ]; then
-          # {{OWNER}}/{{AUTHOR}} and the template's own name are the product, not filler.
-          PLACEHOLDERS="$PLACEHOLDERS_BASE"
+          # {{OWNER}}/{{AUTHOR}} are the shipped product. Only the RSR template
+          # itself may retain its own name; other templates must not ship it.
+          if [ "${REPO_NAME##*/}" = "rsr-template-repo" ]; then
+            PLACEHOLDERS="$PLACEHOLDERS_BASE"
+          else
+            PLACEHOLDERS='rsr-template-repo|'"$PLACEHOLDERS_BASE"
+          fi
         else
           PLACEHOLDERS='\{\{|rsr-template-repo|'"$PLACEHOLDERS_BASE"
         fi
