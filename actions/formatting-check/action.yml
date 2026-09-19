@@ -30,7 +30,10 @@ runs:
 
         # Files whose .md form is GitHub-mandated or conventional. Transitional
         # — when berrywiki lands these move, and this list shrinks.
-        GH_MANDATED='^(README|CONTRIBUTING|SECURITY|CODE_OF_CONDUCT|CHANGELOG|SUPPORT|SUPPORT_POLICY)\.md$'
+        # CLAUDE.md / GEMINI.md are tool-mandated AI entry points that MUST live
+        # at the repo root (Claude Code, Gemini CLI read them there — recorded in
+        # the template's root-allow.txt). They never migrate to berrywiki.
+        GH_MANDATED='^(README|CONTRIBUTING|SECURITY|CODE_OF_CONDUCT|CHANGELOG|SUPPORT|SUPPORT_POLICY|CLAUDE|GEMINI)\.md$'
         WIKI_DIRS='^(wiki|docs/wiki|docs/wikis)/'
 
         echo "Checking document formats..."
