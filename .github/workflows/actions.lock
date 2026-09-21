@@ -5,8 +5,8 @@ version: 'v0.0.2'
 workflows:
     '.github/workflows/code-hygiene-self-test.yml':
         - 'actions/checkout@v7.0.1'
-        - 'hyperpolymath/deed-ecosystem@f9d999b60cb5f383679ea19912bcdc49c944973a'
-        - 'hyperpolymath/k9-ecosystem@2155aa26a21758f2ba119f61bc7e0e1981c106fb'
+    '.github/workflows/label-triage.yml': []
+    '.github/workflows/labels.yml': []
     '.github/workflows/main-estate-audit.yml':
         - 'actions/checkout@v7.0.1'
         - 'hyperpolymath/cicd-suite@main'
