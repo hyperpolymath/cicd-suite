@@ -1,5 +1,5 @@
 name: 'Contractile Validation Gate'
-description: 'Validates that contractiles (must, trust, adjust, dust, bust, intend) are readable by their runners and the self-validating folder has required k9s.'
+description: 'Validates that contractiles (must, trust, adjust, dust, bust, intend) are readable by their runners and the self-validating folder has required k9s. DEED-era declarations are <Verb>file.deed; legacy <Verb>file.a2ml is accepted while the .a2ml -> .deed migration is in flight (standards #837).'
 runs:
   using: 'composite'
   steps:
@@ -10,16 +10,23 @@ runs:
         
         # Check runners are working (mocked for now, assumes global runners or repo scripts)
         runners=("must" "trust" "adjust" "dust" "bust" "intend")
-        
+
         for runner in "${runners[@]}"; do
-          # Capitalize first letter to match file name (e.g. Mustfile)
-          verbfile="$(tr '[:lower:]' '[:upper:]' <<< ${runner:0:1})${runner:1}file.a2ml"
-          
+          # Capitalised verb + 'file' (e.g. Mustfile). The DEED-era declaration
+          # is <Verb>file.deed; the legacy <Verb>file.a2ml spelling is still
+          # accepted while the .a2ml -> .deed migration is in flight
+          # (a2ml is retired: standards #837).
+          stem="$(tr '[:lower:]' '[:upper:]' <<< ${runner:0:1})${runner:1}file"
+          verbfile="$stem.deed"
+          if [ ! -f "$verbfile" ] && [ ! -f "contractiles/$runner/$verbfile" ]; then
+            verbfile="$stem.a2ml"   # legacy
+          fi
+
           # We only validate if the verb file exists in the repo
           if [ -f "$verbfile" ] || [ -f "contractiles/$runner/$verbfile" ]; then
              echo "Invoking $runner runner on $verbfile..."
              # Placeholder for actual runner command
-             # e.g., a2ml-tool validate "$verbfile" --runner="$runner"
+             # e.g., deed-lint "$verbfile" --runner="$runner"
           fi
         done
         

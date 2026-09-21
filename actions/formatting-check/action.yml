@@ -56,10 +56,16 @@ runs:
         fi
 
         # --- hard: wiki content must be .md ---------------------------------
-        # Ply manifests are machine-readable metadata, not wiki prose: the
-        # ply scheme requires them INSIDE the directory they describe, so a
-        # wiki home always carries one. Exempt exactly like _Sidebar/_Footer.
-        badwiki=$(git ls-files | grep -E "$WIKI_DIRS" | grep -vE '\.md$' | grep -vE '/(_Sidebar|_Footer|\.gitkeep)$' | grep -vE '(^|/)0\.[0-9]+-AI-MANIFEST\.(a2ml|deed)$' || true)
+        # Machine-readable manifests are not wiki prose: the ply scheme
+        # requires them INSIDE the directory they describe, so a wiki home
+        # always carries one. Exempt exactly like _Sidebar/_Footer.
+        # Covered: the four DEED document forms (estate_chora.deed,
+        # ATLAS.deed, <stem>_praxis.deed, <stem>_chora.deed — standards
+        # 1-formats/deed/, dispatched by filename stem) plus the legacy
+        # 0.<n>-AI-MANIFEST.deed / .a2ml spelling while the
+        # .a2ml -> .deed migration is in flight (a2ml retired: #837).
+        DEED_FORMS='(^|/)(([^/]*_(chora|praxis)|ATLAS|estate_chora)\.deed|0\.[0-9]+-AI-MANIFEST\.(a2ml|deed))$'
+        badwiki=$(git ls-files | grep -E "$WIKI_DIRS" | grep -vE '\.md$' | grep -vE '/(_Sidebar|_Footer|\.gitkeep)$' | grep -vE "$DEED_FORMS" || true)
         if [ -n "$badwiki" ]; then
           echo "::error::Wiki content must be .md (wikis are the one .md home):"
           printf '%s\n' "$badwiki"
@@ -79,6 +85,17 @@ runs:
           echo "::warning::these are candidates for the berrywiki migration:"
           printf '%s\n' "$stray" | head -20
           [ "$count" -gt 20 ] && echo "  … and $((count - 20)) more"
+        fi
+
+        # --- advisory: legacy .a2ml manifests awaiting DEED conversion ------
+        # a2ml is retired (standards #837): .a2ml artefacts are to be
+        # translated into the DEED grammar. Presence is migration debt, not a
+        # failure — the conversion campaign is tracked, not enforced, here.
+        legacy=$(git ls-files '*.a2ml' || true)
+        if [ -n "$legacy" ]; then
+          count=$(printf '%s\n' "$legacy" | wc -l)
+          echo "::notice::$count legacy .a2ml file(s) remain; DEED is the target grammar (standards #837). Top offenders:"
+          printf '%s\n' "$legacy" | head -10
         fi
 
         if [ "$fail" -eq 1 ]; then
