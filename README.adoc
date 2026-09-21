@@ -24,7 +24,7 @@ one kind of thing. Conflating them was the original error.
 |*Enforcing* (15) |affirmation · boj-cartridge · code-hygiene ·
 *formatting* · idris2-abi · linguist · manifest · proof-runner ·
 *recipes-set* · referencing · required-files · secrets · spdx-license ·
-vaulted-tokens · zig-hexadeca |Can fail. A green tick means something.
+vaulted-tokens · zig-unified-api-adapter |Can fail. A green tick means something.
 
 |*Advisory* (9) |badges · contractile-validation · custom-tools · gitsea
 · hosting · metrics · tests-benches · trust-humans · www-compliance |Do
@@ -108,7 +108,7 @@ reference them. A stub you cannot call cannot mislead.
 
 *6. OPEN — six actions use bare `+git grep+`* with no path restriction
 (`+idris2-abi+`, `+metrics+`, `+secrets+`, `+spdx-license+`,
-`+vaulted-tokens+`, `+zig-hexadeca+`) and may inherit a milder form of
+`+vaulted-tokens+`, `+zig-unified-api-adapter+`) and may inherit a milder form of
 defect (1).
 
 === Blast radius
