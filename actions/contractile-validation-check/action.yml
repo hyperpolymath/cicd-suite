@@ -1,5 +1,5 @@
 name: 'Contractile Validation Gate'
-description: 'Validates that contractiles (must, trust, adjust, dust, bust, intend) are readable by their runners and the self-validating folder has required k9s. DEED-era declarations are <Verb>file.deed; legacy <Verb>file.a2ml is accepted while the .a2ml -> .deed migration is in flight (standards #837).'
+description: 'Validates that contractiles (must, trust, adjust, dust, bust, intend) are readable by their runners and the self-validating folder has required k9s. Declarations are <Verb>file.deed - a2ml is retired (standards #837) and is no longer read by this gate.'
 runs:
   using: 'composite'
   steps:
@@ -12,15 +12,11 @@ runs:
         runners=("must" "trust" "adjust" "dust" "bust" "intend")
 
         for runner in "${runners[@]}"; do
-          # Capitalised verb + 'file' (e.g. Mustfile). The DEED-era declaration
-          # is <Verb>file.deed; the legacy <Verb>file.a2ml spelling is still
-          # accepted while the .a2ml -> .deed migration is in flight
-          # (a2ml is retired: standards #837).
+          # Capitalised verb + 'file' (e.g. Mustfile). Declarations are
+          # <Verb>file.deed; a2ml is retired (standards #837) and this gate
+          # no longer reads <Verb>file.a2ml.
           stem="$(tr '[:lower:]' '[:upper:]' <<< ${runner:0:1})${runner:1}file"
           verbfile="$stem.deed"
-          if [ ! -f "$verbfile" ] && [ ! -f "contractiles/$runner/$verbfile" ]; then
-            verbfile="$stem.a2ml"   # legacy
-          fi
 
           # We only validate if the verb file exists in the repo
           if [ -f "$verbfile" ] || [ -f "contractiles/$runner/$verbfile" ]; then

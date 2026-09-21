@@ -61,10 +61,11 @@ runs:
         # always carries one. Exempt exactly like _Sidebar/_Footer.
         # Covered: the four DEED document forms (estate_chora.deed,
         # ATLAS.deed, <stem>_praxis.deed, <stem>_chora.deed — standards
-        # 1-formats/deed/, dispatched by filename stem) plus the legacy
-        # 0.<n>-AI-MANIFEST.deed / .a2ml spelling while the
-        # .a2ml -> .deed migration is in flight (a2ml retired: #837).
-        DEED_FORMS='(^|/)(([^/]*_(chora|praxis)|ATLAS|estate_chora)\.deed|0\.[0-9]+-AI-MANIFEST\.(a2ml|deed))$'
+        # 1-formats/deed/, dispatched by filename stem) plus the
+        # 0.<n>-AI-MANIFEST.deed spelling. a2ml is retired (standards #837):
+        # 0.<n>-AI-MANIFEST.a2ml is machine-readable-manifest debt now, not
+        # an accepted spelling, and is no longer exempted here.
+        DEED_FORMS='(^|/)(([^/]*_(chora|praxis)|ATLAS|estate_chora)\.deed|0\.[0-9]+-AI-MANIFEST\.deed)$'
         badwiki=$(git ls-files | grep -E "$WIKI_DIRS" | grep -vE '\.md$' | grep -vE '/(_Sidebar|_Footer|\.gitkeep)$' | grep -vE "$DEED_FORMS" || true)
         if [ -n "$badwiki" ]; then
           echo "::error::Wiki content must be .md (wikis are the one .md home):"
@@ -94,7 +95,7 @@ runs:
         legacy=$(git ls-files '*.a2ml' || true)
         if [ -n "$legacy" ]; then
           count=$(printf '%s\n' "$legacy" | wc -l)
-          echo "::notice::$count legacy .a2ml file(s) remain; DEED is the target grammar (standards #837). Top offenders:"
+          echo "::notice::$count legacy .a2ml file(s) remain; the gates read DEED only now (standards #837). Top offenders:"
           printf '%s\n' "$legacy" | head -10
         fi
 
