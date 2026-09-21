@@ -17,3 +17,5 @@ runs:
         else
           echo "No Zig files found. Skipping check."
         fi
+
+# 2026-09-21: cache-bust touch — negative resolution cache for this path poisoned since merge (run 35548451498 "Can't find action.yml").
