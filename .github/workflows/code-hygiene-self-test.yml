@@ -17,6 +17,7 @@ on:
       - 'actions/spdx-license-check/**'
       - 'tests/**'
       - '.github/workflows/code-hygiene-self-test.yml'
+      - '.github/workflows/actions.lock'
   pull_request:
     paths:
       - 'actions/code-hygiene-check/**'
@@ -29,6 +30,7 @@ on:
       - 'actions/spdx-license-check/**'
       - 'tests/**'
       - '.github/workflows/code-hygiene-self-test.yml'
+      - '.github/workflows/actions.lock'
 
 permissions:
   contents: read
@@ -44,6 +46,9 @@ jobs:
   # those pins goes stale the job dies in `prepare`, before a single step runs —
   # which is exactly how the defect this suite covers stayed invisible. This job
   # touches nothing but checkout, so its square always reflects the suite.
+  # For the same reason it is where the actions.lock closure guard runs: a lock
+  # that is missing a composite-reached pin kills `Gate controls` in `Set up job`,
+  # so a check living there could never report the very defect it tests for.
   shell-contract:
     name: Composite shell contract
     runs-on: ubuntu-latest
@@ -53,6 +58,7 @@ jobs:
         with:
           persist-credentials: false
       - run: bash tests/composite-shell-contract.sh
+      - run: bash tests/lock-transitive-closure.sh
 
   test:
     name: Gate controls
