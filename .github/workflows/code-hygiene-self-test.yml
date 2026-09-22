@@ -13,6 +13,9 @@ on:
       - 'actions/secrets-check/**'
       - 'actions/boj-cartridge-check/**'
       - 'actions/manifest-check/**'
+      - 'actions/required-files-check/**'
+      - 'actions/spdx-license-check/**'
+      - 'tests/**'
       - '.github/workflows/code-hygiene-self-test.yml'
   pull_request:
     paths:
@@ -22,6 +25,9 @@ on:
       - 'actions/secrets-check/**'
       - 'actions/boj-cartridge-check/**'
       - 'actions/manifest-check/**'
+      - 'actions/required-files-check/**'
+      - 'actions/spdx-license-check/**'
+      - 'tests/**'
       - '.github/workflows/code-hygiene-self-test.yml'
 
 permissions:
@@ -45,6 +51,11 @@ jobs:
       - run: bash actions/referencing-check/test.sh
       - run: bash actions/secrets-check/test.sh
       - run: bash actions/boj-cartridge-check/test.sh
+      # Proves the composite shell contract: GitHub runs `shell: bash` with
+      # `-e`, which a script's own `set -uo pipefail` does not clear. Two gates
+      # were dying silently on it. This suite kills a mutant, so a green square
+      # here means the contract is actually tested.
+      - run: bash tests/composite-shell-contract.sh
       - name: Create manifest controls
         id: fixtures
         shell: bash
