@@ -7,19 +7,40 @@ runs:
       shell: bash
       run: |
         echo "Validating Linguist configuration and Banned Languages..."
-        
-        # Banned languages list based on user preference
-        BANNED_LANGS=("python" "ruby" "perl")
-        
-        # Detect extensions
-        if find . -name "*.py" -not -path "*/\.*" | grep -q .; then
-           echo "::error::Banned language detected: Python (.py files found). Use Rust, Julia, or bash/just instead."
+
+        # The doctrine bans writing estate code in Python. It does not ban a
+        # repository from CONTAINING Python: a static analyser, a linter or a
+        # parser needs Python source as test input, and that input is data, not
+        # implementation. Asking "does this repo contain .py" instead of "is
+        # this repo written in Python" fails exactly those repos hardest for
+        # doing their job properly.
+        #
+        # So test corpora are excluded by directory. Anything OUTSIDE these
+        # directories is still implementation and is still banned.
+        EXCLUDED_DIRS=(fixtures corpus corpora testdata test-data test-corpus samples vendor node_modules)
+
+        PRUNE=()
+        for d in "${EXCLUDED_DIRS[@]}"; do
+          PRUNE+=(-path "*/$d/*" -o -path "./$d/*" -o)
+        done
+
+        OFFENDERS=$(find . \( "${PRUNE[@]}" -path "*/.*" \) -prune -o -name "*.py" -print 2>/dev/null)
+
+        if [ -n "$OFFENDERS" ]; then
+           echo "::error::Banned language detected: Python implementation source found. Use Rust, Julia, or bash/just instead."
+           echo "Offending files (test corpora under ${EXCLUDED_DIRS[*]} are exempt):"
+           echo "$OFFENDERS" | sed 's/^/  /'
            exit 1
         fi
-        
+
+        EXEMPT_COUNT=$(find . -name "*.py" -not -path "*/.*" 2>/dev/null | wc -l)
+        if [ "$EXEMPT_COUNT" -gt 0 ]; then
+           echo "$EXEMPT_COUNT Python file(s) present, all inside excluded test-corpus directories — allowed."
+        fi
+
         # Ensure .gitattributes defines linguist overrides if needed
         if [ ! -f ".gitattributes" ] || ! grep -q "linguist" ".gitattributes"; then
            echo "::warning::.gitattributes is missing or does not contain linguist configuration. The git linguist list should be up to date."
         fi
-        
+
         echo "Linguist & Banned Languages validation complete."
