@@ -57,6 +57,9 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
+          # lock-transitive-closure.sh compares the actions/ tree at the commit
+          # the lockfile pins against HEAD's, so it needs that commit present.
+          fetch-depth: 0
       - run: bash tests/composite-shell-contract.sh
       - run: bash tests/lock-transitive-closure.sh
 

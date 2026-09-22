@@ -103,6 +103,58 @@ else
     ok "checked $checked composite-reached ref(s) — population is non-empty"
 fi
 
+# A self-referencing BRANCH pin is how every downstream consumer reaches these
+# composites: `uses: hyperpolymath/cicd-suite/actions/x@main` is resolved by the
+# runner to the COMMIT THE LOCKFILE NAMES, not to the branch tip. So if actions/
+# has changed since that locked commit, every consumer silently runs the OLD
+# gates while this repo's own CI runs the new ones — the cure lands here and is
+# inert everywhere else, with nothing red to show for it.
+#
+# Measured 2026-09-22: fa71ac2 (#32) and 0c1bc9f (#34) both cured the composite
+# `-e` kill, and pons-asinorum's estate audit still died on it at 82ms, because
+# the lock still pinned cicd-suite@main at 9adb3908 — four commits back. The
+# house pattern is a follow-up "pin cicd-suite lock at <sha>" commit (f8c8f4a,
+# 4f9a7a4, 373714a); #32 and #34 never got one. This asserts it instead.
+#
+# Needs full history: the job running this must use fetch-depth: 0.
+echo "== a self-referencing branch pin serves the CURRENT composites =="
+# ERE has no lazy quantifiers, so strip .git FIRST and then take owner/repo.
+# In Actions $GITHUB_REPOSITORY is authoritative; the remote is the local path.
+selfrepo="${GITHUB_REPOSITORY:-$(git -C "$ROOT" remote get-url origin 2>/dev/null \
+    | sed -E 's#\.git$##; s#^.*[:/]([^/]+/[^/]+)$#\1#')}"
+selfchecked=0
+while IFS= read -r ref; do
+    [ -n "$ref" ] || continue
+    case "$ref" in "$selfrepo@"*) ;; *) continue ;; esac
+    case "${ref#*@}" in *[!0-9a-f]*) ;; *) continue ;; esac   # a SHA pin cannot drift
+    selfchecked=$((selfchecked+1))
+    locked="$(r="$ref" yqr '.dependencies[strenv(r)].commit' "$LOCK" | sed 's/^sha1-//')"
+    if ! git -C "$ROOT" cat-file -e "$locked^{commit}" 2>/dev/null; then
+        bad "$ref pins $locked, which is not in this clone (need fetch-depth: 0)"
+        continue
+    fi
+    have="$(git -C "$ROOT" rev-parse "$locked:actions" 2>/dev/null || true)"
+    want="$(git -C "$ROOT" rev-parse "HEAD:actions" 2>/dev/null || true)"
+    if [ -n "$have" ] && [ "$have" = "$want" ]; then
+        ok "$ref serves the current actions/ tree ($locked)"
+    else
+        bad "$ref pins $locked, whose actions/ tree differs from HEAD"
+        echo "       every consumer using this branch ref runs those OLD composites;"
+        echo "       a cure landed here is inert downstream. Changed since the pin:"
+        git -C "$ROOT" diff --name-only "$locked" HEAD -- actions/ 2>/dev/null \
+            | sed 's/^/         /' | head -8
+    fi
+done < <(yqr '.dependencies | keys | .[]' "$LOCK")
+
+# This block printed its header and checked NOTHING on its first run — a broken
+# sed left ".git" on the repo name so no key ever matched, and the section above
+# only asserts non-vacuity for its own population. A header is not a check.
+if [ "$selfchecked" -eq 0 ]; then
+    bad "no self-referencing branch pin examined (selfrepo='$selfrepo') — this section is vacuous"
+else
+    ok "examined $selfchecked self-referencing branch pin(s)"
+fi
+
 echo "== every declared ref resolves to a dependencies: entry =="
 while IFS= read -r ref; do
     [ -n "$ref" ] || continue
