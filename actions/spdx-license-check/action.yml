@@ -17,7 +17,12 @@ runs:
         # Check that files have SPDX lines (heuristic check on some files)
         # We ensure at least one SPDX line for code and one for docs is found in the repo
         
-        has_spdx=$(git grep -i "SPDX-License-Identifier" | wc -l)
+        # GitHub runs this step as `bash -e -o pipefail`. `git grep` exits 1 when
+        # it matches nothing, so without the guard below the ZERO-SPDX case — the
+        # only case this check exists to detect — killed the step outright, making
+        # the `::warning::` branch beneath unreachable and inverting the stated
+        # intent of the comment beside it. Measured 2026-09-22.
+        has_spdx=$({ git grep -i "SPDX-License-Identifier" || true; } | wc -l)
         if [ "$has_spdx" -eq 0 ]; then
            echo "::warning::No SPDX-License-Identifier lines found in the repository."
            # exit 1 (disabled strictly to prevent total CI blockage until adoption)

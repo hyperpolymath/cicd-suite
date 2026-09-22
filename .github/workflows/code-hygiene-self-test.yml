@@ -13,6 +13,9 @@ on:
       - 'actions/secrets-check/**'
       - 'actions/boj-cartridge-check/**'
       - 'actions/manifest-check/**'
+      - 'actions/required-files-check/**'
+      - 'actions/spdx-license-check/**'
+      - 'tests/**'
       - '.github/workflows/code-hygiene-self-test.yml'
   pull_request:
     paths:
@@ -22,6 +25,9 @@ on:
       - 'actions/secrets-check/**'
       - 'actions/boj-cartridge-check/**'
       - 'actions/manifest-check/**'
+      - 'actions/required-files-check/**'
+      - 'actions/spdx-license-check/**'
+      - 'tests/**'
       - '.github/workflows/code-hygiene-self-test.yml'
 
 permissions:
@@ -32,6 +38,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+
+  # Deliberately a SEPARATE job from `test`. The `test` job invokes composite
+  # actions, which drag transitive `uses:` edges into actions.lock; when one of
+  # those pins goes stale the job dies in `prepare`, before a single step runs —
+  # which is exactly how the defect this suite covers stayed invisible. This job
+  # touches nothing but checkout, so its square always reflects the suite.
+  shell-contract:
+    name: Composite shell contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - run: bash tests/composite-shell-contract.sh
+
   test:
     name: Gate controls
     runs-on: ubuntu-latest
