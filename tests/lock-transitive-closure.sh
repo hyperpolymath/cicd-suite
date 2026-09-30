@@ -117,42 +117,62 @@ fi
 # 4f9a7a4, 373714a); #32 and #34 never got one. This asserts it instead.
 #
 # Needs full history: the job running this must use fetch-depth: 0.
-echo "== a self-referencing branch pin serves the CURRENT composites =="
+echo "== a self-referencing pin serves the CURRENT composites =="
 # ERE has no lazy quantifiers, so strip .git FIRST and then take owner/repo.
 # In Actions $GITHUB_REPOSITORY is authoritative; the remote is the local path.
 selfrepo="${GITHUB_REPOSITORY:-$(git -C "$ROOT" remote get-url origin 2>/dev/null \
     | sed -E 's#\.git$##; s#^.*[:/]([^/]+/[^/]+)$#\1#')}"
 selfchecked=0
+
+# serves_current <label> <commit>: is <commit>'s actions/ tree HEAD's?
+serves_current() {
+    local label="$1" pinned="$2" have want
+    selfchecked=$((selfchecked+1))
+    if ! git -C "$ROOT" cat-file -e "$pinned^{commit}" 2>/dev/null; then
+        bad "$label pins $pinned, which is not in this clone (need fetch-depth: 0)"
+        return
+    fi
+    have="$(git -C "$ROOT" rev-parse "$pinned:actions" 2>/dev/null || true)"
+    want="$(git -C "$ROOT" rev-parse "HEAD:actions" 2>/dev/null || true)"
+    if [ -n "$have" ] && [ "$have" = "$want" ]; then
+        ok "$label serves the current actions/ tree ($pinned)"
+    else
+        bad "$label pins $pinned, whose actions/ tree differs from HEAD"
+        echo "       every consumer reaching this pin runs those OLD composites;"
+        echo "       a cure landed here is inert downstream. Changed since the pin:"
+        git -C "$ROOT" diff --name-only "$pinned" HEAD -- actions/ 2>/dev/null \
+            | sed 's/^/         /' | head -8
+    fi
+}
+
+# Population 1: a branch pin in the lock, resolved to the commit the lock names.
 while IFS= read -r ref; do
     [ -n "$ref" ] || continue
     case "$ref" in "$selfrepo@"*) ;; *) continue ;; esac
-    case "${ref#*@}" in *[!0-9a-f]*) ;; *) continue ;; esac   # a SHA pin cannot drift
-    selfchecked=$((selfchecked+1))
+    case "${ref#*@}" in *[!0-9a-f]*) ;; *) continue ;; esac   # SHA keys: population 2
     locked="$(r="$ref" yqr '.dependencies[strenv(r)].commit' "$LOCK" | sed 's/^sha1-//')"
-    if ! git -C "$ROOT" cat-file -e "$locked^{commit}" 2>/dev/null; then
-        bad "$ref pins $locked, which is not in this clone (need fetch-depth: 0)"
-        continue
-    fi
-    have="$(git -C "$ROOT" rev-parse "$locked:actions" 2>/dev/null || true)"
-    want="$(git -C "$ROOT" rev-parse "HEAD:actions" 2>/dev/null || true)"
-    if [ -n "$have" ] && [ "$have" = "$want" ]; then
-        ok "$ref serves the current actions/ tree ($locked)"
-    else
-        bad "$ref pins $locked, whose actions/ tree differs from HEAD"
-        echo "       every consumer using this branch ref runs those OLD composites;"
-        echo "       a cure landed here is inert downstream. Changed since the pin:"
-        git -C "$ROOT" diff --name-only "$locked" HEAD -- actions/ 2>/dev/null \
-            | sed 's/^/         /' | head -8
-    fi
+    serves_current "$ref" "$locked"
 done < <(yqr '.dependencies | keys | .[]' "$LOCK")
+
+# Population 2: a literal-SHA self-reference in a workflow file. The ref cannot
+# drift, but what consumers RUN can: actions/ moves on and the SHA does not.
+# main-estate-audit.yml is in this form, de-onboarded from the lock, because a
+# lock-onboarded branch ref startup-fails every caller that sets
+# sha_pinning_required (the lock is honoured only inside this repo). One check
+# per distinct pinned commit.
+while IFS= read -r pinned; do
+    [ -n "$pinned" ] || continue
+    serves_current "$selfrepo/actions/*@<sha> in a workflow" "$pinned"
+done < <(grep -rhoE "uses:[[:space:]]*$selfrepo/actions/[A-Za-z0-9_.-]+@[0-9a-f]{40}" \
+            "$ROOT/.github/workflows" 2>/dev/null | sed -E 's/.*@//' | sort -u)
 
 # This block printed its header and checked NOTHING on its first run — a broken
 # sed left ".git" on the repo name so no key ever matched, and the section above
 # only asserts non-vacuity for its own population. A header is not a check.
 if [ "$selfchecked" -eq 0 ]; then
-    bad "no self-referencing branch pin examined (selfrepo='$selfrepo') — this section is vacuous"
+    bad "no self-referencing pin examined (selfrepo='$selfrepo') — this section is vacuous"
 else
-    ok "examined $selfchecked self-referencing branch pin(s)"
+    ok "examined $selfchecked self-referencing pin(s)"
 fi
 
 echo "== every declared ref resolves to a dependencies: entry =="
