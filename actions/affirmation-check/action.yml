@@ -5,6 +5,14 @@ inputs:
     description: 'Set true only when the repository declares the governance-tier capability.'
     required: false
     default: 'false'
+  trusted-gpg-keys:
+    description: 'Optional armoured PGP public-key file whose signatures count as trusted, in addition to the vendored GitHub web-flow key.'
+    required: false
+    default: ''
+  allowed-signers:
+    description: 'Optional git allowed_signers file whose SSH signers count as trusted, in addition to the vendored estate-owner keys. A relative path is read from the checked-out tree, which a pull request controls; name one only where that tree is protected.'
+    required: false
+    default: ''
 runs:
   using: 'composite'
   steps:
@@ -12,4 +20,6 @@ runs:
       shell: bash
       env:
         AFFIRMATION_REQUIRED: ${{ inputs.required }}
+        AFFIRMATION_TRUSTED_GPG_KEYS: ${{ inputs.trusted-gpg-keys }}
+        AFFIRMATION_ALLOWED_SIGNERS: ${{ inputs.allowed-signers }}
       run: "${{ github.action_path }}/check.sh"
