@@ -30,4 +30,108 @@ printf '%s\n' \
   > "$fixture/AFFIRMATION.adoc"
 GITHUB_WORKSPACE=$fixture AFFIRMATION_REQUIRED=true "$here/check.sh"
 
+
+# Signature controls. Each verdict is planted with a throwaway key, so the
+# checker is shown both to accept what it should and to refuse what it should.
+# Print a minimal affirmation that passes the stub and placeholder checks.
+substantive_affirmation() {
+  printf '%s\n' \
+    '= AFFIRMATION — controlled fixture' \
+    'This snapshot makes a falsifiable claim.' \
+    'The claim is anchored to a named revision.' \
+    'Tests were run and their scope is stated.' \
+    'Unproved properties are not called proved.' \
+    'Later revisions must be assessed separately.'
+}
+
+# Create a git repository at $1 holding one commit of AFFIRMATION.adoc, with
+# any extra `git -c` settings in the remaining arguments (used to sign it).
+make_signed_repo() {
+  local repo=$1
+  shift
+  git init -q "$repo"
+  substantive_affirmation > "$repo/AFFIRMATION.adoc"
+  git -C "$repo" add AFFIRMATION.adoc
+  git -C "$repo" -c user.name=Fixture -c user.email=fixture@example.invalid \
+    "$@" commit -q -m 'affirm'
+}
+
+# Run the checker on repository $1 with the remaining arguments as extra
+# environment, capturing output in $fixture/out; returns the checker's status.
+run_check() {
+  local repo=$1
+  shift
+  env GITHUB_WORKSPACE="$repo" AFFIRMATION_REQUIRED=true "$@" "$here/check.sh" > "$fixture/out" 2>&1
+}
+
+if command -v gpg >/dev/null 2>&1; then
+  vendored_fprs=$(gpg --batch --with-colons --import-options show-only --import "$here/github-web-flow.gpg" 2>/dev/null \
+    | awk -F: '$1 == "fpr" { print $10 }' | sort | tr '\n' ' ')
+  if [[ "$vendored_fprs" != "5DE3E0509C47EA3CF04A42D34AEE18F83AFDEB23 968479A1AFF927E37D1A566BB5690EEEBB952194 " ]]; then
+    echo "vendored GitHub web-flow key has unexpected fingerprints: $vendored_fprs" >&2
+    exit 1
+  fi
+
+  signer_home=$fixture/signer-gnupg
+  mkdir -m 700 "$signer_home"
+  GNUPGHOME=$signer_home gpg --batch --quiet --passphrase '' \
+    --quick-generate-key 'Fixture <fixture@example.invalid>' ed25519 sign never
+  GNUPGHOME=$signer_home gpg --batch --armor --export > "$fixture/fixture-key.asc"
+
+  pgp_repo=$fixture/pgp
+  GNUPGHOME=$signer_home make_signed_repo "$pgp_repo" -c commit.gpgsign=true \
+    -c gpg.format=openpgp -c user.signingkey=fixture@example.invalid
+
+  run_check "$pgp_repo" AFFIRMATION_TRUSTED_GPG_KEYS="$fixture/fixture-key.asc"
+  if ! grep -q 'verified with a trusted key: Fixture <fixture@example.invalid>' "$fixture/out"; then
+    cat "$fixture/out" >&2
+    echo "PGP signature from a supplied trusted key was not verified" >&2
+    exit 1
+  fi
+
+  if run_check "$pgp_repo"; then
+    echo "PGP signature from an unsupplied key unexpectedly passed" >&2
+    exit 1
+  fi
+
+  # Tamper with the signed commit's message so its signature no longer matches.
+  tampered=$(git -C "$pgp_repo" cat-file commit HEAD | sed 's/^affirm$/affirm, altered/' \
+    | git -C "$pgp_repo" hash-object -t commit -w --stdin)
+  git -C "$pgp_repo" update-ref HEAD "$tampered"
+  if run_check "$pgp_repo" AFFIRMATION_TRUSTED_GPG_KEYS="$fixture/fixture-key.asc"; then
+    echo "tampered PGP signature unexpectedly passed" >&2
+    exit 1
+  fi
+  grep -q 'signature is bad' "$fixture/out"
+
+  if run_check "$pgp_repo" AFFIRMATION_TRUSTED_GPG_KEYS="$fixture/missing.asc"; then
+    echo "missing trusted key file unexpectedly passed" >&2
+    exit 1
+  fi
+  grep -q 'could not be imported' "$fixture/out"
+else
+  echo "::warning::gpg is not installed; PGP signature controls were not run."
+fi
+
+if command -v ssh-keygen >/dev/null 2>&1; then
+  ssh-keygen -q -t ed25519 -N '' -C fixture -f "$fixture/ssh-key"
+  ssh_repo=$fixture/ssh
+  make_signed_repo "$ssh_repo" -c commit.gpgsign=true -c gpg.format=ssh \
+    -c user.signingkey="$fixture/ssh-key.pub"
+
+  run_check "$ssh_repo"
+  grep -q 'untrusted or locally unknown key' "$fixture/out"
+
+  mkdir -p "$ssh_repo/.github"
+  printf 'fixture@example.invalid %s\n' "$(cat "$fixture/ssh-key.pub")" > "$ssh_repo/.github/allowed_signers"
+  run_check "$ssh_repo"
+  if ! grep -q 'verified with a trusted key' "$fixture/out"; then
+    cat "$fixture/out" >&2
+    echo "SSH signature listed in .github/allowed_signers was not verified" >&2
+    exit 1
+  fi
+else
+  echo "::warning::ssh-keygen is not installed; SSH signature controls were not run."
+fi
+
 echo 'affirmation-check controls passed'
