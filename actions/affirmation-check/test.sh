@@ -82,18 +82,24 @@ if command -v gpg >/dev/null 2>&1; then
   GNUPGHOME=$signer_home make_signed_repo "$pgp_repo" -c commit.gpgsign=true \
     -c gpg.format=openpgp -c user.signingkey=fixture@example.invalid
 
-  run_check "$pgp_repo" AFFIRMATION_TRUSTED_GPG_KEYS="$fixture/fixture-key.asc"
+  if ! run_check "$pgp_repo" AFFIRMATION_TRUSTED_GPG_KEYS="$fixture/fixture-key.asc"; then
+    cat "$fixture/out" >&2
+    echo "affirmation check failed where it should pass: $pgp_repo AFFIRMATION_TRUSTED_GPG_KEYS=$fixture/fixture-key.asc" >&2
+    exit 1
+  fi
   if ! grep -q 'verified with a trusted key: Fixture <fixture@example.invalid>' "$fixture/out"; then
     cat "$fixture/out" >&2
     echo "PGP signature from a supplied trusted key was not verified" >&2
     exit 1
   fi
 
-  if run_check "$pgp_repo"; then
+  # The runner's own keyring trusts the fixture key here; it must not count.
+  if run_check "$pgp_repo" GNUPGHOME="$signer_home"; then
     echo "PGP signature from an unsupplied key unexpectedly passed" >&2
     exit 1
   fi
 
+  signed_head=$(git -C "$pgp_repo" rev-parse HEAD)
   # Tamper with the signed commit's message so its signature no longer matches.
   tampered=$(git -C "$pgp_repo" cat-file commit HEAD | sed 's/^affirm$/affirm, altered/' \
     | git -C "$pgp_repo" hash-object -t commit -w --stdin)
@@ -108,7 +114,9 @@ if command -v gpg >/dev/null 2>&1; then
     exit 1
   fi
 
-  if run_check "$pgp_repo" AFFIRMATION_TRUSTED_GPG_KEYS="$fixture/missing.asc"; then
+  # Back to the validly signed commit, so only the missing key can fail it.
+  git -C "$pgp_repo" update-ref HEAD "$signed_head"
+  if run_check "$pgp_repo" GNUPGHOME="$signer_home" AFFIRMATION_TRUSTED_GPG_KEYS="$fixture/missing.asc"; then
     echo "missing trusted key file unexpectedly passed" >&2
     exit 1
   fi
@@ -117,8 +125,36 @@ if command -v gpg >/dev/null 2>&1; then
     echo "missing trusted key file failed for the wrong reason" >&2
     exit 1
   fi
+
+  # A key that merely calls itself GitHub is not GitHub's key.
+  impostor_home=$fixture/impostor-gnupg
+  mkdir -m 700 "$impostor_home"
+  GNUPGHOME=$impostor_home gpg --batch --quiet --passphrase '' \
+    --quick-generate-key 'GitHub <noreply@github.com>' ed25519 sign never
+  GNUPGHOME=$impostor_home gpg --batch --armor --export > "$fixture/impostor-key.asc"
+  impostor_repo=$fixture/impostor
+  GNUPGHOME=$impostor_home make_signed_repo "$impostor_repo" -c commit.gpgsign=true \
+    -c gpg.format=openpgp -c user.signingkey=noreply@github.com
+  if ! run_check "$impostor_repo" AFFIRMATION_TRUSTED_GPG_KEYS="$fixture/impostor-key.asc"; then
+    cat "$fixture/out" >&2
+    echo "affirmation check failed where it should pass: $impostor_repo AFFIRMATION_TRUSTED_GPG_KEYS=$fixture/impostor-key.asc" >&2
+    exit 1
+  fi
+  if ! grep -q 'verified with a trusted key: GitHub <noreply@github.com>' "$fixture/out" \
+    || grep -q 'GitHub signed this commit' "$fixture/out"; then
+    cat "$fixture/out" >&2
+    echo "a key named GitHub was taken for GitHub's web-flow key" >&2
+    exit 1
+  fi
 else
   echo "::warning::gpg is not installed; PGP signature controls were not run."
+fi
+
+# The vendored SSH signers name only the estate owner's GitHub noreply address.
+vendored_principals=$(grep -v '^#' "$here/allowed_signers" | awk 'NF { print $1 }' | sort -u)
+if [[ "$vendored_principals" != "6759885+hyperpolymath@users.noreply.github.com" ]]; then
+  echo "vendored allowed_signers names unexpected principals: $vendored_principals" >&2
+  exit 1
 fi
 
 if command -v ssh-keygen >/dev/null 2>&1; then
@@ -127,19 +163,39 @@ if command -v ssh-keygen >/dev/null 2>&1; then
   make_signed_repo "$ssh_repo" -c commit.gpgsign=true -c gpg.format=ssh \
     -c user.signingkey="$fixture/ssh-key.pub"
 
-  run_check "$ssh_repo"
+  if ! run_check "$ssh_repo"; then
+    cat "$fixture/out" >&2
+    echo "affirmation check failed where it should pass: $ssh_repo" >&2
+    exit 1
+  fi
   if ! grep -q 'untrusted or locally unknown key' "$fixture/out"; then
     cat "$fixture/out" >&2
     echo "SSH signature without allowed_signers was not reported as untrusted" >&2
     exit 1
   fi
 
+  # The checked-out tree is the contributor's on a pull request, so a signers
+  # file inside it is not trusted unless the caller names it.
   mkdir -p "$ssh_repo/.github"
   printf 'fixture@example.invalid %s\n' "$(cat "$fixture/ssh-key.pub")" > "$ssh_repo/.github/allowed_signers"
-  run_check "$ssh_repo"
+  if ! run_check "$ssh_repo"; then
+    cat "$fixture/out" >&2
+    echo "affirmation check failed where it should pass: $ssh_repo" >&2
+    exit 1
+  fi
+  if ! grep -q 'untrusted or locally unknown key' "$fixture/out"; then
+    cat "$fixture/out" >&2
+    echo "a signers file in the checked-out tree was trusted by default" >&2
+    exit 1
+  fi
+  if ! run_check "$ssh_repo" AFFIRMATION_ALLOWED_SIGNERS=.github/allowed_signers; then
+    cat "$fixture/out" >&2
+    echo "affirmation check failed where it should pass: $ssh_repo AFFIRMATION_ALLOWED_SIGNERS=.github/allowed_signers" >&2
+    exit 1
+  fi
   if ! grep -q 'verified with a trusted key' "$fixture/out"; then
     cat "$fixture/out" >&2
-    echo "SSH signature listed in .github/allowed_signers was not verified" >&2
+    echo "SSH signature from a caller-named allowed_signers file was not verified" >&2
     exit 1
   fi
 else
@@ -153,14 +209,22 @@ make_signed_repo "$history_repo"
 echo later > "$history_repo/LATER"
 git -C "$history_repo" add LATER
 git -C "$history_repo" -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -m later
-run_check "$history_repo"
+if ! run_check "$history_repo"; then
+  cat "$fixture/out" >&2
+  echo "affirmation check failed where it should pass: $history_repo" >&2
+  exit 1
+fi
 if grep -q 'history boundary' "$fixture/out"; then
   cat "$fixture/out" >&2
   echo "full history was reported as a shallow boundary" >&2
   exit 1
 fi
 git clone -q --depth 1 "file://$history_repo" "$fixture/shallow"
-run_check "$fixture/shallow"
+if ! run_check "$fixture/shallow"; then
+  cat "$fixture/out" >&2
+  echo "affirmation check failed where it should pass: $fixture/shallow" >&2
+  exit 1
+fi
 if ! grep -q 'history boundary' "$fixture/out"; then
   cat "$fixture/out" >&2
   echo "shallow boundary commit was not reported" >&2
@@ -171,7 +235,11 @@ echo 'The shallow fixture re-affirms the claim at a later commit.' >> "$history_
 git -C "$history_repo" add AFFIRMATION.adoc
 git -C "$history_repo" -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -m reaffirm
 git clone -q --depth 2 "file://$history_repo" "$fixture/shallow-deep"
-run_check "$fixture/shallow-deep"
+if ! run_check "$fixture/shallow-deep"; then
+  cat "$fixture/out" >&2
+  echo "affirmation check failed where it should pass: $fixture/shallow-deep" >&2
+  exit 1
+fi
 if grep -q 'history boundary' "$fixture/out"; then
   cat "$fixture/out" >&2
   echo "a shallow clone holding the affirmation commit was reported as a boundary" >&2

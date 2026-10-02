@@ -10,7 +10,7 @@ inputs:
     required: false
     default: ''
   allowed-signers:
-    description: 'Optional git allowed_signers file for SSH-signed commits. Defaults to .github/allowed_signers when present.'
+    description: 'Optional git allowed_signers file whose SSH signers count as trusted, in addition to the vendored estate-owner keys. A relative path is read from the checked-out tree, which a pull request controls; name one only where that tree is protected.'
     required: false
     default: ''
 runs:

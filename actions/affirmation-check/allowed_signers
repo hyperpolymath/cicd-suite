@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: MPL-2.0
+# SSH commit-signing keys of the estate owner, from https://api.github.com/users/hyperpolymath/ssh_signing_keys
+# (fetched 2026-10-02). Only the GitHub noreply principal is listed.
+6759885+hyperpolymath@users.noreply.github.com namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOpGzhVGVlqEQuGus7hiS66b1PBWjel6ahCjBBLVDqCg
+6759885+hyperpolymath@users.noreply.github.com namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBFX2cMllRUW/TjfJ9rHg6oALk7UfxzZrh7tDShhbLQ0
+6759885+hyperpolymath@users.noreply.github.com namespaces="git" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBp4I5S7wV5b8xEUfcVI+E/9FQPoA2XO/9aMPfTOGa1p
