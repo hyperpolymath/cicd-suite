@@ -146,4 +146,36 @@ else
   echo "::warning::ssh-keygen is not installed; SSH signature controls were not run."
 fi
 
+# A shallow checkout must say that the commit it found is only the history
+# boundary; a full one must not.
+history_repo=$fixture/history
+make_signed_repo "$history_repo"
+echo later > "$history_repo/LATER"
+git -C "$history_repo" add LATER
+git -C "$history_repo" -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -m later
+run_check "$history_repo"
+if grep -q 'history boundary' "$fixture/out"; then
+  cat "$fixture/out" >&2
+  echo "full history was reported as a shallow boundary" >&2
+  exit 1
+fi
+git clone -q --depth 1 "file://$history_repo" "$fixture/shallow"
+run_check "$fixture/shallow"
+if ! grep -q 'history boundary' "$fixture/out"; then
+  cat "$fixture/out" >&2
+  echo "shallow boundary commit was not reported" >&2
+  exit 1
+fi
+# Shallow, but the affirmation commit lies above the boundary: no notice.
+echo 'The shallow fixture re-affirms the claim at a later commit.' >> "$history_repo/AFFIRMATION.adoc"
+git -C "$history_repo" add AFFIRMATION.adoc
+git -C "$history_repo" -c user.name=Fixture -c user.email=fixture@example.invalid commit -q -m reaffirm
+git clone -q --depth 2 "file://$history_repo" "$fixture/shallow-deep"
+run_check "$fixture/shallow-deep"
+if grep -q 'history boundary' "$fixture/out"; then
+  cat "$fixture/out" >&2
+  echo "a shallow clone holding the affirmation commit was reported as a boundary" >&2
+  exit 1
+fi
+
 echo 'affirmation-check controls passed'

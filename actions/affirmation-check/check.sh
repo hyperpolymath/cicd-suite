@@ -108,6 +108,15 @@ if git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     signer=${sig_line#*$'\t'}
   fi
   last_update_ts=$(git -C "$root" log -1 --format='%at' -- "$aff_file" 2>/dev/null || true)
+  # In a shallow clone the boundary commit appears to add every file, so the
+  # commit found above may only be the boundary, not the affirmation commit.
+  if [[ "$(git -C "$root" rev-parse --is-shallow-repository 2>/dev/null || true)" == true ]]; then
+    aff_commit=$(git -C "$root" log -1 --format='%H' -- "$aff_file" 2>/dev/null || true)
+    shallow_file=$(git -C "$root" rev-parse --path-format=absolute --git-path shallow 2>/dev/null || true)
+    if [[ -n "$aff_commit" && -f "$shallow_file" ]] && grep -qxF "$aff_commit" "$shallow_file"; then
+      echo "::notice::The checkout is shallow: $aff_commit is the history boundary, not necessarily the commit that last changed $aff_file. Fetch more history to check that commit's signature."
+    fi
+  fi
   if [[ -n "$gnupg_home" ]]; then
     rm -rf -- "$gnupg_home"
   fi
