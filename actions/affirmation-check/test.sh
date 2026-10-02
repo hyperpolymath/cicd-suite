@@ -102,13 +102,21 @@ if command -v gpg >/dev/null 2>&1; then
     echo "tampered PGP signature unexpectedly passed" >&2
     exit 1
   fi
-  grep -q 'signature is bad' "$fixture/out"
+  if ! grep -q 'signature is bad' "$fixture/out"; then
+    cat "$fixture/out" >&2
+    echo "tampered PGP signature failed for the wrong reason" >&2
+    exit 1
+  fi
 
   if run_check "$pgp_repo" AFFIRMATION_TRUSTED_GPG_KEYS="$fixture/missing.asc"; then
     echo "missing trusted key file unexpectedly passed" >&2
     exit 1
   fi
-  grep -q 'could not be imported' "$fixture/out"
+  if ! grep -q 'could not be imported' "$fixture/out"; then
+    cat "$fixture/out" >&2
+    echo "missing trusted key file failed for the wrong reason" >&2
+    exit 1
+  fi
 else
   echo "::warning::gpg is not installed; PGP signature controls were not run."
 fi
@@ -120,7 +128,11 @@ if command -v ssh-keygen >/dev/null 2>&1; then
     -c user.signingkey="$fixture/ssh-key.pub"
 
   run_check "$ssh_repo"
-  grep -q 'untrusted or locally unknown key' "$fixture/out"
+  if ! grep -q 'untrusted or locally unknown key' "$fixture/out"; then
+    cat "$fixture/out" >&2
+    echo "SSH signature without allowed_signers was not reported as untrusted" >&2
+    exit 1
+  fi
 
   mkdir -p "$ssh_repo/.github"
   printf 'fixture@example.invalid %s\n' "$(cat "$fixture/ssh-key.pub")" > "$ssh_repo/.github/allowed_signers"

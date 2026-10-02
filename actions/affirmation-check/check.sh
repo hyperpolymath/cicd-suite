@@ -91,10 +91,14 @@ last_update_ts=
 if git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   gnupg_home=$(make_trusted_gnupg_home)
   [[ -n "$gnupg_home" ]] || echo "::notice::No trusted PGP keys could be loaded; GitHub-signed commits cannot be checked."
-  git_verify=(git -C "$root")
-  if [[ -n "$allowed_signers" ]]; then
-    git_verify+=(-c "gpg.ssh.allowedSignersFile=$allowed_signers")
+  # With no allowed_signers configured Git reports an SSH signature as N (no
+  # signature); an empty file makes it report U (valid, signer not trusted).
+  empty_signers=
+  if [[ -z "$allowed_signers" ]]; then
+    empty_signers=$(mktemp)
+    allowed_signers=$empty_signers
   fi
+  git_verify=(git -C "$root" -c "gpg.ssh.allowedSignersFile=$allowed_signers")
   if [[ -n "$gnupg_home" ]]; then
     git_verify=(env "GNUPGHOME=$gnupg_home" "${git_verify[@]}")
   fi
@@ -106,6 +110,9 @@ if git -C "$root" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   last_update_ts=$(git -C "$root" log -1 --format='%at' -- "$aff_file" 2>/dev/null || true)
   if [[ -n "$gnupg_home" ]]; then
     rm -rf -- "$gnupg_home"
+  fi
+  if [[ -n "$empty_signers" ]]; then
+    rm -f -- "$empty_signers"
   fi
 fi
 
