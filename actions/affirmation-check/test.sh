@@ -30,6 +30,21 @@ printf '%s\n' \
   > "$fixture/AFFIRMATION.adoc"
 GITHUB_WORKSPACE=$fixture AFFIRMATION_REQUIRED=true "$here/check.sh"
 
+# Placeholder controls: a placeholder named inside a code span is a quotation
+# and passes; the same token left bare in the prose is unfilled and fails.
+cp "$fixture/AFFIRMATION.adoc" "$fixture/base.adoc"
+printf '%s\n' 'Identity placeholders (`{{PROJECT_NAME}}`) were substituted.' >> "$fixture/AFFIRMATION.adoc"
+GITHUB_WORKSPACE=$fixture AFFIRMATION_REQUIRED=true "$here/check.sh"
+
+cp "$fixture/base.adoc" "$fixture/AFFIRMATION.adoc"
+printf '%s\n' 'This is {{PROJECT_NAME}}, quoting `{{x}}` too.' >> "$fixture/AFFIRMATION.adoc"
+if GITHUB_WORKSPACE=$fixture AFFIRMATION_REQUIRED=true "$here/check.sh"; then
+  echo "bare placeholder beside a code span unexpectedly passed" >&2
+  exit 1
+fi
+cp "$fixture/base.adoc" "$fixture/AFFIRMATION.adoc"
+rm -f "$fixture/base.adoc"
+
 
 # Signature controls. Each verdict is planted with a throwaway key, so the
 # checker is shown both to accept what it should and to refuse what it should.

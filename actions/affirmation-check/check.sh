@@ -32,8 +32,15 @@ if (( substantive_lines < 5 )); then
   exit 1
 fi
 
-if grep -qiE '\{\{|TODO: update|<PROJECT|YOUR_PROJECT|lorem ipsum|example\.com' "$path"; then
+# An inline code span (`...`) quotes text rather than asserting it: an
+# affirmation may name the placeholder syntax it swept for, e.g. "`{{PROJECT}}`
+# tokens were substituted". Strip code spans before matching so that only
+# placeholders left in the prose itself count.
+placeholders=$(sed -E 's/`[^`]*`//g' "$path" |
+  grep -niE '\{\{|TODO: update|<PROJECT|YOUR_PROJECT|lorem ipsum|example\.com' || true)
+if [[ -n "$placeholders" ]]; then
   echo "::error::$aff_file contains template placeholders."
+  printf '%s\n' "$placeholders" | head -5
   exit 1
 fi
 
