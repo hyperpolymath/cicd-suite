@@ -28,6 +28,55 @@ runs:
         set -uo pipefail
         fail=0
 
+        # Every failing path gets its OWN annotation, with file= set. The PR
+        # checks view shows a step's annotations, not its log. A path printed
+        # as a plain line under an ::error:: header reaches the log only, so
+        # the summary of marid run 37448023282 (2026-10-06) read "Wiki content
+        # must be .md (wikis are the one .md home):" and named no file — the
+        # defect reported as metadatastician/marid#38.
+        #
+        # GitHub keeps at most 10 error annotations per step (and 50 per job)
+        # and drops the rest without a word. So at most ERR_BUDGET paths are
+        # annotated, the last annotation is the summary, and the log always
+        # carries the full list.
+        ERR_BUDGET=9
+        err_used=0
+        nbad=0
+
+        # cmd_prop: percent-encode a workflow-command property value, as
+        # actions/toolkit's escapeProperty does (% CR LF : ,).
+        cmd_prop() {
+          local s="$1"
+          s="${s//\%/%25}"; s="${s//$'\r'/%0D}"; s="${s//$'\n'/%0A}"
+          s="${s//:/%3A}"; s="${s//,/%2C}"
+          printf '%s' "$s"
+        }
+
+        # cmd_data: percent-encode a workflow-command message, as
+        # actions/toolkit's escapeData does (% CR LF).
+        cmd_data() {
+          local s="$1"
+          s="${s//\%/%25}"; s="${s//$'\r'/%0D}"; s="${s//$'\n'/%0A}"
+          printf '%s' "$s"
+        }
+
+        # report_failing <rule> <paths>: log the rule and every path, annotate
+        # each path as an error with file= until the step's budget is spent,
+        # and fail the gate.
+        report_failing() {
+          local rule="$1" p
+          echo "$rule:"
+          printf '%s\n' "$2"
+          while IFS= read -r p; do
+            [ -n "$p" ] || continue
+            nbad=$((nbad + 1))
+            [ "$err_used" -lt "$ERR_BUDGET" ] || continue
+            err_used=$((err_used + 1))
+            echo "::error file=$(cmd_prop "$p")::$(cmd_data "$rule: $p")"
+          done <<< "$2"
+          fail=1
+        }
+
         # Files whose .md form is GitHub-mandated or conventional. Transitional
         # — when berrywiki lands these move, and this list shrinks.
         # CLAUDE.md / GEMINI.md are tool-mandated AI entry points that MUST live
@@ -41,18 +90,13 @@ runs:
         # --- hard: a documentation format that is never policy-legal --------
         illegal=$(git ls-files | grep -E '\.(rst|textile|org|pod|wiki)$' || true)
         if [ -n "$illegal" ]; then
-          echo "::error::Documentation in a format the estate does not use:"
-          printf '%s\n' "$illegal"
-          echo "::error::Convert to .adoc (or .md if it is wiki content)."
-          fail=1
+          report_failing 'Documentation in a format the estate does not use; convert to .adoc (or .md if it is wiki content)' "$illegal"
         fi
 
         # --- hard: licence texts must be .txt -------------------------------
         badlic=$(git ls-files 'LICENSES/*' | grep -vE '\.txt$' || true)
         if [ -n "$badlic" ]; then
-          echo "::error::Licence texts must be .txt:"
-          printf '%s\n' "$badlic"
-          fail=1
+          report_failing 'Licence texts must be .txt' "$badlic"
         fi
 
         # --- hard: wiki content must be .md ---------------------------------
@@ -68,12 +112,19 @@ runs:
         DEED_FORMS='(^|/)(([^/]*_(chora|praxis)|ATLAS|estate_chora)\.deed|0\.[0-9]+-AI-MANIFEST\.deed)$'
         badwiki=$(git ls-files | grep -E "$WIKI_DIRS" | grep -vE '\.md$' | grep -vE '/(_Sidebar|_Footer|\.gitkeep)$' | grep -vE "$DEED_FORMS" || true)
         if [ -n "$badwiki" ]; then
-          echo "::error::Wiki content must be .md (wikis are the one .md home):"
-          printf '%s\n' "$badwiki"
-          fail=1
+          report_failing 'Wiki content must be .md (wikis are the one .md home)' "$badwiki"
         fi
 
+        # The two advisory lists below print their head with `head -N <<<`,
+        # never `printf | head -N`: head exits after N lines, and once the list
+        # outgrows the pipe buffer printf takes SIGPIPE, pipefail reports 141,
+        # and the composite's -e ends the step with no message at all
+        # (measured: a 5000-path list dies at 141, a 100-path one does not).
+
         # --- advisory: .md documents awaiting the berrywiki migration -------
+        # One summary annotation naming the first few paths, not one per path:
+        # most repos carry some, and every annotation spent here comes out of
+        # the same 50-per-job budget as the hard errors of the gates after it.
         stray=$(git ls-files '*.md' \
                   | grep -vE "$WIKI_DIRS" \
                   | grep -vE '^\.github/' \
@@ -81,11 +132,11 @@ runs:
                   | grep -vE "$GH_MANDATED" || true)
         if [ -n "$stray" ]; then
           count=$(printf '%s\n' "$stray" | wc -l)
-          echo "::warning::$count .md document(s) outside wiki and outside the"
-          echo "::warning::GitHub-mandated set. Policy is .adoc for documentation;"
-          echo "::warning::these are candidates for the berrywiki migration:"
-          printf '%s\n' "$stray" | head -20
-          [ "$count" -gt 20 ] && echo "  … and $((count - 20)) more"
+          first=$(head -5 <<< "$stray" | paste -sd ' ')
+          if [ "$count" -gt 5 ]; then first="$first …"; fi
+          echo "::warning::$(cmd_data "$count .md document(s) outside wiki and outside the GitHub-mandated set. Policy is .adoc for documentation; these are candidates for the berrywiki migration: $first")"
+          head -20 <<< "$stray"
+          if [ "$count" -gt 20 ]; then echo "  … and $((count - 20)) more"; fi
         fi
 
         # --- advisory: legacy .a2ml manifests awaiting DEED conversion ------
@@ -96,11 +147,15 @@ runs:
         if [ -n "$legacy" ]; then
           count=$(printf '%s\n' "$legacy" | wc -l)
           echo "::notice::$count legacy .a2ml file(s) remain; the gates read DEED only now (standards #837). Top offenders:"
-          printf '%s\n' "$legacy" | head -10
+          head -10 <<< "$legacy"
         fi
 
         if [ "$fail" -eq 1 ]; then
-          echo "::error::Formatting gate failed."
+          if [ "$nbad" -gt "$err_used" ]; then
+            echo "::error::Formatting gate failed: $nbad file(s) break the format policy. GitHub keeps 10 error annotations per step, so the first $err_used are annotated; this step's log lists all $nbad."
+          else
+            echo "::error::Formatting gate failed: $nbad file(s) break the format policy, each annotated above."
+          fi
           exit 1
         fi
         echo "Document formatting is policy-conformant."

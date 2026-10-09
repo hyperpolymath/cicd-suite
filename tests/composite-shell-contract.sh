@@ -151,6 +151,145 @@ elif [ "$MUT_OK" -eq 1 ]; then
     bad "mutant does not parse — cannot prove non-vacuity"
 fi
 
+# --- formatting-check: a failure must NAME the file in its annotation --------
+# The PR checks view shows annotations, not the log. Until this fix the gate
+# printed offending paths as plain lines under an `::error::` header, so marid
+# run 37448023282 annotated "Wiki content must be .md (wikis are the one .md
+# home):" with no file and the path sat only in the raw log (marid#38). These
+# sections plant that exact file and assert the annotation carries it.
+echo "== formatting-check on the valid fixture =="
+FC="$WORK/formatting.sh"; extract formatting-check > "$FC"
+bash -n "$FC" || bad "extracted formatting script is not valid bash"
+run_gate "$FC"
+    RC=$GATE_RC; OUT="$(cat "$GATE_OUT")"
+[ "$RC" -eq 0 ] && ok "exits 0 on a conformant repo" \
+                || { bad "exits $RC, expected 0"; printf '%s\n' "$OUT" | sed 's/^/      /'; }
+case "$OUT" in
+  *"Document formatting is policy-conformant."*) ok "reaches its own success line" ;;
+  *) bad "did not reach the success line" ;;
+esac
+
+# plant <path>...: create and stage files in the fixture; the gate reads
+# `git ls-files`, so an unstaged file would be invisible to it.
+plant() {
+    local p
+    for p in "$@"; do
+        case "$p" in */*) [ -d "$FIX/${p%/*}" ] || mkdir -p "$FIX/${p%/*}" ;; esac
+        : > "$FIX/$p"
+    done
+    git -C "$FIX" add -- "$@"
+}
+# unplant <path>...: unstage and delete what plant created.
+unplant() { git -C "$FIX" rm -qrf -- "$@" >/dev/null; }
+
+echo "== formatting-check names each failing path in its own annotation =="
+plant docs/wikis/README.adoc LICENSES/MIT notes.rst
+run_gate "$FC"
+    RC=$GATE_RC; OUT="$(cat "$GATE_OUT")"
+[ "$RC" -eq 1 ] && ok "exits 1 on three policy breaks" || bad "exits $RC, expected 1"
+for want in \
+    '::error file=docs/wikis/README.adoc::Wiki content must be .md (wikis are the one .md home): docs/wikis/README.adoc' \
+    '::error file=LICENSES/MIT::Licence texts must be .txt: LICENSES/MIT' \
+    '::error file=notes.rst::Documentation in a format the estate does not use'; do
+    if printf '%s\n' "$OUT" | grep -qF -- "$want"; then
+        label="${want#::error file=}"; ok "annotates ${label%%::*}"
+    else
+        bad "no annotation starting: $want"
+    fi
+done
+headers="$(printf '%s\n' "$OUT" | grep -c '^::error::' || true)"
+[ "$headers" -eq 1 ] && ok "the only file-less ::error:: is the summary" \
+                     || bad "$headers file-less ::error:: lines, expected 1 (the summary)"
+case "$OUT" in
+  *"::error::Formatting gate failed: 3 file(s) break the format policy, each annotated above."*)
+      ok "the summary counts the three files" ;;
+  *)  bad "the summary does not count the three files" ;;
+esac
+unplant docs/wikis/README.adoc LICENSES/MIT notes.rst
+
+# GitHub keeps 10 error annotations per step and silently drops the rest, so a
+# gate that annotates every path loses its own summary on a big repo.
+echo "== formatting-check stays within the 10-error annotation cap =="
+many=()
+for i in $(seq -w 1 12); do many+=("docs/wikis/page-$i.adoc"); done
+plant "${many[@]}"
+run_gate "$FC"
+    RC=$GATE_RC; OUT="$(cat "$GATE_OUT")"
+errs="$(printf '%s\n' "$OUT" | grep -c '^::error' || true)"
+[ "$RC" -eq 1 ] && [ "$errs" -le 10 ] && ok "exits 1 with $errs error annotations (cap 10)" \
+                                        || bad "exits $RC with $errs error annotations"
+case "$OUT" in
+  *"the first 9 are annotated; this step's log lists all 12."*) ok "the summary says 9 of 12 are annotated" ;;
+  *) bad "the summary does not account for the paths past the cap" ;;
+esac
+listed=0
+for p in "${many[@]}"; do printf '%s\n' "$OUT" | grep -qxF -- "$p" && listed=$((listed+1)); done
+[ "$listed" -eq 12 ] && ok "the log lists all 12 paths" || bad "the log lists $listed of 12 paths"
+unplant "${many[@]}"
+
+echo "== formatting-check escapes the file= property =="
+plant 'docs/wikis/a,b:c%d.adoc'
+run_gate "$FC"
+    OUT="$(cat "$GATE_OUT")"
+want='::error file=docs/wikis/a%2Cb%3Ac%25d.adoc::Wiki content must be .md (wikis are the one .md home): docs/wikis/a,b:c%25d.adoc'
+printf '%s\n' "$OUT" | grep -qxF -- "$want" && ok "file= carries %2C %3A %25; the message carries %25" \
+                                             || bad "no correctly escaped annotation: $want"
+unplant 'docs/wikis/a,b:c%d.adoc'
+
+# A list longer than the pipe buffer kills `printf "$list" | head -N` with
+# SIGPIPE: pipefail turns that into 141 and -e ends the step without a word.
+echo "== formatting-check survives a stray .md list larger than the pipe buffer =="
+strays=()
+for i in $(seq -w 1 3000); do strays+=("notes/candidate-document-for-the-berrywiki-migration-$i.md"); done
+plant "${strays[@]}"
+run_gate "$FC"
+    RC=$GATE_RC; OUT="$(cat "$GATE_OUT")"
+[ "$RC" -eq 0 ] && ok "exits 0 on 3000 stray .md files" \
+                || { bad "exits $RC on 3000 stray .md files, expected 0"; printf '%s\n' "$OUT" | tail -3 | sed 's/^/      /'; }
+case "$OUT" in
+  *"::warning::3000 .md document(s) outside wiki"*"candidates for the berrywiki migration: notes/candidate-document-for-the-berrywiki-migration-0001.md"*)
+      ok "one summary warning names the count and the first paths" ;;
+  *)  bad "the stray .md warning does not name the count and the first paths" ;;
+esac
+
+# --- MUTANTS: each restores one pre-fix form; the suite MUST see it ----------
+echo "== mutant: reinstate printf | head on the stray list =="
+FM1="$WORK/formatting-mutant-pipe.sh"
+perl -pe 's/^(\s*)head -20 <<< "\$stray"$/$1printf %s\\\\n "\$stray" | head -20/' "$FC" > "$FM1"
+if grep -qF 'printf %s\\n "$stray" | head -20' "$FM1" && bash -n "$FM1" 2>/dev/null; then
+    ok "pipe mutant parses and the mutation applied"
+    run_gate "$FM1"
+        RC=$GATE_RC; OUT="$(cat "$GATE_OUT")"
+    if [ "$RC" -eq 141 ] && ! printf '%s' "$OUT" | grep -q '::error'; then
+        ok "pipe mutant dies SILENTLY at 141 — the SIGPIPE kill is reproduced"
+    else
+        bad "pipe mutant exited $RC — the 3000-path control does not reach the pipe buffer"
+    fi
+else
+    bad "pipe mutant was not applied or does not parse"
+fi
+unplant "${strays[@]}"
+
+echo "== mutant: reinstate the header-only ::error:: form =="
+FM2="$WORK/formatting-mutant-header.sh"
+perl -pe 's/^(\s*)echo "::error file=.*$/$1: # (mutant) per-path annotation removed/;
+          s/^(\s*)echo "\$rule:"$/$1echo "::error::\$rule:"/' "$FC" > "$FM2"
+if grep -q '(mutant) per-path annotation removed' "$FM2" && grep -qF 'echo "::error::$rule:"' "$FM2" \
+   && bash -n "$FM2" 2>/dev/null; then
+    ok "header mutant parses and both mutations applied"
+    plant docs/wikis/README.adoc
+    run_gate "$FM2"
+        RC=$GATE_RC; OUT="$(cat "$GATE_OUT")"
+    if [ "$RC" -eq 1 ] && ! printf '%s' "$OUT" | grep -q '::error file='; then
+        ok "header mutant still fails, and names no file= — the marid#38 shape the assertions above reject"
+    else
+        bad "header mutant exited $RC or still emitted file= — the mutant does not reproduce the defect"
+    fi
+    unplant docs/wikis/README.adoc
+else
+    bad "header mutant was not applied or does not parse"
+fi
+
 echo
 echo "PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ]

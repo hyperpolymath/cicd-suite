@@ -1,112 +1,181 @@
 # This workflow is managed by gh actions-lock.
 
 # SPDX-License-Identifier: MPL-2.0
-name: Code Hygiene Self-Test
-
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'actions/code-hygiene-check/**'
-      - 'actions/affirmation-check/**'
-      - 'actions/referencing-check/**'
-      - 'actions/secrets-check/**'
-      - 'actions/boj-cartridge-check/**'
-      - 'actions/manifest-check/**'
-      - 'actions/required-files-check/**'
-      - 'actions/spdx-license-check/**'
-      - 'tests/**'
-      - '.github/workflows/code-hygiene-self-test.yml'
-      - '.github/workflows/actions.lock'
-  pull_request:
-    paths:
-      - 'actions/code-hygiene-check/**'
-      - 'actions/affirmation-check/**'
-      - 'actions/referencing-check/**'
-      - 'actions/secrets-check/**'
-      - 'actions/boj-cartridge-check/**'
-      - 'actions/manifest-check/**'
-      - 'actions/required-files-check/**'
-      - 'actions/spdx-license-check/**'
-      - 'tests/**'
-      - '.github/workflows/code-hygiene-self-test.yml'
-      - '.github/workflows/actions.lock'
-
-permissions:
-  contents: read
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-jobs:
-
-  # Deliberately a SEPARATE job from `test`. The `test` job invokes composite
-  # actions, which drag transitive `uses:` edges into actions.lock; when one of
-  # those pins goes stale the job dies in `prepare`, before a single step runs —
-  # which is exactly how the defect this suite covers stayed invisible. This job
-  # touches nothing but checkout, so its square always reflects the suite.
-  # For the same reason it is where the actions.lock closure guard runs: a lock
-  # that is missing a composite-reached pin kills `Gate controls` in `Set up job`,
-  # so a check living there could never report the very defect it tests for.
-  shell-contract:
-    name: Composite shell contract
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          persist-credentials: false
-          # lock-transitive-closure.sh compares the actions/ tree at the commit
-          # the lockfile pins against HEAD's, so it needs that commit present.
-          fetch-depth: 0
-      - run: bash tests/composite-shell-contract.sh
-      - run: bash tests/lock-transitive-closure.sh
-
-  test:
-    name: Gate controls
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          persist-credentials: false
-      - run: bash actions/code-hygiene-check/test.sh
-      - run: bash actions/affirmation-check/test.sh
-      - run: bash actions/referencing-check/test.sh
-      - run: bash actions/secrets-check/test.sh
-      - run: bash actions/boj-cartridge-check/test.sh
-      - name: Create manifest controls
-        id: fixtures
-        shell: bash
-        run: |
-          root="$RUNNER_TEMP/manifest-controls"
-          mkdir -p "$root/valid" "$root/bad-deed" "$root/bad-k9"
-          printf '%s\n' '# SPDX-License-Identifier: MPL-2.0' 'agent-id = "ci-control"' 'version = "1.0.0"' > "$root/valid/control.deed"
-          printf '%s\n' 'K9!' '# SPDX-License-Identifier: MPL-2.0' 'pedigree = {' '  metadata = { name = "ci-control", version = "1.0.0" },' "  security = { leash = 'Kennel }," '}' > "$root/valid/control.k9.ncl"
-          printf '%s\n' 'invalid manifest' > "$root/bad-deed/control.deed"
-          # K9-suffixed library modules are outside pedigree validation. Give
-          # this negative control a real contract marker and omit its pedigree.
-          printf '%s\n' 'K9!' '# SPDX-License-Identifier: MPL-2.0' 'invalid manifest' > "$root/bad-k9/control.k9.ncl"
-          echo "root=$root" >> "$GITHUB_OUTPUT"
-      - name: Valid manifests must pass
-        uses: $/actions/manifest-check
-        with:
-          path: ${{ steps.fixtures.outputs.root }}/valid
-      - name: Invalid DEED manifest must fail
-        id: bad-deed
-        continue-on-error: true
-        uses: $/actions/manifest-check
-        with:
-          path: ${{ steps.fixtures.outputs.root }}/bad-deed
-      - name: Invalid K9 Nickel manifest must fail
-        id: bad-k9
-        continue-on-error: true
-        uses: $/actions/manifest-check
-        with:
-          path: ${{ steps.fixtures.outputs.root }}/bad-k9
-      - name: Verify both negative controls failed
-        env:
-          DEED_OUTCOME: ${{ steps.bad-deed.outcome }}
-          K9_OUTCOME: ${{ steps.bad-k9.outcome }}
-        run: test "$DEED_OUTCOME" = failure && test "$K9_OUTCOME" = failure
+{
+  name: "Code Hygiene Self-Test",
+  on: {
+    push: {
+      branches: [
+        "main",
+      ],
+      paths: [
+        "actions/code-hygiene-check/**",
+        "actions/affirmation-check/**",
+        "actions/referencing-check/**",
+        "actions/secrets-check/**",
+        "actions/boj-cartridge-check/**",
+        "actions/manifest-check/**",
+        "actions/required-files-check/**",
+        "actions/spdx-license-check/**",
+        "actions/formatting-check/**",
+        "tests/**",
+        ".github/workflows/code-hygiene-self-test.yml",
+        ".github/workflows/actions.lock",
+        # lock-transitive-closure.sh reads the literal cicd-suite SHA pins in
+        # this file: a repin PR must re-run it, or main stays red after the cure.
+        ".github/workflows/main-estate-audit.yml",
+      ],
+    },
+    pull_request: {
+      paths: [
+        "actions/code-hygiene-check/**",
+        "actions/affirmation-check/**",
+        "actions/referencing-check/**",
+        "actions/secrets-check/**",
+        "actions/boj-cartridge-check/**",
+        "actions/manifest-check/**",
+        "actions/required-files-check/**",
+        "actions/spdx-license-check/**",
+        "actions/formatting-check/**",
+        "tests/**",
+        ".github/workflows/code-hygiene-self-test.yml",
+        ".github/workflows/actions.lock",
+        # lock-transitive-closure.sh reads the literal cicd-suite SHA pins in
+        # this file: a repin PR must re-run it, or main stays red after the cure.
+        ".github/workflows/main-estate-audit.yml",
+      ],
+    },
+  },
+  permissions: {
+    contents: "read",
+  },
+  concurrency: {
+    group: "${{ github.workflow }}-${{ github.ref }}",
+    cancel-in-progress: true,
+  },
+  jobs: {
+    # Deliberately a SEPARATE job from `test`. The `test` job invokes composite
+    # actions, which drag transitive `uses:` edges into actions.lock; when one of
+    # those pins goes stale the job dies in `prepare`, before a single step runs —
+    # which is exactly how the defect this suite covers stayed invisible. This job
+    # touches nothing but checkout, so its square always reflects the suite.
+    # For the same reason it is where the actions.lock closure guard runs: a lock
+    # that is missing a composite-reached pin kills `Gate controls` in `Set up job`,
+    # so a check living there could never report the very defect it tests for.
+    shell-contract: {
+      name: "Composite shell contract",
+      runs-on: "ubuntu-latest",
+      timeout-minutes: 5,
+      steps: [
+        {
+          uses: "actions/checkout@v7.0.1",
+          with: {
+            persist-credentials: false,
+            # lock-transitive-closure.sh compares the actions/ tree at the commit
+            # the lockfile pins against HEAD's, so it needs that commit present.
+            fetch-depth: 0,
+          },
+        },
+        {
+          run: "bash tests/composite-shell-contract.sh",
+        },
+        {
+          run: "bash tests/lock-transitive-closure.sh",
+        },
+      ],
+    },
+    test: {
+      name: "Gate controls",
+      runs-on: "ubuntu-latest",
+      timeout-minutes: 10,
+      steps: [
+        {
+          uses: "actions/checkout@v7.0.1",
+          with: {
+            persist-credentials: false,
+          },
+        },
+        {
+          run: "bash actions/code-hygiene-check/test.sh",
+        },
+        {
+          run: "bash actions/affirmation-check/test.sh",
+        },
+        {
+          run: "bash actions/referencing-check/test.sh",
+        },
+        {
+          run: "bash actions/secrets-check/test.sh",
+        },
+        {
+          run: "bash actions/boj-cartridge-check/test.sh",
+        },
+        {
+          name: "Create manifest controls",
+          id: "fixtures",
+          shell: "bash",
+          run: "root=\"$RUNNER_TEMP/manifest-controls\"\nmkdir -p \"$root/valid\" \"$root/bad-deed\" \"$root/bad-k9\"\nprintf '%s\\n' '# SPDX-License-Identifier: MPL-2.0' 'agent-id = \"ci-control\"' 'version = \"1.0.0\"' > \"$root/valid/control.deed\"\nprintf '%s\\n' 'K9!' '# SPDX-License-Identifier: MPL-2.0' 'pedigree = {' '  metadata = { name = \"ci-control\", version = \"1.0.0\" },' \"  security = { leash = 'Kennel },\" '}' > \"$root/valid/control.k9.ncl\"\nprintf '%s\\n' 'invalid manifest' > \"$root/bad-deed/control.deed\"\n# K9-suffixed library modules are outside pedigree validation. Give\n# this negative control a real contract marker and omit its pedigree.\nprintf '%s\\n' 'K9!' '# SPDX-License-Identifier: MPL-2.0' 'invalid manifest' > \"$root/bad-k9/control.k9.ncl\"\necho \"root=$root\" >> \"$GITHUB_OUTPUT\"\n",
+        },
+        {
+          name: "Valid manifests must pass",
+          uses: "$/actions/manifest-check",
+          with: {
+            path: "${{ steps.fixtures.outputs.root }}/valid",
+          },
+        },
+        {
+          name: "Invalid DEED manifest must fail",
+          id: "bad-deed",
+          continue-on-error: true,
+          uses: "$/actions/manifest-check",
+          with: {
+            path: "${{ steps.fixtures.outputs.root }}/bad-deed",
+          },
+        },
+        {
+          name: "Invalid K9 Nickel manifest must fail",
+          id: "bad-k9",
+          continue-on-error: true,
+          uses: "$/actions/manifest-check",
+          with: {
+            path: "${{ steps.fixtures.outputs.root }}/bad-k9",
+          },
+        },
+        {
+          name: "Verify both negative controls failed",
+          env: {
+            DEED_OUTCOME: "${{ steps.bad-deed.outcome }}",
+            K9_OUTCOME: "${{ steps.bad-k9.outcome }}",
+          },
+          run: "test \"$DEED_OUTCOME\" = failure && test \"$K9_OUTCOME\" = failure",
+        },
+        # formatting-check reads `git ls-files` in the workspace, so its controls
+        # run on this checkout: clean it must pass, and with one planted
+        # non-.md wiki page it must fail. The annotation that failure produces
+        # (file=docs/wikis/README.adoc) is what marid#38 asked for; the shell
+        # suite asserts its exact text.
+        {
+          name: "This repo's own tree must pass the formatting gate",
+          uses: "$/actions/formatting-check",
+        },
+        {
+          name: "Plant a non-.md wiki page",
+          run: "mkdir -p docs/wikis\n: > docs/wikis/README.adoc\ngit add docs/wikis/README.adoc\n",
+        },
+        {
+          name: "A non-.md wiki page must fail the formatting gate",
+          id: "bad-format",
+          continue-on-error: true,
+          uses: "$/actions/formatting-check",
+        },
+        {
+          name: "Verify the formatting negative control failed",
+          env: {
+            FORMAT_OUTCOME: "${{ steps.bad-format.outcome }}",
+          },
+          run: "test \"$FORMAT_OUTCOME\" = failure",
+        },
+      ],
+    },
+  },
+}
