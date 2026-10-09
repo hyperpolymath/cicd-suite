@@ -60,15 +60,25 @@ runs:
           printf '%s' "$s"
         }
 
+        # A path two rules both catch (docs/wikis/x.rst is an illegal format
+        # AND non-.md wiki content) is one file: count and annotate it once,
+        # under the first rule, so it does not spend a second annotation.
+        # Only the single-expansion forms ${reported[$p]+x} and
+        # reported[$p]=1 touch this array; [[ -v ]] and (( )) would expand a
+        # path's $(...) a second time.
+        declare -A reported=()
+
         # report_failing <rule> <paths>: log the rule and every path, annotate
-        # each path as an error with file= until the step's budget is spent,
-        # and fail the gate.
+        # each newly failing path as an error with file= until the step's
+        # budget is spent, and fail the gate.
         report_failing() {
           local rule="$1" p
           echo "$rule:"
           printf '%s\n' "$2"
           while IFS= read -r p; do
             [ -n "$p" ] || continue
+            [ -z "${reported[$p]+x}" ] || continue
+            reported[$p]=1
             nbad=$((nbad + 1))
             [ "$err_used" -lt "$ERR_BUDGET" ] || continue
             err_used=$((err_used + 1))

@@ -227,6 +227,24 @@ for p in "${many[@]}"; do printf '%s\n' "$OUT" | grep -qxF -- "$p" && listed=$((
 [ "$listed" -eq 12 ] && ok "the log lists all 12 paths" || bad "the log lists $listed of 12 paths"
 unplant "${many[@]}"
 
+# docs/wikis/x.rst breaks two rules (an illegal format, and non-.md wiki
+# content). It is one file: one annotation, counted once, logged under both.
+echo "== formatting-check counts a path two rules catch once =="
+plant docs/wikis/page.rst
+run_gate "$FC"
+    RC=$GATE_RC; OUT="$(cat "$GATE_OUT")"
+fileanns="$(printf '%s\n' "$OUT" | grep -c '^::error file=docs/wikis/page.rst::' || true)"
+[ "$RC" -eq 1 ] && [ "$fileanns" -eq 1 ] && ok "exits 1 with one annotation for the doubly-failing path" \
+                                          || bad "exits $RC with $fileanns annotations for docs/wikis/page.rst, expected 1"
+case "$OUT" in
+  *"::error::Formatting gate failed: 1 file(s) break the format policy, each annotated above."*)
+      ok "the summary counts it as one file" ;;
+  *)  bad "the summary does not count it as one file" ;;
+esac
+logged="$(printf '%s\n' "$OUT" | grep -cxF 'docs/wikis/page.rst' || true)"
+[ "$logged" -eq 2 ] && ok "the log lists it under both rules" || bad "the log lists it $logged time(s), expected 2"
+unplant docs/wikis/page.rst
+
 echo "== formatting-check escapes the file= property =="
 plant 'docs/wikis/a,b:c%d.adoc'
 run_gate "$FC"
