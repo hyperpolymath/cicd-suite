@@ -117,9 +117,11 @@ runs:
 
         # The two advisory lists below print their head with `head -N <<<`,
         # never `printf | head -N`: head exits after N lines, and once the list
-        # outgrows the pipe buffer printf takes SIGPIPE, pipefail reports 141,
-        # and the composite's -e ends the step with no message at all
-        # (measured: a 5000-path list dies at 141, a 100-path one does not).
+        # outgrows the pipe buffer printf dies of SIGPIPE (141) or, where
+        # SIGPIPE is ignored as on GitHub's runner, fails with EPIPE (1).
+        # pipefail passes that on and the composite's -e ends the step with
+        # no message at all (measured: a 3000-path list dies, a 100-path one
+        # does not).
 
         # --- advisory: .md documents awaiting the berrywiki migration -------
         # One summary annotation naming the first few paths, not one per path:

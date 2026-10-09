@@ -260,10 +260,19 @@ if grep -qF 'printf %s\\n "$stray" | head -20' "$FM1" && bash -n "$FM1" 2>/dev/n
     ok "pipe mutant parses and the mutation applied"
     run_gate "$FM1"
         RC=$GATE_RC; OUT="$(cat "$GATE_OUT")"
-    if [ "$RC" -eq 141 ] && ! printf '%s' "$OUT" | grep -q '::error'; then
+    # Where SIGPIPE has its default action, printf is killed (141). Where the
+    # parent ignores it, as GitHub's runner does (run 37933270247 saw rc=1),
+    # printf gets EPIPE and returns 1 with "write error: Broken pipe". Either
+    # way pipefail and -e end the step with no ::error::.
+    if printf '%s' "$OUT" | grep -q '::error'; then
+        bad "pipe mutant emitted ::error — it does not reproduce the silent kill"
+    elif [ "$RC" -eq 141 ]; then
         ok "pipe mutant dies SILENTLY at 141 — the SIGPIPE kill is reproduced"
+    elif [ "$RC" -eq 1 ] && printf '%s' "$OUT" | grep -q 'printf: write error: Broken pipe'; then
+        ok "pipe mutant dies SILENTLY at rc=1 on EPIPE (SIGPIPE ignored here) — the kill is reproduced"
     else
         bad "pipe mutant exited $RC — the 3000-path control does not reach the pipe buffer"
+        printf '%s\n' "$OUT" | tail -3 | sed 's/^/      /'
     fi
 else
     bad "pipe mutant was not applied or does not parse"
