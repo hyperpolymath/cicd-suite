@@ -10,19 +10,60 @@ inputs:
     description: 'Promote validator warnings to failures.'
     required: false
     default: 'false'
+  deed-paths-ignore:
+    description: >-
+      Newline-separated path fragments the DEED validator skips, passed through
+      as its own `paths-ignore`. Use it for files that carry a manifest
+      extension but are not manifests, such as panic-attack's suppression
+      registry at audits/assail-classifications.a2ml. A value REPLACES the
+      validator's default list (vendor/, vendored/, verified-container-spec/,
+      .audittraining/, integration/fixtures/, test/fixtures/, tests/fixtures/),
+      so repeat those you still want skipped. Empty, the default, leaves the
+      validator's defaults in place.
+    required: false
+    default: ''
+  k9-paths-ignore:
+    description: >-
+      The same for the K9 validator, whose default list differs (it also skips
+      coordination.k9, session/custom-checks.k9 and
+      self-validating/methodology-guard.k9.ncl). Kept separate from
+      deed-paths-ignore so that ignoring a DEED path never replaces K9's
+      defaults. Empty, the default, leaves the validator's defaults in place.
+    required: false
+    default: ''
 runs:
   using: 'composite'
+  # Each validator is called once, with or without the caller's list. A
+  # `with:` key is always passed, even when empty, and both validators read an
+  # empty paths-ignore as "skip nothing", so forwarding an empty input would
+  # widen the scan rather than leave it alone.
   steps:
     - name: Validate DEED manifests
+      if: ${{ inputs.deed-paths-ignore == '' }}
       uses: hyperpolymath/deed-ecosystem/validate-action@f9d999b60cb5f383679ea19912bcdc49c944973a # main @ 2026-09-17 — SHA-pinned: sha_pinning_required + audit de-onboarded; lock SHA keys cover the onboarded self-test path
       with:
         path: ${{ inputs.path }}
         strict: ${{ inputs.strict }}
+    - name: Validate DEED manifests (caller's ignore list)
+      if: ${{ inputs.deed-paths-ignore != '' }}
+      uses: hyperpolymath/deed-ecosystem/validate-action@f9d999b60cb5f383679ea19912bcdc49c944973a # main @ 2026-09-17 — SHA-pinned: ditto
+      with:
+        path: ${{ inputs.path }}
+        strict: ${{ inputs.strict }}
+        paths-ignore: ${{ inputs.deed-paths-ignore }}
     - name: Validate K9 manifests
+      if: ${{ inputs.k9-paths-ignore == '' }}
       uses: hyperpolymath/k9-ecosystem/validate-action@2155aa26a21758f2ba119f61bc7e0e1981c106fb # main @ 2026-09-17 — SHA-pinned: ditto
       with:
         path: ${{ inputs.path }}
         strict: ${{ inputs.strict }}
+    - name: Validate K9 manifests (caller's ignore list)
+      if: ${{ inputs.k9-paths-ignore != '' }}
+      uses: hyperpolymath/k9-ecosystem/validate-action@2155aa26a21758f2ba119f61bc7e0e1981c106fb # main @ 2026-09-17 — SHA-pinned: ditto
+      with:
+        path: ${{ inputs.path }}
+        strict: ${{ inputs.strict }}
+        paths-ignore: ${{ inputs.k9-paths-ignore }}
 # These validators check manifest structure. Executable Nickel contracts need
 # a separate Nickel evaluation step; neither an empty-field grep nor this
 # structural check establishes that a contract evaluates or a proof holds.
