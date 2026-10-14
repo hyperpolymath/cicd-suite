@@ -1,17 +1,35 @@
 == cicd-suite
 
-Composite GitHub Actions for estate-wide CI/CD auditing. Consumed by
-`+.github/workflows/main-estate-audit.yml+`, which `+rollout_estate.sh+`
-copies into each repository.
+Composite GitHub Actions for estate-wide CI/CD auditing. They are run by
+the reusable workflow `+.github/workflows/main-estate-audit.yml+`. Each
+repository *calls* that workflow from a ten-line caller; it does not copy
+it (see _Consuming it_).
+
+The audit reports five component checks, one check run each:
+
+[cols="1,3",options="header"]
+|===
+|Check |Gates
+|`governance` |required-files · spdx-license · affirmation · referencing
+|`hygiene` |code-hygiene · formatting · linguist · secrets · vaulted-tokens
+|`manifests` |manifest · recipes-set
+|`languages` |idris2-abi · zig-unified-api-adapter · proof-runner · boj-cartridge
+|`advisory` |the nine advisory gates below; this check cannot fail, by design
+|===
+
+Within a component every gate runs even after an earlier gate fails, so one
+push reports every failing gate. Before this change one job ran all 26 in
+sequence, and the first failure hid the rest behind "estate-audit: failing
+after 8s".
 
 === Status
 
-Published 2026-08-07. Three of the four defects listed below are *fixed
-and verified against two live estate repositories*; the
-advisory/enforcing split (13 of 26 cannot fail) is still open.
+Published 2026-08-07. Defects (1)–(3) are *fixed and verified against two
+live estate repositories*; (4) is partly fixed; (5) is closed by removing
+the stubs from the workflow; (6) is open.
 
-Before wiring this into a repository, read _Known defects_ — one item
-remains.
+Before wiring this into a repository, read _Known defects_ and _Consuming
+it_.
 
 === What actually enforces
 
@@ -31,7 +49,8 @@ vaulted-tokens · zig-unified-api-adapter |Can fail. A green tick means somethin
 real work, warn on genuinely soft findings. Failing the estate over a
 missing Keybase link would be worse than not checking.
 
-|*Unimplemented* (2) |prat · semantic-audit |Stubs. See below.
+|*Unimplemented* (2) |prat · semantic-audit |Stubs. Not referenced by the
+audit workflow. See (5).
 |===
 
 `+formatting+` and `+recipes-set+` moved out of the toothless column;
@@ -90,7 +109,8 @@ not parse. `+formatting+` gained teeth in (3). The nine remaining
 advisories are advisory by design and defensible; the honest fix for
 them is a rename to `+*-advisory+`, not teeth.
 
-*5. OPEN — two actions are unimplemented stubs.*
+*5. CLOSED — two actions are unimplemented stubs, and the workflow no
+longer runs them.*
 
 * `+semantic-audit+` is pure `+echo+` with "`Placeholder for actual
 invocation`"; its real body is `+cicd-squabbler audit --semantic+`, and
@@ -103,8 +123,13 @@ any repository that has a `+tests/+` directory _or_ contains the letters
 "`prat`" anywhere. It cannot be honestly implemented until somebody says
 what PRAT is.
 
-Both should move to a `+draft/+` directory so the workflow cannot
-reference them. A stub you cannot call cannot mislead.
+A stub that prints success cannot be credited as assurance, so neither
+step is in `+main-estate-audit.yml+` any more. The two directories stay
+under `+actions/+` for now, for two reasons. Repositories still running a
+pre-caller copy of the workflow reference them by path. And
+`+tests/lock-transitive-closure.sh+` requires that the SHA the workflow
+pins serves the whole `+actions/+` tree at HEAD. Move them to `+draft/+`
+once the estate runs the caller (see _Consuming it_).
 
 *6. OPEN — six actions use bare `+git grep+`* with no path restriction
 (`+idris2-abi+`, `+metrics+`, `+secrets+`, `+spdx-license+`,
@@ -113,26 +138,49 @@ defect (1).
 
 === Blast radius
 
-`+rollout_estate.sh+` has already copied `+main-estate-audit.yml+` into
-*199 repositories*; in *198* of them the file is untracked and has
-therefore never run. Committing it in those repos is what arms these
-gates — so it should follow closing (4), the last open defect, not
-precede it.
+An earlier `+rollout_estate.sh+` copied the whole workflow into *199
+repositories*. Each copy froze at whatever cicd-suite commit its
+`+actions.lock+` held. That is why a gate fixed here kept failing
+downstream. The composite-shell fix to required-files (#32, 2026-09-22)
+had still not reached hyperpolymath/marches on 2026-10-14, because its
+lock held `+5a10b72+`, the commit before it. The caller replaces those
+copies.
 
-The workflow also has no `+permissions:+` block and pins
-`+actions/checkout+` by tag rather than SHA.
+The workflow now has `+permissions: contents: read+` and pins
+`+actions/checkout+` and every gate by full SHA.
 
 === Consuming it
 
-Once (4) is resolved, pin by commit SHA rather than `+@main+`:
+A repository calls the audit; it does not copy it. Three pieces:
 
+. `+templates/estate-audit-caller.yml+` becomes
+`+.github/workflows/main-estate-audit.yml+`, with `+__CICD_SUITE_SHA__+`
+replaced by a full cicd-suite commit SHA:
++
 [source,yaml]
 ----
-- uses: hyperpolymath/cicd-suite/actions/required-files-check@<sha>  # vX.Y.Z
+jobs:
+  estate:
+    uses: hyperpolymath/cicd-suite/.github/workflows/main-estate-audit.yml@<40-hex sha> # cicd-suite main
 ----
-
-`+@main+` is a moving target: a change here silently changes the gate in
++
+Pin a full SHA, never `+@main+` or a tag: the account enforces
+`+sha_pinning_required+`, and `+@main+` would silently change the gate in
 every consuming repository at once.
+. The caller must be *de-onboarded* from the repository's
+`+actions.lock+`. Onboarded, a cross-repository reusable-workflow call
+startup-fails with zero jobs. `+scripts/deonboard-estate-audit.sh <repo>+`
+removes the entry and prunes the dependencies only it reached. It needs
+mikefarah `+yq+` v4, and it is idempotent.
+. `+templates/track-estate-audit.yml+` becomes
+`+.github/workflows/track-estate-audit.yml+`. Weekly, it opens a PR that
+moves the pin to cicd-suite HEAD; that PR's own audit run is the check.
+It needs an `+AUTOMATION_TOKEN+` secret (a fine-grained token on that
+repository with Contents, Pull requests and Workflows set to read/write),
+because `+GITHUB_TOKEN+` may not write under `+.github/workflows/+`.
+
+`+rollout_estate.sh+` does all three for every local estate clone. It
+writes files and does not commit them.
 
 === Licence
 
