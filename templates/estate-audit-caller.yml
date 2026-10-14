@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: MPL-2.0
+name: Central Estate CI/CD Audit
+
+# Thin caller of the estate audit, which lives in hyperpolymath/cicd-suite as
+# a reusable workflow and reports five component checks: governance,
+# hygiene, manifests, languages, advisory. Do not copy the audit's steps in
+# here. A copy freezes this repository at whatever cicd-suite commit its
+# actions.lock happened to hold, and fixes made upstream never arrive.
+#
+# The pin is a full SHA, advanced weekly by track-estate-audit.yml (a PR
+# whose own run of this audit is the check).
+#
+# ⚠ DE-ONBOARDED from actions.lock, deliberately, like the secret-scanner
+# caller. A reusable workflow onboarded cross-repo startup-fails with zero
+# jobs under sha_pinning_required (see the header of cicd-suite's
+# main-estate-audit.yml). Do not run a full-directory `gh actions-lock` that
+# re-onboards this file. If one does, cicd-suite/scripts/deonboard-estate-audit.sh
+# reverses it.
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  estate:
+    uses: hyperpolymath/cicd-suite/.github/workflows/main-estate-audit.yml@__CICD_SUITE_SHA__ # cicd-suite main

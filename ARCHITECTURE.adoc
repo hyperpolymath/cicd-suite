@@ -8,14 +8,17 @@ shared library: each gate is a self-contained GitHub composite action whose
 entire implementation is the bash in its `action.yml`.
 
 ....
-actions/<name>-check/action.yml   one composite action per gate (26)
-.github/workflows/               the audit workflow consumers copy
-rollout_estate.sh                copies that workflow into every estate repo
+actions/<name>-check/action.yml       one composite action per gate (26; 24 run)
+.github/workflows/main-estate-audit.yml  the reusable audit: five component jobs
+templates/estate-audit-caller.yml     the ten-line caller each repository holds
+templates/track-estate-audit.yml      weekly bot: moves the caller's pin to HEAD
+scripts/deonboard-estate-audit.sh     removes the caller from a repo's actions.lock
+rollout_estate.sh                     installs the three above in every estate clone
 ....
 
-Consumers do not depend on this repository as a whole. They reference
-individual actions by path, so a broken gate affects only the repositories that
-name it.
+Consumers call the reusable workflow at a full SHA. They do not copy its steps.
+A copy froze at whatever commit its lock held, so fixes made here never
+arrived. The caller is one line to move, and the track bot moves it.
 
 == Why composite, and why bash
 
@@ -40,7 +43,8 @@ the README carries the classification and not just prose.
 
 == Blast radius
 
-`rollout_estate.sh` copies the audit workflow into every repository in the
-estate. A change to an action here therefore changes CI behaviour across all of
-them at once, which is why consumers should pin by commit SHA rather than
-`@main`, and why `CODEOWNERS` requires review on everything under `actions/`.
+Every estate repository calls the audit workflow, so a change here reaches all
+of them. It does not reach them at once: each caller pins a full SHA, and the
+weekly track bot moves that pin by PR, whose own audit run is the check. That
+PR is where a regression shows up, one repository at a time. `CODEOWNERS`
+requires review on everything under `actions/`.
