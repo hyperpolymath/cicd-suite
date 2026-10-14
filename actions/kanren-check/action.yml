@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: MPL-2.0
+name: 'miniKanren Gate'
+description: >-
+  Relational-code gate: finds miniKanren sources (Scheme family, Rust kanren
+  crates), fails on a claim with no relations (optional), on relations with
+  no goal-level test, and on a failing relational test run; lists impure
+  operators (conda/condu/project/…) and can fail on them. Needs the
+  interpreter the sources name (guile, Chez scheme, racket) on PATH.
+inputs:
+  working_directory:
+    description: 'Tree root'
+    required: false
+    default: '.'
+  require_tests:
+    description: 'Fail when relational sources have no relational test (true|false)'
+    required: false
+    default: 'true'
+  enforce_purity:
+    description: 'Fail on conda/condu/project/onceo/ifa/ifu/copy-term'
+    required: false
+    default: 'false'
+  enforce_claims:
+    description: 'Fail on a miniKanren claim with no relational sources'
+    required: false
+    default: 'false'
+runs:
+  using: 'composite'
+  steps:
+    - name: Run miniKanren gate
+      shell: bash
+      env:
+        WORKING_DIRECTORY: ${{ inputs.working_directory }}
+        REQUIRE_TESTS: ${{ inputs.require_tests }}
+        ENFORCE_PURITY: ${{ inputs.enforce_purity }}
+        ENFORCE_CLAIMS: ${{ inputs.enforce_claims }}
+      run: bash "$GITHUB_ACTION_PATH/check.sh"

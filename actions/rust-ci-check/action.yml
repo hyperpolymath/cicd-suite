@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: MPL-2.0
+name: 'Rust CI Gate'
+description: >-
+  Strict Rust gate: cargo check/fmt/clippy, tests AND doctests, cargo doc with
+  warnings denied, and an MSRV build — every call --locked, every compile -D
+  warnings. One phase per step (RUST_GATE_PHASE). The reusable workflow
+  .github/workflows/rust-ci.yml is the recommended entry point; this composite
+  is the same script for callers that want a single job.
+inputs:
+  phase:
+    description: 'check | test | doc | msrv'
+    required: true
+  working_directory:
+    description: 'Directory containing Cargo.toml'
+    required: false
+    default: '.'
+  check_args:
+    description: 'Args appended to cargo check'
+    required: false
+    default: '--all-targets'
+  clippy_args:
+    description: 'Args appended to cargo clippy'
+    required: false
+    default: '--all-targets -- -D warnings'
+  test_args:
+    description: 'Args appended to cargo test'
+    required: false
+    default: '--all-targets'
+  doctests:
+    description: 'Run cargo test --doc as well (true|false)'
+    required: false
+    default: 'true'
+  deny_warnings:
+    description: 'Export RUSTFLAGS/RUSTDOCFLAGS=-D warnings for every compile'
+    required: false
+    default: 'true'
+  msrv:
+    description: 'Toolchain for the msrv phase (the declared rust-version)'
+    required: false
+    default: ''
+runs:
+  using: 'composite'
+  steps:
+    - name: Run Rust gate phase
+      shell: bash
+      env:
+        RUST_GATE_PHASE: ${{ inputs.phase }}
+        WORKING_DIRECTORY: ${{ inputs.working_directory }}
+        CHECK_ARGS: ${{ inputs.check_args }}
+        CLIPPY_ARGS: ${{ inputs.clippy_args }}
+        TEST_ARGS: ${{ inputs.test_args }}
+        DOCTESTS: ${{ inputs.doctests }}
+        DENY_WARNINGS: ${{ inputs.deny_warnings }}
+        MSRV: ${{ inputs.msrv }}
+      run: bash "$GITHUB_ACTION_PATH/check.sh"

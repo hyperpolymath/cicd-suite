@@ -14,11 +14,38 @@ templates/estate-audit-caller.yml     the ten-line caller each repository holds
 templates/track-estate-audit.yml      weekly bot: moves the caller's pin to HEAD
 scripts/deonboard-estate-audit.sh     removes the caller from a repo's actions.lock
 rollout_estate.sh                     installs the three above in every estate clone
+actions/rust-ci-check/               the strict Rust gate (resolve.sh, check.sh, test.sh)
+actions/creusot-check/               Creusot: detect · theatre · prove (planted controls)
+actions/spark-check/                 SPARK: detect · GNATprove (planted controls)
+actions/kanren-check/                miniKanren: detect · run · purity
+.github/workflows/rust-ci.yml         reusable; jobs run the scripts above
+.github/workflows/creusot-gate.yml    reusable
+.github/workflows/spark-gate.yml      reusable; theatre half is standards' gate, nested
+.github/workflows/kanren-gate.yml     reusable
+.github/workflows/language-gates-self-test.yml  each gate's test.sh, every PR
+templates/*-caller.yml                the thin callers for the four gates
+scripts/verify-suite-checkout.sh      proves the self-checkout is the caller's pin
+scripts/deonboard-workflow.sh         general form of deonboard-estate-audit.sh
+rollout_language_gates.sh             installs the callers by what a tree contains
 ....
 
 Consumers call the reusable workflow at a full SHA. They do not copy its steps.
 A copy froze at whatever commit its lock held, so fixes made here never
 arrived. The caller is one line to move, and the track bot moves it.
+
+== Two ways a reusable reaches its scripts
+
+The estate audit pins each composite as `+uses: hyperpolymath/cicd-suite/actions/x@<sha>+`,
+which is why `+tests/lock-transitive-closure.sh+` insists the pinned commit
+serves the current `+actions/+` tree — a cure landed here was inert downstream
+until a repin commit followed. The language gates avoid the second pin: every
+job reads the SHA the caller pins the reusable at back out of the caller's own
+workflow file, checks this repository out at that SHA and runs the scripts from
+that checkout after
+`+scripts/verify-suite-checkout.sh+` has proved it IS that commit. One pin,
+held by the caller, selects both the workflow and its scripts. An empty or
+wrong SHA is exit 2 — no check was performed — because a silent fall-through
+to the default branch would be the `+@main+` hazard by another route.
 
 == Why composite, and why bash
 

@@ -1,0 +1,272 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# spark-gate.yml — Ada/SPARK formal verification, as a reusable workflow.
+# The Ada twin of creusot-gate.yml.
+#
+#   theatre  hyperpolymath/standards' SPARK Theatre Gate (the claims side):
+#            a SPARK_Mode-On unit whose header claims "formally verified"
+#            with no GNATprove in the repository is a hard failure, and a
+#            zero-contract SPARK_Mode is named (escalates with
+#            enforce_zero_contract). Called as a nested reusable, pinned,
+#            rather than copied: solutions at source.
+#   detect   counts SPARK_Mode-On units and names the project GNATprove gets;
+#            with several .gpr and no `gpr` input it fails rather than guess
+#   prove    installs GNAT + GNATprove at PINNED versions through Alire,
+#            proves a planted FALSE postcondition and REQUIRES refusal, proves
+#            a planted TRUE one and requires success, then runs
+#              gnatprove -P <gpr> --mode=all --level=N --checks-as-errors=on
+#                        --warnings=error --report=all --timeout=T -j0
+#            failing on any unproved check
+#   verdict  one context to require; a skipped prove with units present is
+#            VOID, not green
+#
+# Gate scripts are pinned at the caller's own `uses:` SHA — see rust-ci.yml.
+#
+# Permissions: the theatre job calls a standards reusable that declares
+# `actions: read` + `contents: read`; a nested call may not request more
+# than its caller holds, so this file and its callers grant both.
+
+name: SPARK Gate (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        type: string
+        required: false
+        default: ubuntu-24.04
+      working_directory:
+        description: Tree root to scan
+        type: string
+        required: false
+        default: "."
+      gpr:
+        description: Project file for gnatprove (required when several .gpr files exist)
+        type: string
+        required: false
+        default: ""
+      level:
+        description: gnatprove --level (0..4)
+        type: string
+        required: false
+        default: "2"
+      timeout:
+        description: gnatprove --timeout, seconds per verification condition
+        type: string
+        required: false
+        default: "60"
+      extra_args:
+        description: Extra gnatprove arguments
+        type: string
+        required: false
+        default: ""
+      enforce_zero_contract:
+        description: Escalate the theatre gate's T2 (SPARK_Mode with no contracts) to a failure
+        type: boolean
+        required: false
+        default: false
+      gnat_version:
+        description: Alire gnat_native crate version
+        type: string
+        required: false
+        default: "16.1.0"
+      gnatprove_version:
+        description: Alire gnatprove crate version
+        type: string
+        required: false
+        default: "16.1.0"
+
+permissions:
+  actions: read
+  contents: read
+
+# Every `run:` step gets bash with -e AND pipefail. GitHub's default when no
+# shell is named is `bash -e` without pipefail, which would let a failing
+# gate script hide behind the `| tee` that records its facts.
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  theatre:
+    name: SPARK theatre gate (standards)
+    uses: hyperpolymath/standards/.github/workflows/spark-theatre-gate.yml@95de3dfc3fcf09a1cf3325ab42723e3d81682b45 # standards main 2026-10-14
+    permissions:
+      actions: read
+      contents: read
+    with:
+      paths: ${{ inputs.working_directory }}
+      enforce_zero_contract: ${{ inputs.enforce_zero_contract }}
+
+  detect:
+    name: Detect SPARK units
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      spark_units: ${{ steps.facts.outputs.spark_units }}
+      project: ${{ steps.facts.outputs.project }}
+      gpr_count: ${{ steps.facts.outputs.gpr_count }}
+    steps:
+      - name: Check out the calling repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Resolve the cicd-suite commit this caller pins
+        id: suite
+        env:
+          SUITE_WORKFLOW: spark-gate.yml
+        # Inside a reusable workflow the `github` context is the CALLER's, so
+        # GITHUB_WORKFLOW_REF names the caller's workflow file — which is in
+        # the tree just checked out and holds the very `uses:` line GitHub
+        # resolved to reach this file. That SHA pins the gate scripts: one
+        # pin, held by the caller, selects both the workflow and its scripts.
+        # (`github.job_workflow_sha` is an OIDC claim, not a context property,
+        # and reading the token would need id-token: write from every caller.)
+        run: |
+          set -euo pipefail
+          path="${GITHUB_WORKFLOW_REF#"$GITHUB_REPOSITORY"/}"; path="${path%@*}"
+          [ -f "$path" ] || { echo "::error::caller workflow '$path' is not in the checkout, so the gate scripts cannot be pinned. NO CHECK WAS PERFORMED."; exit 2; }
+          shas="$(grep -oE "uses:[[:space:]]*hyperpolymath/cicd-suite/\.github/workflows/${SUITE_WORKFLOW}@[0-9a-f]{40}" "$path" | sed 's/.*@//' | sort -u || true)"
+          n="$(printf '%s' "$shas" | grep -c . || true)"
+          if [ "$n" -ne 1 ]; then
+            echo "::error::$path pins hyperpolymath/cicd-suite/.github/workflows/${SUITE_WORKFLOW} at $n distinct full SHAs; exactly one is required (a branch or tag ref does not count). NO CHECK WAS PERFORMED."
+            exit 2
+          fi
+          echo "sha=$shas" >> "$GITHUB_OUTPUT"
+          echo "cicd-suite pinned at $shas by $path"
+      - name: Check out cicd-suite at that commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: hyperpolymath/cicd-suite
+          ref: ${{ steps.suite.outputs.sha }}
+          path: .cicd-suite
+          persist-credentials: false
+      - name: Refuse gate scripts from an unverified cicd-suite commit
+        env:
+          EXPECTED: ${{ steps.suite.outputs.sha }}
+        run: bash .cicd-suite/scripts/verify-suite-checkout.sh
+      - name: Facts
+        id: facts
+        env:
+          SPARK_GATE_PHASE: detect
+          WORKING_DIRECTORY: ${{ inputs.working_directory }}
+          GPR: ${{ inputs.gpr }}
+        run: bash .cicd-suite/actions/spark-check/check.sh | tee -a "$GITHUB_OUTPUT"
+
+  prove:
+    name: GNATprove
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 60
+    needs: detect
+    if: ${{ needs.detect.outputs.spark_units != '0' && needs.detect.outputs.spark_units != '' }}
+    permissions:
+      contents: read
+    env:
+      GNATPROVE_VERSION: ${{ inputs.gnatprove_version }}
+      GNATPROVE_PREFIX: ${{ github.workspace }}/.gnatprove-prefix
+    steps:
+      - name: Check out the calling repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Resolve the cicd-suite commit this caller pins
+        id: suite
+        env:
+          SUITE_WORKFLOW: spark-gate.yml
+        # Inside a reusable workflow the `github` context is the CALLER's, so
+        # GITHUB_WORKFLOW_REF names the caller's workflow file — which is in
+        # the tree just checked out and holds the very `uses:` line GitHub
+        # resolved to reach this file. That SHA pins the gate scripts: one
+        # pin, held by the caller, selects both the workflow and its scripts.
+        # (`github.job_workflow_sha` is an OIDC claim, not a context property,
+        # and reading the token would need id-token: write from every caller.)
+        run: |
+          set -euo pipefail
+          path="${GITHUB_WORKFLOW_REF#"$GITHUB_REPOSITORY"/}"; path="${path%@*}"
+          [ -f "$path" ] || { echo "::error::caller workflow '$path' is not in the checkout, so the gate scripts cannot be pinned. NO CHECK WAS PERFORMED."; exit 2; }
+          shas="$(grep -oE "uses:[[:space:]]*hyperpolymath/cicd-suite/\.github/workflows/${SUITE_WORKFLOW}@[0-9a-f]{40}" "$path" | sed 's/.*@//' | sort -u || true)"
+          n="$(printf '%s' "$shas" | grep -c . || true)"
+          if [ "$n" -ne 1 ]; then
+            echo "::error::$path pins hyperpolymath/cicd-suite/.github/workflows/${SUITE_WORKFLOW} at $n distinct full SHAs; exactly one is required (a branch or tag ref does not count). NO CHECK WAS PERFORMED."
+            exit 2
+          fi
+          echo "sha=$shas" >> "$GITHUB_OUTPUT"
+          echo "cicd-suite pinned at $shas by $path"
+      - name: Check out cicd-suite at that commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: hyperpolymath/cicd-suite
+          ref: ${{ steps.suite.outputs.sha }}
+          path: .cicd-suite
+          persist-credentials: false
+      - name: Refuse gate scripts from an unverified cicd-suite commit
+        env:
+          EXPECTED: ${{ steps.suite.outputs.sha }}
+        run: bash .cicd-suite/scripts/verify-suite-checkout.sh
+      - name: Set up Alire with GNAT ${{ inputs.gnat_version }} and gprbuild
+        uses: alire-project/setup-alire@fc4c8ce471aa30b3af0d39ce15add1ee9eaf28f2 # v6.0.0
+        with:
+          toolchain: gnat_native=${{ inputs.gnat_version }} gprbuild
+      - name: Cache the GNATprove ${{ inputs.gnatprove_version }} install
+        id: cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.GNATPROVE_PREFIX }}
+          key: gnatprove-${{ inputs.gnatprove_version }}-${{ runner.os }}-${{ runner.arch }}
+      - name: Install GNATprove ${{ inputs.gnatprove_version }} (alr install)
+        if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+        run: |
+          set -euo pipefail
+          alr -n install "gnatprove=${GNATPROVE_VERSION}" --prefix "$GNATPROVE_PREFIX"
+      - name: gnatprove is on PATH
+        run: |
+          set -euo pipefail
+          echo "$GNATPROVE_PREFIX/bin" >> "$GITHUB_PATH"
+          export PATH="$GNATPROVE_PREFIX/bin:$PATH"
+          gnatprove --version
+      - name: Planted controls, then the project
+        env:
+          SPARK_GATE_PHASE: prove
+          WORKING_DIRECTORY: ${{ inputs.working_directory }}
+          GPR: ${{ inputs.gpr }}
+          LEVEL: ${{ inputs.level }}
+          TIMEOUT: ${{ inputs.timeout }}
+          EXTRA_ARGS: ${{ inputs.extra_args }}
+        run: bash .cicd-suite/actions/spark-check/check.sh
+
+  verdict:
+    name: SPARK verdict
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 5
+    needs: [theatre, detect, prove]
+    if: ${{ always() }}
+    permissions:
+      contents: read
+    env:
+      UNITS: ${{ needs.detect.outputs.spark_units }}
+      R_THEATRE: ${{ needs.theatre.result }}
+      R_DETECT: ${{ needs.detect.result }}
+      R_PROVE: ${{ needs.prove.result }}
+    steps:
+      - name: Adjudicate
+        run: |
+          set -euo pipefail
+          fail=0
+          [ "$R_THEATRE" = success ] || { echo "::error::theatre: $R_THEATRE"; fail=1; }
+          [ "$R_DETECT" = success ]  || { echo "::error::detect: $R_DETECT"; fail=1; }
+          case "$R_PROVE" in
+            success) echo "  ok       prove ($UNITS SPARK unit(s))" ;;
+            failure|cancelled) echo "::error::prove: $R_PROVE"; fail=1 ;;
+            skipped)
+              if [ "${UNITS:-0}" != 0 ] && [ -n "${UNITS:-}" ]; then
+                echo "::error::prove was SKIPPED although $UNITS SPARK unit(s) exist — VOID, not green."; fail=1
+              else
+                echo "::notice::No SPARK_Mode-On unit in this tree: nothing was proved. This verdict is silent, not green-as-assurance."
+              fi ;;
+            *) echo "::error::prove: unknown result '$R_PROVE'"; fail=1 ;;
+          esac
+          [ "$fail" -eq 0 ] || { echo "::error::SPARK verdict: RED."; exit 1; }
+          echo "SPARK verdict: GREEN."

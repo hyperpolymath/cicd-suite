@@ -1,0 +1,641 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# rust-ci.yml — the estate's strict Rust gate, as a reusable workflow.
+#
+# WHY THIS EXISTS. From 2026-09-29 every `rust-ci / Cargo check + clippy +
+# fmt` in the estate that called hyperpolymath/standards'
+# rust-ci-reusable.yml at a pre-fix SHA died in six seconds: the reusable
+# pinned dtolnay/rust-toolchain by commit and passed no `toolchain:`, and a
+# SHA ref carries no channel, so the action exited 1 with "'toolchain' is a
+# required input" before a compiler existed (plasma-parser-writer#105,
+# run 38564229091). The fix landed in standards; the callers stayed pinned
+# behind it. This workflow makes that class of failure impossible by
+# construction: the channel is RESOLVED by actions/rust-ci-check/resolve.sh
+# before any action runs and the gate refuses an empty value.
+#
+# WHAT IS STRICTER THAN BEFORE (actions/rust-ci-check/check.sh has the why):
+#   * every compile denies warnings (RUSTFLAGS/RUSTDOCFLAGS -D warnings),
+#     not only clippy;
+#   * doctests run (`cargo test --all-targets` never ran a single `///`);
+#   * `cargo doc` with broken intra-doc links fails;
+#   * the declared `rust-version` (MSRV) must actually build;
+#   * cargo-deny runs by default: advisories, bans, sources (licences only
+#     with an owner-authored deny.toml — the gate never invents licence
+#     policy, doctrine #6);
+#   * a missing Cargo.lock fails with the fix named, before cargo runs;
+#   * a final `Rust CI verdict` job turns a SKIPPED mandatory job into a
+#     failure: a gate that did not run is VOID, not green
+#     (proven-tests-and-benches, corpus unit cancelled-gate-void).
+#
+# CONTEXT NAMES ARE PRESERVED. Callers keep the job id `rust-ci`, so the
+# contexts `rust-ci / Detect Cargo.toml`, `rust-ci / Cargo check + clippy +
+# fmt` and `rust-ci / Cargo test` are the same strings branch rules already
+# require (standards docs/CICD-SIGNAL-DISCIPLINE.adoc: never rename and
+# re-require in one step). New contexts are additive.
+#
+# HOW THE GATE SCRIPTS ARE PINNED. Every job reads the caller's own `uses:`
+# line back out of the caller's checked-out workflow file (GITHUB_WORKFLOW_REF
+# names it; inside a reusable the `github` context is the caller's), checks
+# THIS repository out at that SHA into .cicd-suite/, verifies the checkout is
+# that commit, and runs the scripts from there. A caller pinned at a SHA therefore runs exactly that
+# commit's scripts: no second pin to drift, no repin commit after every
+# change to actions/ (the defect tests/lock-transitive-closure.sh guards
+# against for `uses:`-form composites). The caller's tree is untouched: the
+# scripts read `git ls-files`, and .cicd-suite/ is untracked.
+#
+# CONSUMING IT. templates/rust-ci-caller.yml, pinned at a full cicd-suite
+# SHA and DE-ONBOARDED from the caller's actions.lock (an onboarded
+# cross-repo reusable startup-fails with zero jobs under
+# sha_pinning_required — see main-estate-audit.yml's header for the
+# witnessed matrix). This file is likewise de-onboarded here: every `uses:`
+# below is a full SHA.
+
+name: Rust CI (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        description: Runner label for every job
+        type: string
+        required: false
+        default: ubuntu-24.04
+      working_directory:
+        description: Directory containing Cargo.toml (relative to the repo root)
+        type: string
+        required: false
+        default: "."
+      toolchain:
+        description: >-
+          Rust channel for the gate. "auto" (default) reads rust-toolchain.toml /
+          rust-toolchain and falls back to stable. Never empty: an empty channel
+          fails the detect job.
+        type: string
+        required: false
+        default: auto
+      components:
+        description: rustup components for the check job
+        type: string
+        required: false
+        default: "clippy, rustfmt"
+      check_args:
+        description: Args appended to `cargo check`
+        type: string
+        required: false
+        default: "--all-targets"
+      clippy_args:
+        description: Args appended to `cargo clippy`
+        type: string
+        required: false
+        default: "--all-targets -- -D warnings"
+      test_args:
+        description: Args appended to `cargo test`
+        type: string
+        required: false
+        default: "--all-targets"
+      doctests:
+        description: Also run `cargo test --doc --workspace` (recommended; --all-targets skips doctests)
+        type: boolean
+        required: false
+        default: true
+      deny_warnings:
+        description: Export RUSTFLAGS/RUSTDOCFLAGS "-D warnings" for every compile
+        type: boolean
+        required: false
+        default: true
+      doc_check:
+        description: Run `cargo doc --no-deps --document-private-items` with warnings denied
+        type: boolean
+        required: false
+        default: true
+      msrv_check:
+        description: Build with the declared `rust-version` when the manifest declares one
+        type: boolean
+        required: false
+        default: true
+      deny_check:
+        description: Run cargo-deny (advisories, bans, sources; licences only with a deny.toml)
+        type: boolean
+        required: false
+        default: true
+      deny_args:
+        description: Global cargo-deny arguments (placed before the command)
+        type: string
+        required: false
+        default: "--all-features --locked --warn unmaintained --warn yanked"
+      enable_audit:
+        description: >-
+          Accepted for compatibility with standards' rust-ci-reusable; advisories
+          now always run through cargo-deny (see deny_check), so this input is a
+          no-op.
+        type: boolean
+        required: false
+        default: false
+      enable_coverage:
+        description: Measure line coverage with cargo-llvm-cov and enforce coverage_floor
+        type: boolean
+        required: false
+        default: false
+      coverage_floor:
+        description: Minimum line-coverage percent when enable_coverage is set; ratchet upward, never lower
+        type: string
+        required: false
+        default: "0"
+      zig_version:
+        description: Exact Zig version for a crate with a Zig-native build; empty for pure Rust
+        type: string
+        required: false
+        default: ""
+
+# Only `contents: read`. A reusable may narrow the caller's permissions, never
+# widen them: asking for more than the caller granted is a startup_failure
+# with zero jobs (standards rust-ci-reusable.yml, header).
+permissions:
+  contents: read
+
+# Every `run:` step gets bash with -e AND pipefail. GitHub's default when no
+# shell is named is `bash -e` without pipefail, which would let a failing
+# gate script hide behind the `| tee` that records its facts.
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  detect:
+    name: Detect Cargo.toml
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      has_cargo: ${{ steps.facts.outputs.has_cargo }}
+      toolchain: ${{ steps.facts.outputs.toolchain }}
+      toolchain_source: ${{ steps.facts.outputs.toolchain_source }}
+      msrv: ${{ steps.facts.outputs.msrv }}
+      has_lock: ${{ steps.facts.outputs.has_lock }}
+      has_deny_toml: ${{ steps.facts.outputs.has_deny_toml }}
+    steps:
+      - name: Check out the calling repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Resolve the cicd-suite commit this caller pins
+        id: suite
+        env:
+          SUITE_WORKFLOW: rust-ci.yml
+        # Inside a reusable workflow the `github` context is the CALLER's, so
+        # GITHUB_WORKFLOW_REF names the caller's workflow file — which is in
+        # the tree just checked out and holds the very `uses:` line GitHub
+        # resolved to reach this file. That SHA pins the gate scripts: one
+        # pin, held by the caller, selects both the workflow and its scripts.
+        # (`github.job_workflow_sha` is an OIDC claim, not a context property,
+        # and reading the token would need id-token: write from every caller.)
+        run: |
+          set -euo pipefail
+          path="${GITHUB_WORKFLOW_REF#"$GITHUB_REPOSITORY"/}"; path="${path%@*}"
+          [ -f "$path" ] || { echo "::error::caller workflow '$path' is not in the checkout, so the gate scripts cannot be pinned. NO CHECK WAS PERFORMED."; exit 2; }
+          shas="$(grep -oE "uses:[[:space:]]*hyperpolymath/cicd-suite/\.github/workflows/${SUITE_WORKFLOW}@[0-9a-f]{40}" "$path" | sed 's/.*@//' | sort -u || true)"
+          n="$(printf '%s' "$shas" | grep -c . || true)"
+          if [ "$n" -ne 1 ]; then
+            echo "::error::$path pins hyperpolymath/cicd-suite/.github/workflows/${SUITE_WORKFLOW} at $n distinct full SHAs; exactly one is required (a branch or tag ref does not count). NO CHECK WAS PERFORMED."
+            exit 2
+          fi
+          echo "sha=$shas" >> "$GITHUB_OUTPUT"
+          echo "cicd-suite pinned at $shas by $path"
+      - name: Check out cicd-suite at that commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: hyperpolymath/cicd-suite
+          ref: ${{ steps.suite.outputs.sha }}
+          path: .cicd-suite
+          persist-credentials: false
+      - name: Refuse gate scripts from an unverified cicd-suite commit
+        env:
+          EXPECTED: ${{ steps.suite.outputs.sha }}
+        run: bash .cicd-suite/scripts/verify-suite-checkout.sh
+      - name: Resolve toolchain, MSRV and lockfile facts
+        id: facts
+        env:
+          WORKING_DIRECTORY: ${{ inputs.working_directory }}
+          TOOLCHAIN: ${{ inputs.toolchain }}
+        run: bash .cicd-suite/actions/rust-ci-check/resolve.sh | tee -a "$GITHUB_OUTPUT"
+
+  check:
+    name: Cargo check + clippy + fmt
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 30
+    needs: detect
+    if: ${{ needs.detect.outputs.has_cargo == 'true' }}
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the calling repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Resolve the cicd-suite commit this caller pins
+        id: suite
+        env:
+          SUITE_WORKFLOW: rust-ci.yml
+        # Inside a reusable workflow the `github` context is the CALLER's, so
+        # GITHUB_WORKFLOW_REF names the caller's workflow file — which is in
+        # the tree just checked out and holds the very `uses:` line GitHub
+        # resolved to reach this file. That SHA pins the gate scripts: one
+        # pin, held by the caller, selects both the workflow and its scripts.
+        # (`github.job_workflow_sha` is an OIDC claim, not a context property,
+        # and reading the token would need id-token: write from every caller.)
+        run: |
+          set -euo pipefail
+          path="${GITHUB_WORKFLOW_REF#"$GITHUB_REPOSITORY"/}"; path="${path%@*}"
+          [ -f "$path" ] || { echo "::error::caller workflow '$path' is not in the checkout, so the gate scripts cannot be pinned. NO CHECK WAS PERFORMED."; exit 2; }
+          shas="$(grep -oE "uses:[[:space:]]*hyperpolymath/cicd-suite/\.github/workflows/${SUITE_WORKFLOW}@[0-9a-f]{40}" "$path" | sed 's/.*@//' | sort -u || true)"
+          n="$(printf '%s' "$shas" | grep -c . || true)"
+          if [ "$n" -ne 1 ]; then
+            echo "::error::$path pins hyperpolymath/cicd-suite/.github/workflows/${SUITE_WORKFLOW} at $n distinct full SHAs; exactly one is required (a branch or tag ref does not count). NO CHECK WAS PERFORMED."
+            exit 2
+          fi
+          echo "sha=$shas" >> "$GITHUB_OUTPUT"
+          echo "cicd-suite pinned at $shas by $path"
+      - name: Check out cicd-suite at that commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: hyperpolymath/cicd-suite
+          ref: ${{ steps.suite.outputs.sha }}
+          path: .cicd-suite
+          persist-credentials: false
+      - name: Refuse gate scripts from an unverified cicd-suite commit
+        env:
+          EXPECTED: ${{ steps.suite.outputs.sha }}
+        run: bash .cicd-suite/scripts/verify-suite-checkout.sh
+      - name: Install Rust ${{ needs.detect.outputs.toolchain }} (${{ needs.detect.outputs.toolchain_source }})
+        # `toolchain:` is ALWAYS passed: a SHA-pinned dtolnay/rust-toolchain
+        # has no channel of its own and fails without it. detect refuses to
+        # emit an empty value, so this can never be the silent "" that
+        # killed the estate's rust-ci on 2026-09-29.
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master 2026-08-04 (v1)
+        with:
+          toolchain: ${{ needs.detect.outputs.toolchain }}
+          components: ${{ inputs.components }}
+      - name: Install Zig for a native build
+        if: ${{ inputs.zig_version != '' }}
+        uses: goto-bus-stop/setup-zig@abea47f85e598557f500fa1fd2ab7464fcb39406 # v2.2.1
+        with:
+          version: ${{ inputs.zig_version }}
+      - name: Cache cargo registry and build
+        uses: swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: ${{ inputs.working_directory }}
+      - name: cargo check, cargo fmt --check, cargo clippy -D warnings (all --locked)
+        env:
+          RUST_GATE_PHASE: check
+          WORKING_DIRECTORY: ${{ inputs.working_directory }}
+          CHECK_ARGS: ${{ inputs.check_args }}
+          CLIPPY_ARGS: ${{ inputs.clippy_args }}
+          DENY_WARNINGS: ${{ inputs.deny_warnings }}
+        run: bash .cicd-suite/actions/rust-ci-check/check.sh
+
+  test:
+    name: Cargo test
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 30
+    needs: [detect, check]
+    if: ${{ needs.detect.outputs.has_cargo == 'true' }}
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the calling repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Resolve the cicd-suite commit this caller pins
+        id: suite
+        env:
+          SUITE_WORKFLOW: rust-ci.yml
+        # Inside a reusable workflow the `github` context is the CALLER's, so
+        # GITHUB_WORKFLOW_REF names the caller's workflow file — which is in
+        # the tree just checked out and holds the very `uses:` line GitHub
+        # resolved to reach this file. That SHA pins the gate scripts: one
+        # pin, held by the caller, selects both the workflow and its scripts.
+        # (`github.job_workflow_sha` is an OIDC claim, not a context property,
+        # and reading the token would need id-token: write from every caller.)
+        run: |
+          set -euo pipefail
+          path="${GITHUB_WORKFLOW_REF#"$GITHUB_REPOSITORY"/}"; path="${path%@*}"
+          [ -f "$path" ] || { echo "::error::caller workflow '$path' is not in the checkout, so the gate scripts cannot be pinned. NO CHECK WAS PERFORMED."; exit 2; }
+          shas="$(grep -oE "uses:[[:space:]]*hyperpolymath/cicd-suite/\.github/workflows/${SUITE_WORKFLOW}@[0-9a-f]{40}" "$path" | sed 's/.*@//' | sort -u || true)"
+          n="$(printf '%s' "$shas" | grep -c . || true)"
+          if [ "$n" -ne 1 ]; then
+            echo "::error::$path pins hyperpolymath/cicd-suite/.github/workflows/${SUITE_WORKFLOW} at $n distinct full SHAs; exactly one is required (a branch or tag ref does not count). NO CHECK WAS PERFORMED."
+            exit 2
+          fi
+          echo "sha=$shas" >> "$GITHUB_OUTPUT"
+          echo "cicd-suite pinned at $shas by $path"
+      - name: Check out cicd-suite at that commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: hyperpolymath/cicd-suite
+          ref: ${{ steps.suite.outputs.sha }}
+          path: .cicd-suite
+          persist-credentials: false
+      - name: Refuse gate scripts from an unverified cicd-suite commit
+        env:
+          EXPECTED: ${{ steps.suite.outputs.sha }}
+        run: bash .cicd-suite/scripts/verify-suite-checkout.sh
+      - name: Install Rust ${{ needs.detect.outputs.toolchain }}
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master 2026-08-04 (v1)
+        with:
+          toolchain: ${{ needs.detect.outputs.toolchain }}
+      - name: Install Zig for a native build
+        if: ${{ inputs.zig_version != '' }}
+        uses: goto-bus-stop/setup-zig@abea47f85e598557f500fa1fd2ab7464fcb39406 # v2.2.1
+        with:
+          version: ${{ inputs.zig_version }}
+      - name: Cache cargo registry and build
+        uses: swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: ${{ inputs.working_directory }}
+      - name: cargo test (all targets) and cargo test --doc, --locked
+        env:
+          RUST_GATE_PHASE: test
+          WORKING_DIRECTORY: ${{ inputs.working_directory }}
+          TEST_ARGS: ${{ inputs.test_args }}
+          DOCTESTS: ${{ inputs.doctests }}
+          DENY_WARNINGS: ${{ inputs.deny_warnings }}
+        run: bash .cicd-suite/actions/rust-ci-check/check.sh
+
+  doc:
+    name: Cargo doc (warnings denied)
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 20
+    needs: detect
+    if: ${{ needs.detect.outputs.has_cargo == 'true' && inputs.doc_check }}
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the calling repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Resolve the cicd-suite commit this caller pins
+        id: suite
+        env:
+          SUITE_WORKFLOW: rust-ci.yml
+        # Inside a reusable workflow the `github` context is the CALLER's, so
+        # GITHUB_WORKFLOW_REF names the caller's workflow file — which is in
+        # the tree just checked out and holds the very `uses:` line GitHub
+        # resolved to reach this file. That SHA pins the gate scripts: one
+        # pin, held by the caller, selects both the workflow and its scripts.
+        # (`github.job_workflow_sha` is an OIDC claim, not a context property,
+        # and reading the token would need id-token: write from every caller.)
+        run: |
+          set -euo pipefail
+          path="${GITHUB_WORKFLOW_REF#"$GITHUB_REPOSITORY"/}"; path="${path%@*}"
+          [ -f "$path" ] || { echo "::error::caller workflow '$path' is not in the checkout, so the gate scripts cannot be pinned. NO CHECK WAS PERFORMED."; exit 2; }
+          shas="$(grep -oE "uses:[[:space:]]*hyperpolymath/cicd-suite/\.github/workflows/${SUITE_WORKFLOW}@[0-9a-f]{40}" "$path" | sed 's/.*@//' | sort -u || true)"
+          n="$(printf '%s' "$shas" | grep -c . || true)"
+          if [ "$n" -ne 1 ]; then
+            echo "::error::$path pins hyperpolymath/cicd-suite/.github/workflows/${SUITE_WORKFLOW} at $n distinct full SHAs; exactly one is required (a branch or tag ref does not count). NO CHECK WAS PERFORMED."
+            exit 2
+          fi
+          echo "sha=$shas" >> "$GITHUB_OUTPUT"
+          echo "cicd-suite pinned at $shas by $path"
+      - name: Check out cicd-suite at that commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: hyperpolymath/cicd-suite
+          ref: ${{ steps.suite.outputs.sha }}
+          path: .cicd-suite
+          persist-credentials: false
+      - name: Refuse gate scripts from an unverified cicd-suite commit
+        env:
+          EXPECTED: ${{ steps.suite.outputs.sha }}
+        run: bash .cicd-suite/scripts/verify-suite-checkout.sh
+      - name: Install Rust ${{ needs.detect.outputs.toolchain }}
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master 2026-08-04 (v1)
+        with:
+          toolchain: ${{ needs.detect.outputs.toolchain }}
+      - name: Install Zig for a native build
+        if: ${{ inputs.zig_version != '' }}
+        uses: goto-bus-stop/setup-zig@abea47f85e598557f500fa1fd2ab7464fcb39406 # v2.2.1
+        with:
+          version: ${{ inputs.zig_version }}
+      - name: Cache cargo registry and build
+        uses: swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: ${{ inputs.working_directory }}
+      - name: cargo doc --no-deps --document-private-items, RUSTDOCFLAGS -D warnings
+        env:
+          RUST_GATE_PHASE: doc
+          WORKING_DIRECTORY: ${{ inputs.working_directory }}
+          DENY_WARNINGS: ${{ inputs.deny_warnings }}
+        run: bash .cicd-suite/actions/rust-ci-check/check.sh
+
+  msrv:
+    name: MSRV check (rust-version ${{ needs.detect.outputs.msrv }})
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 30
+    needs: detect
+    if: ${{ needs.detect.outputs.has_cargo == 'true' && inputs.msrv_check && needs.detect.outputs.msrv != '' }}
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the calling repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Resolve the cicd-suite commit this caller pins
+        id: suite
+        env:
+          SUITE_WORKFLOW: rust-ci.yml
+        # Inside a reusable workflow the `github` context is the CALLER's, so
+        # GITHUB_WORKFLOW_REF names the caller's workflow file — which is in
+        # the tree just checked out and holds the very `uses:` line GitHub
+        # resolved to reach this file. That SHA pins the gate scripts: one
+        # pin, held by the caller, selects both the workflow and its scripts.
+        # (`github.job_workflow_sha` is an OIDC claim, not a context property,
+        # and reading the token would need id-token: write from every caller.)
+        run: |
+          set -euo pipefail
+          path="${GITHUB_WORKFLOW_REF#"$GITHUB_REPOSITORY"/}"; path="${path%@*}"
+          [ -f "$path" ] || { echo "::error::caller workflow '$path' is not in the checkout, so the gate scripts cannot be pinned. NO CHECK WAS PERFORMED."; exit 2; }
+          shas="$(grep -oE "uses:[[:space:]]*hyperpolymath/cicd-suite/\.github/workflows/${SUITE_WORKFLOW}@[0-9a-f]{40}" "$path" | sed 's/.*@//' | sort -u || true)"
+          n="$(printf '%s' "$shas" | grep -c . || true)"
+          if [ "$n" -ne 1 ]; then
+            echo "::error::$path pins hyperpolymath/cicd-suite/.github/workflows/${SUITE_WORKFLOW} at $n distinct full SHAs; exactly one is required (a branch or tag ref does not count). NO CHECK WAS PERFORMED."
+            exit 2
+          fi
+          echo "sha=$shas" >> "$GITHUB_OUTPUT"
+          echo "cicd-suite pinned at $shas by $path"
+      - name: Check out cicd-suite at that commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: hyperpolymath/cicd-suite
+          ref: ${{ steps.suite.outputs.sha }}
+          path: .cicd-suite
+          persist-credentials: false
+      - name: Refuse gate scripts from an unverified cicd-suite commit
+        env:
+          EXPECTED: ${{ steps.suite.outputs.sha }}
+        run: bash .cicd-suite/scripts/verify-suite-checkout.sh
+      - name: Install the declared rust-version ${{ needs.detect.outputs.msrv }}
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master 2026-08-04 (v1)
+        with:
+          toolchain: ${{ needs.detect.outputs.msrv }}
+      - name: Install Zig for a native build
+        if: ${{ inputs.zig_version != '' }}
+        uses: goto-bus-stop/setup-zig@abea47f85e598557f500fa1fd2ab7464fcb39406 # v2.2.1
+        with:
+          version: ${{ inputs.zig_version }}
+      - name: Cache cargo registry and build
+        uses: swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: ${{ inputs.working_directory }}
+          key: msrv-${{ needs.detect.outputs.msrv }}
+      - name: cargo +${{ needs.detect.outputs.msrv }} check --locked
+        env:
+          RUST_GATE_PHASE: msrv
+          MSRV: ${{ needs.detect.outputs.msrv }}
+          WORKING_DIRECTORY: ${{ inputs.working_directory }}
+          CHECK_ARGS: ${{ inputs.check_args }}
+          DENY_WARNINGS: ${{ inputs.deny_warnings }}
+        run: bash .cicd-suite/actions/rust-ci-check/check.sh
+
+  deny:
+    name: cargo-deny (advisories, bans, sources)
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 15
+    needs: detect
+    if: ${{ needs.detect.outputs.has_cargo == 'true' && inputs.deny_check }}
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the calling repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: cargo-deny — advisories, bans, sources
+        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+        with:
+          command: check advisories bans sources
+          arguments: ${{ inputs.deny_args }}
+          manifest-path: ${{ inputs.working_directory }}/Cargo.toml
+      - name: cargo-deny — licences (only against an owner-authored deny.toml)
+        # Licence policy is manual and owner-only (doctrine #6). With no
+        # deny.toml there is no policy to check against, and the gate does
+        # not invent one.
+        if: ${{ needs.detect.outputs.has_deny_toml == 'true' }}
+        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+        with:
+          command: check licenses
+          arguments: ${{ inputs.deny_args }}
+          manifest-path: ${{ inputs.working_directory }}/Cargo.toml
+
+  coverage:
+    name: llvm-cov line coverage
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 30
+    needs: detect
+    if: ${{ needs.detect.outputs.has_cargo == 'true' && inputs.enable_coverage }}
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: ${{ inputs.working_directory }}
+    env:
+      FLOOR: ${{ inputs.coverage_floor }}
+    steps:
+      - name: Check out the calling repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust ${{ needs.detect.outputs.toolchain }} with llvm-tools
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master 2026-08-04 (v1)
+        with:
+          toolchain: ${{ needs.detect.outputs.toolchain }}
+          components: llvm-tools-preview
+      - name: Install Zig for a native build
+        if: ${{ inputs.zig_version != '' }}
+        uses: goto-bus-stop/setup-zig@abea47f85e598557f500fa1fd2ab7464fcb39406 # v2.2.1
+        with:
+          version: ${{ inputs.zig_version }}
+      - name: Install cargo-llvm-cov (prebuilt, pinned)
+        uses: taiki-e/install-action@1168f6810a3cb30a3514bf5756a3b7f0422c6df8 # v2.87.28
+        with:
+          tool: cargo-llvm-cov
+      - name: Measure line coverage
+        id: cov
+        run: |
+          set -euo pipefail
+          cargo llvm-cov --workspace --locked --json --output-path cov.json
+          PCT=$(jq -r '.data[0].totals.lines.percent' cov.json)
+          printf '### Line coverage: %.2f%% (floor %s%%)\n' "$PCT" "$FLOOR" >> "$GITHUB_STEP_SUMMARY"
+          echo "pct=$PCT" >> "$GITHUB_OUTPUT"
+      - name: Enforce the ratchet floor
+        env:
+          PCT: ${{ steps.cov.outputs.pct }}
+        run: |
+          set -euo pipefail
+          awk -v p="$PCT" -v f="$FLOOR" 'BEGIN {
+            if (p + 0 < f + 0) { printf "FAIL: line coverage %.2f%% is below floor %s%%\n", p, f; exit 1 }
+            printf "OK: line coverage %.2f%% >= floor %s%%\n", p, f
+          }'
+
+  verdict:
+    # One context to require. Red if any gate failed, was cancelled, or was
+    # SKIPPED while expected to run: a job that never ran proved nothing, and
+    # a green tick over it would be the cancelled-gate-void defect.
+    name: Rust CI verdict
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 5
+    needs: [detect, check, test, doc, msrv, deny, coverage]
+    if: ${{ always() }}
+    permissions:
+      contents: read
+    env:
+      HAS_CARGO: ${{ needs.detect.outputs.has_cargo }}
+      MSRV: ${{ needs.detect.outputs.msrv }}
+      R_DETECT: ${{ needs.detect.result }}
+      R_CHECK: ${{ needs.check.result }}
+      R_TEST: ${{ needs.test.result }}
+      R_DOC: ${{ needs.doc.result }}
+      R_MSRV: ${{ needs.msrv.result }}
+      R_DENY: ${{ needs.deny.result }}
+      R_COVERAGE: ${{ needs.coverage.result }}
+      WANT_DOC: ${{ inputs.doc_check }}
+      WANT_MSRV: ${{ inputs.msrv_check }}
+      WANT_DENY: ${{ inputs.deny_check }}
+      WANT_COVERAGE: ${{ inputs.enable_coverage }}
+    steps:
+      - name: Adjudicate
+        run: |
+          set -euo pipefail
+          fail=0
+          verdict() { # <job> <result> <expected-to-run>
+            local job="$1" result="$2" expected="$3"
+            case "$result" in
+              success) echo "  ok       $job" ;;
+              failure|cancelled) echo "::error::$job: $result"; fail=1 ;;
+              skipped)
+                if [ "$expected" = true ]; then
+                  echo "::error::$job was SKIPPED but was expected to run — a gate that did not run is VOID, not green (proven-tests-and-benches: cancelled-gate-void)."
+                  fail=1
+                else
+                  echo "  skipped  $job (not requested)"
+                fi ;;
+              *) echo "::error::$job: unknown result '$result'"; fail=1 ;;
+            esac
+          }
+          [ "$R_DETECT" = success ] || { echo "::error::detect: $R_DETECT — the toolchain/MSRV facts were not established."; fail=1; }
+          if [ "$HAS_CARGO" != true ]; then
+            echo "::notice::No Cargo.toml at the configured working_directory: no Rust gate ran. This verdict is silent, not green-as-assurance."
+            exit "$fail"
+          fi
+          verdict check    "$R_CHECK"    true
+          verdict test     "$R_TEST"     true
+          verdict doc      "$R_DOC"      "$WANT_DOC"
+          if [ -n "$MSRV" ]; then verdict msrv "$R_MSRV" "$WANT_MSRV"; else echo "  skipped  msrv (no rust-version declared)"; fi
+          verdict deny     "$R_DENY"     "$WANT_DENY"
+          verdict coverage "$R_COVERAGE" "$WANT_COVERAGE"
+          [ "$fail" -eq 0 ] || { echo "::error::Rust CI verdict: RED."; exit 1; }
+          echo "Rust CI verdict: GREEN — every requested gate ran and passed."

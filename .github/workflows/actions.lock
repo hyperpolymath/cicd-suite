@@ -9,6 +9,8 @@ workflows:
         - 'hyperpolymath/k9-ecosystem@2155aa26a21758f2ba119f61bc7e0e1981c106fb'
     '.github/workflows/label-triage.yml': []
     '.github/workflows/labels.yml': []
+    '.github/workflows/language-gates-self-test.yml':
+        - 'actions/checkout@v7.0.1'
 dependencies:
     'actions/checkout@v7.0.1':
         ref: 'v7.0.1'

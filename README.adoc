@@ -53,6 +53,11 @@ missing Keybase link would be worse than not checking.
 audit workflow. See (5).
 |===
 
+The four language gates added 2026-10-14 (Rust CI, Creusot, SPARK, miniKanren)
+are enforcing by construction — every `+check.sh+` exits 1 on a defect and 2
+when no check could be performed — and are classified tier by tier in
+_Language gates_ below.
+
 `+formatting+` and `+recipes-set+` moved out of the toothless column;
 the remaining advisory nine are advisory _by design_, which is
 defensible — provided nobody reads their green tick as a guarantee.
@@ -181,6 +186,104 @@ because `+GITHUB_TOKEN+` may not write under `+.github/workflows/+`.
 
 `+rollout_estate.sh+` does all three for every local estate clone. It
 writes files and does not commit them.
+
+=== Language gates (Rust, Creusot, SPARK, miniKanren)
+
+Added 2026-10-14. Four reusable workflows, consumed exactly like the estate
+audit (a thin caller at a full SHA, de-onboarded from `+actions.lock+`), and
+each built so that its oracle has demonstrably said *no* before its green is
+credited.
+
+[cols="1,2,2",options="header"]
+|===
+|Reusable |Check contexts (caller job id, then job name) |Oracle
+
+|`+.github/workflows/rust-ci.yml+`
+|`+rust-ci / Detect Cargo.toml+` · `+Cargo check + clippy + fmt+` ·
+`+Cargo test+` · `+Cargo doc (warnings denied)+` · `+MSRV check+` ·
+`+cargo-deny (advisories, bans, sources)+` · `+llvm-cov line coverage+`
+(opt-in) · *`+Rust CI verdict+`*
+|cargo, every call `+--locked+`, every compile `+-D warnings+`, doctests
+run, MSRV builds, cargo-deny. The verdict job turns a skipped mandatory
+job into red.
+
+|`+.github/workflows/creusot-gate.yml+`
+|`+creusot / Detect Creusot obligations+` · `+Creusot theatre gate+` ·
+`+Creusot proofs (cargo creusot prove)+` · *`+Creusot verdict+`*
+|Creusot at a pinned release. A planted FALSE contract must be refused
+and a planted TRUE one proved before the caller's crates are proved;
+otherwise the verdict is VOID (exit 2), never green.
+
+|`+.github/workflows/spark-gate.yml+`
+|`+spark / SPARK theatre gate (standards)+` · `+Detect SPARK units+` ·
+`+GNATprove+` · *`+SPARK verdict+`*
+|standards' SPARK Theatre Gate (claims side, called at a pin, not copied)
+plus GNATprove at pinned GNAT/GNATprove versions via Alire,
+`+--checks-as-errors=on --warnings=error+`, with the same planted
+controls.
+
+|`+.github/workflows/kanren-gate.yml+`
+|`+kanren / miniKanren gate+`
+|The relations are RUN by the interpreter their dialect names (guile,
+Chez, racket); relations with no goal-level test fail; impure operators
+are listed (enforceable); a claim with no relations is named.
+|===
+
+Why. From 2026-09-29 every `+rust-ci / Cargo check + clippy + fmt+`
+calling standards' `+rust-ci-reusable.yml+` at a pre-fix SHA died in six
+seconds: the reusable pinned `+dtolnay/rust-toolchain+` by commit and
+passed no `+toolchain:+`, and a SHA ref carries no channel
+(plasma-parser-writer#105). The fix landed upstream; the callers stayed
+pinned behind it. `+actions/rust-ci-check/resolve.sh+` now computes the
+channel before any action runs and refuses an empty one, and the
+previous gate's silent holes are closed: `+cargo test --all-targets+`
+never ran a doctest, nothing denied rustc warnings outside clippy,
+`+cargo doc+` never ran, the declared `+rust-version+` was never built,
+and no supply-chain check ran unless opted in.
+
+Tiers. Within each gate the *theatre* tier (a claim with nothing behind
+it) and the *oracle* tier (the prover or interpreter run) are enforcing and
+exit 1; the *hollow* and *purity* tiers warn by default and become
+enforcing through an input (`+enforce_hollow+`, `+enforce_zero_contract+`,
+`+enforce_purity+`, `+enforce_claims+`), mirroring standards' SPARK T2.
+A tree with nothing to gate gets a `+::notice::+` that nothing ran — never a
+tick read as assurance. A missing tool is exit 2, "no check was performed".
+
+How the scripts are pinned. Each reusable job reads the caller's own `+uses:+`
+line back out of the caller's checked-out workflow file (`+GITHUB_WORKFLOW_REF+`
+names it; inside a reusable the `+github+` context is the caller's), checks this
+repository out at that SHA into `+.cicd-suite/+` and runs `+actions/*-check/check.sh+` from there, after
+`+scripts/verify-suite-checkout.sh+` has proved the checkout is that
+commit. A caller pinned at a SHA runs exactly that commit's scripts, with
+no second pin to drift and no repin commit after a change to `+actions/+`.
+The caller's tree is read through `+git ls-files+`, so the untracked
+`+.cicd-suite/+` is invisible to it.
+
+Self-test. `+.github/workflows/language-gates-self-test.yml+` runs each
+gate's `+test.sh+`: a fixture, a planted defect per claim, the exact
+composite shell, and a mutant where one applies. The prover tiers are
+exercised against stand-in oracles there; the planted controls in the
+check scripts exercise the real provers on every live run.
+
+Consuming. `+templates/rust-ci-caller.yml+`, `+creusot-gate-caller.yml+`,
+`+spark-gate-caller.yml+` and `+kanren-gate-caller.yml+` become
+`+.github/workflows/<name>.yml+` with `+__CICD_SUITE_SHA__+` replaced;
+`+scripts/deonboard-workflow.sh <repo> <workflow-path>+` de-onboards each
+(the estate-audit script now delegates to it);
+`+templates/track-estate-audit.yml+` moves *every* cicd-suite pin weekly by
+PR. `+rollout_language_gates.sh+` does all of it per clone, by what the
+tree contains. Keep the caller job ids above: they are the context strings
+branch rules require.
+
+Not yet witnessed live (2026-10-14). The Creusot and GNATprove install
+steps and the exit-code contract of `+cargo creusot prove+` and
+`+gnatprove --checks-as-errors=on+` were validated against the tools'
+documentation and stand-ins, not against a live runner. The planted
+controls are the safeguard: if either prover cannot refuse a false
+contract on the runner, the gate reports VOID rather than green. The
+first live subject for SPARK is cicd-squabbler's
+`+spark/squabble_gate.gpr+`; no repository in the first rollout carries
+Creusot obligations yet.
 
 === Licence
 
