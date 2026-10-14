@@ -49,6 +49,22 @@ on:
   pull_request:
     branches: [ "main" ]
   workflow_call:
+    inputs:
+      # Forwarded to manifest-check. For files that carry a manifest extension
+      # but are not manifests (panic-attack's suppression registry at
+      # audits/assail-classifications.a2ml, for one). A value REPLACES that
+      # validator's default ignore list; empty keeps the defaults. On this
+      # repository's own push and pull_request runs both are empty.
+      manifest-deed-paths-ignore:
+        description: 'Newline-separated path fragments the DEED validator skips (replaces its defaults; empty keeps them).'
+        type: string
+        required: false
+        default: ''
+      manifest-k9-paths-ignore:
+        description: 'Newline-separated path fragments the K9 validator skips (replaces its defaults; empty keeps them).'
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -114,6 +130,9 @@ jobs:
       - name: Manifest Validation Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
         uses: hyperpolymath/cicd-suite/actions/manifest-check@1aa6bfb657f8240db089a8eef1ad4a7ac198bcf0 # 2026-10-09 (#48)
+        with:
+          deed-paths-ignore: ${{ inputs.manifest-deed-paths-ignore }}
+          k9-paths-ignore: ${{ inputs.manifest-k9-paths-ignore }}
       - name: Recipes Set Validation Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
         uses: hyperpolymath/cicd-suite/actions/recipes-set-check@1aa6bfb657f8240db089a8eef1ad4a7ac198bcf0 # 2026-10-09 (#48)

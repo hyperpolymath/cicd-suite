@@ -141,13 +141,43 @@
             path: "${{ steps.fixtures.outputs.root }}/bad-k9",
           },
         },
+        # The ignore lists: each must lift exactly its own validator's finding.
+        # The two positives use the same bad fixtures as the negatives above,
+        # so they pass only because the named file is skipped.
         {
-          name: "Verify both negative controls failed",
+          name: "An invalid DEED file on the caller's DEED ignore list must pass",
+          uses: "$/actions/manifest-check",
+          with: {
+            path: "${{ steps.fixtures.outputs.root }}/bad-deed",
+            deed-paths-ignore: "control.deed",
+          },
+        },
+        {
+          name: "An invalid K9 file on the caller's K9 ignore list must pass",
+          uses: "$/actions/manifest-check",
+          with: {
+            path: "${{ steps.fixtures.outputs.root }}/bad-k9",
+            k9-paths-ignore: "control.k9.ncl",
+          },
+        },
+        {
+          name: "A DEED ignore list must leave K9 validation on",
+          id: "deed-ignore-k9-on",
+          continue-on-error: true,
+          uses: "$/actions/manifest-check",
+          with: {
+            path: "${{ steps.fixtures.outputs.root }}/bad-k9",
+            deed-paths-ignore: "control.k9.ncl",
+          },
+        },
+        {
+          name: "Verify the negative controls failed",
           env: {
             DEED_OUTCOME: "${{ steps.bad-deed.outcome }}",
             K9_OUTCOME: "${{ steps.bad-k9.outcome }}",
+            CROSS_OUTCOME: "${{ steps.deed-ignore-k9-on.outcome }}",
           },
-          run: "test \"$DEED_OUTCOME\" = failure && test \"$K9_OUTCOME\" = failure",
+          run: "test \"$DEED_OUTCOME\" = failure && test \"$K9_OUTCOME\" = failure && test \"$CROSS_OUTCOME\" = failure",
         },
         # formatting-check reads `git ls-files` in the workspace, so its controls
         # run on this checkout: clean it must pass, and with one planted

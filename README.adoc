@@ -182,6 +182,35 @@ because `+GITHUB_TOKEN+` may not write under `+.github/workflows/+`.
 `+rollout_estate.sh+` does all three for every local estate clone. It
 writes files and does not commit them.
 
+If a file carries a manifest extension but is not a manifest, the
+`+manifests+` check will fail on it. Panic-attack's suppression registry
+at `+audits/assail-classifications.a2ml+` is one such file. Name it in the
+caller rather than editing or moving it:
+
+[source,yaml]
+----
+jobs:
+  estate:
+    uses: hyperpolymath/cicd-suite/.github/workflows/main-estate-audit.yml@<40-hex sha> # cicd-suite main
+    with:
+      manifest-deed-paths-ignore: |
+        vendor/
+        vendored/
+        verified-container-spec/
+        .audittraining/
+        integration/fixtures/
+        test/fixtures/
+        tests/fixtures/
+        audits/assail-classifications.a2ml
+----
+
+The list goes to the DEED validator as its `+paths-ignore+` and
+*replaces* its defaults, so repeat the defaults you still want, as above.
+`+manifest-k9-paths-ignore+` does the same for the K9 validator. That
+validator has a different default list, which is why the two lists are
+separate. Each fragment is matched as a substring of the file's path.
+Leave both unset and each validator keeps its own defaults.
+
 === Licence
 
 Code MPL-2.0, prose CC-BY-SA-4.0. See link:LICENSE[`+LICENSE+`].
