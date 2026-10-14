@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: MPL-2.0
+name: 'SPARK Proof Gate'
+description: >-
+  Ada/SPARK oracle gate: detect names the proof project and counts
+  SPARK_Mode-On units; prove runs planted controls then GNATprove with
+  --checks-as-errors=on --warnings=error, failing on any unproved check. Pair
+  it with hyperpolymath/standards' SPARK Theatre Gate (claims side); the
+  reusable workflow .github/workflows/spark-gate.yml does both.
+inputs:
+  phase:
+    description: 'detect | prove'
+    required: true
+  working_directory:
+    description: 'Tree root'
+    required: false
+    default: '.'
+  gpr:
+    description: 'Project file for gnatprove (required when several .gpr exist)'
+    required: false
+    default: ''
+  level:
+    description: 'gnatprove --level'
+    required: false
+    default: '2'
+  timeout:
+    description: 'gnatprove --timeout (seconds per VC)'
+    required: false
+    default: '60'
+  extra_args:
+    description: 'Extra gnatprove arguments'
+    required: false
+    default: ''
+runs:
+  using: 'composite'
+  steps:
+    - name: Run SPARK gate phase
+      shell: bash
+      env:
+        SPARK_GATE_PHASE: ${{ inputs.phase }}
+        WORKING_DIRECTORY: ${{ inputs.working_directory }}
+        GPR: ${{ inputs.gpr }}
+        LEVEL: ${{ inputs.level }}
+        TIMEOUT: ${{ inputs.timeout }}
+        EXTRA_ARGS: ${{ inputs.extra_args }}
+      run: bash "$GITHUB_ACTION_PATH/check.sh"

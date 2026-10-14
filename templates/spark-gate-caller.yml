@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: MPL-2.0
+# SPARK Gate — thin caller of the estate's Ada/SPARK verification gate in
+# hyperpolymath/cicd-suite. Two halves: the claims side is
+# hyperpolymath/standards' SPARK Theatre Gate (a "formally verified" banner
+# with no prover is a failure); the oracle side runs GNATprove — this caller
+# is where gnatprove runs for this repository — at pinned GNAT/GNATprove
+# versions through Alire, with --checks-as-errors=on and --warnings=error,
+# after proving a planted false postcondition to prove the prover can say no.
+#
+# Require `spark / SPARK verdict`.
+#
+# Full-SHA pin, DE-ONBOARDED from actions.lock, no `secrets:` — see
+# rust-ci.yml in this directory for why. `actions: read` is granted because
+# the nested standards theatre gate declares it and a nested reusable may not
+# request more than its caller holds.
+name: SPARK Gate
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  spark:
+    uses: hyperpolymath/cicd-suite/.github/workflows/spark-gate.yml@__CICD_SUITE_SHA__ # cicd-suite main
+    # Inputs (optional):
+    #   gpr: spark/squabble_gate.gpr     # required when several .gpr files exist
+    #   level: "2"                       # gnatprove --level
+    #   enforce_zero_contract: true      # SPARK_Mode with no contracts fails

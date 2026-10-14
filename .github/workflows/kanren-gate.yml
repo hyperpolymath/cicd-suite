@@ -1,0 +1,134 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# kanren-gate.yml — miniKanren / relational code, as a reusable workflow.
+#
+# One job: actions/kanren-check/check.sh finds relational sources (Scheme
+# family and Rust kanren crates), fails when relations have no goal-level
+# test, EXECUTES every relational test with the interpreter the file's
+# dialect names, lists impure operators (conda/condu/project/…), and names a
+# miniKanren claim that has no relations behind it. A missing interpreter is
+# exit 2 — no check was performed — never a pass.
+#
+# `interpreters` installs what the sources need. The estate's miniKanren is
+# Guile Scheme (archived state-kanren.scm; cicd-squabbler's Reasoner design),
+# so guile is the default; add chez and/or racket for those dialects.
+#
+# Gate scripts are pinned at the caller's own `uses:` SHA — see rust-ci.yml.
+
+name: miniKanren Gate (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        type: string
+        required: false
+        default: ubuntu-24.04
+      working_directory:
+        type: string
+        required: false
+        default: "."
+      interpreters:
+        description: Space-separated subset of "guile chez racket" to install
+        type: string
+        required: false
+        default: "guile"
+      require_tests:
+        description: Fail when relational sources have no relational test
+        type: boolean
+        required: false
+        default: true
+      enforce_purity:
+        description: Fail on conda/condu/project/onceo/ifa/ifu/copy-term
+        type: boolean
+        required: false
+        default: false
+      enforce_claims:
+        description: Fail on a miniKanren claim with no relational sources
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+# Every `run:` step gets bash with -e AND pipefail. GitHub's default when no
+# shell is named is `bash -e` without pipefail, which would let a failing
+# gate script hide behind the `| tee` that records its facts.
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  kanren:
+    name: miniKanren gate
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the calling repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Resolve the cicd-suite commit this caller pins
+        id: suite
+        env:
+          SUITE_WORKFLOW: kanren-gate.yml
+        # Inside a reusable workflow the `github` context is the CALLER's, so
+        # GITHUB_WORKFLOW_REF names the caller's workflow file — which is in
+        # the tree just checked out and holds the very `uses:` line GitHub
+        # resolved to reach this file. That SHA pins the gate scripts: one
+        # pin, held by the caller, selects both the workflow and its scripts.
+        # (`github.job_workflow_sha` is an OIDC claim, not a context property,
+        # and reading the token would need id-token: write from every caller.)
+        run: |
+          set -euo pipefail
+          path="${GITHUB_WORKFLOW_REF#"$GITHUB_REPOSITORY"/}"; path="${path%@*}"
+          [ -f "$path" ] || { echo "::error::caller workflow '$path' is not in the checkout, so the gate scripts cannot be pinned. NO CHECK WAS PERFORMED."; exit 2; }
+          shas="$(grep -oE "uses:[[:space:]]*hyperpolymath/cicd-suite/\.github/workflows/${SUITE_WORKFLOW}@[0-9a-f]{40}" "$path" | sed 's/.*@//' | sort -u || true)"
+          n="$(printf '%s' "$shas" | grep -c . || true)"
+          if [ "$n" -ne 1 ]; then
+            echo "::error::$path pins hyperpolymath/cicd-suite/.github/workflows/${SUITE_WORKFLOW} at $n distinct full SHAs; exactly one is required (a branch or tag ref does not count). NO CHECK WAS PERFORMED."
+            exit 2
+          fi
+          echo "sha=$shas" >> "$GITHUB_OUTPUT"
+          echo "cicd-suite pinned at $shas by $path"
+      - name: Check out cicd-suite at that commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: hyperpolymath/cicd-suite
+          ref: ${{ steps.suite.outputs.sha }}
+          path: .cicd-suite
+          persist-credentials: false
+      - name: Refuse gate scripts from an unverified cicd-suite commit
+        env:
+          EXPECTED: ${{ steps.suite.outputs.sha }}
+        run: bash .cicd-suite/scripts/verify-suite-checkout.sh
+      - name: Install the requested interpreters
+        env:
+          INTERPRETERS: ${{ inputs.interpreters }}
+        run: |
+          set -euo pipefail
+          pkgs=""
+          for i in $INTERPRETERS; do
+            case "$i" in
+              guile)  pkgs="$pkgs guile-3.0" ;;
+              chez)   pkgs="$pkgs chezscheme" ;;
+              racket) pkgs="$pkgs racket" ;;
+              *) echo "::error::unknown interpreter '$i' (guile|chez|racket)"; exit 2 ;;
+            esac
+          done
+          if [ -n "$pkgs" ]; then
+            sudo apt-get update
+            # shellcheck disable=SC2086
+            sudo apt-get install -y --no-install-recommends $pkgs
+          fi
+      - name: Run the relations
+        env:
+          WORKING_DIRECTORY: ${{ inputs.working_directory }}
+          REQUIRE_TESTS: ${{ inputs.require_tests }}
+          ENFORCE_PURITY: ${{ inputs.enforce_purity }}
+          ENFORCE_CLAIMS: ${{ inputs.enforce_claims }}
+        run: bash .cicd-suite/actions/kanren-check/check.sh

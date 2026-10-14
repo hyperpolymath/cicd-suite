@@ -159,12 +159,39 @@ done < <(yqr '.dependencies | keys | .[]' "$LOCK")
 # main-estate-audit.yml is in this form, de-onboarded from the lock, because a
 # lock-onboarded branch ref startup-fails every caller that sets
 # sha_pinning_required (the lock is honoured only inside this repo). One check
-# per distinct pinned commit.
-while IFS= read -r pinned; do
-    [ -n "$pinned" ] || continue
-    serves_current "$selfrepo/actions/*@<sha> in a workflow" "$pinned"
-done < <(grep -rhoE "uses:[[:space:]]*$selfrepo/actions/[A-Za-z0-9_.-]+@[0-9a-f]{40}" \
-            "$ROOT/.github/workflows" 2>/dev/null | sed -E 's/.*@//' | sort -u)
+# per (pinned commit, referenced composite): the invariant is that each
+# composite a workflow REFERENCES at that pin is the one HEAD holds. Comparing
+# the whole actions/ tree made every unrelated addition under actions/ (the
+# language gates, 2026-10-14, which no `uses:` pin reaches — their reusables
+# check this repo out at the caller's own pin) read as drift, which would have
+# forced a repin commit for a cure that reached nobody.
+serves_current_composite() { # <workflow> <composite name> <commit>
+    local wf="$1" name="$2" pinned="$3" have want
+    selfchecked=$((selfchecked+1))
+    if ! git -C "$ROOT" cat-file -e "$pinned^{commit}" 2>/dev/null; then
+        bad "$wf pins actions/$name at $pinned, which is not in this clone (need fetch-depth: 0)"
+        return
+    fi
+    have="$(git -C "$ROOT" rev-parse "$pinned:actions/$name" 2>/dev/null || true)"
+    want="$(git -C "$ROOT" rev-parse "HEAD:actions/$name" 2>/dev/null || true)"
+    if [ -n "$have" ] && [ "$have" = "$want" ]; then
+        ok "$wf: actions/$name@${pinned:0:7} is HEAD's actions/$name"
+    else
+        bad "$wf pins actions/$name at $pinned, which differs from HEAD's"
+        echo "       every consumer reaching this pin runs the OLD composite;"
+        echo "       a cure landed here is inert downstream. Changed since the pin:"
+        git -C "$ROOT" diff --name-only "$pinned" HEAD -- "actions/$name" 2>/dev/null \
+            | sed 's/^/         /' | head -8
+    fi
+}
+while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    wf="${line%%:*}"; ref="${line#*:}"
+    name="$(printf '%s' "$ref" | sed -E 's#^.*/actions/([A-Za-z0-9_.-]+)@.*$#\1#')"
+    pinned="${ref##*@}"
+    serves_current_composite "${wf#"$ROOT/.github/workflows/"}" "$name" "$pinned"
+done < <(grep -roE "uses:[[:space:]]*$selfrepo/actions/[A-Za-z0-9_.-]+@[0-9a-f]{40}" \
+            "$ROOT/.github/workflows" 2>/dev/null | sed -E 's/:uses:[[:space:]]*/:/' | sort -u)
 
 # This block printed its header and checked NOTHING on its first run — a broken
 # sed left ".git" on the repo name so no key ever matched, and the section above

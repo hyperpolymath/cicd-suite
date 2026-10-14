@@ -1,0 +1,108 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# language-gates-self-test.yml — the four language gates must be able to
+# FAIL, for each thing they claim to check, before any consumer calls them.
+#
+# This repository has no Rust, Ada or Scheme of its own, so a self-run of
+# the reusables would be silent and prove nothing. Instead each gate's
+# test.sh builds a fixture, plants a defect, asserts the gate goes red for
+# that defect under the exact composite shell, and kills a mutant where one
+# exists (tests/composite-shell-contract.sh explains the -e trap that made
+# that necessary). The prover tiers run against stand-in oracles here; the
+# planted controls inside the check scripts exercise the real provers on
+# every live run.
+
+name: Language Gates Self-Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "actions/rust-ci-check/**"
+      - "actions/creusot-check/**"
+      - "actions/spark-check/**"
+      - "actions/kanren-check/**"
+      - "scripts/verify-suite-checkout.sh"
+      - "scripts/deonboard-workflow.sh"
+      - ".github/workflows/rust-ci.yml"
+      - ".github/workflows/creusot-gate.yml"
+      - ".github/workflows/spark-gate.yml"
+      - ".github/workflows/kanren-gate.yml"
+      - ".github/workflows/language-gates-self-test.yml"
+      - "templates/**"
+  pull_request:
+    paths:
+      - "actions/rust-ci-check/**"
+      - "actions/creusot-check/**"
+      - "actions/spark-check/**"
+      - "actions/kanren-check/**"
+      - "scripts/verify-suite-checkout.sh"
+      - "scripts/deonboard-workflow.sh"
+      - ".github/workflows/rust-ci.yml"
+      - ".github/workflows/creusot-gate.yml"
+      - ".github/workflows/spark-gate.yml"
+      - ".github/workflows/kanren-gate.yml"
+      - ".github/workflows/language-gates-self-test.yml"
+      - "templates/**"
+
+permissions:
+  contents: read
+
+# Every `run:` step gets bash with -e AND pipefail. GitHub's default when no
+# shell is named is `bash -e` without pipefail, which would let a failing
+# gate script hide behind the `| tee` that records its facts.
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    name: Each gate can fail for what it checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Interpreters and linters the suites need
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends guile-3.0 shellcheck
+          rustup component add clippy rustfmt
+      - name: Every gate script parses and is shellcheck-clean
+        run: |
+          set -euo pipefail
+          for f in actions/rust-ci-check/*.sh actions/creusot-check/*.sh actions/spark-check/*.sh actions/kanren-check/*.sh scripts/verify-suite-checkout.sh scripts/deonboard-workflow.sh rollout_language_gates.sh; do
+            bash -n "$f"
+          done
+          shellcheck -S warning actions/rust-ci-check/*.sh actions/creusot-check/*.sh actions/spark-check/*.sh actions/kanren-check/*.sh scripts/verify-suite-checkout.sh scripts/deonboard-workflow.sh rollout_language_gates.sh
+      - name: The suite-checkout verifier refuses an empty or wrong SHA
+        run: |
+          set -euo pipefail
+          rc=0; EXPECTED= SUITE_DIR=. bash scripts/verify-suite-checkout.sh || rc=$?
+          [ "$rc" -eq 2 ] || { echo "verifier accepted an empty SHA (rc=$rc)"; exit 1; }
+          rc=0; EXPECTED=0000000000000000000000000000000000000000 SUITE_DIR=. bash scripts/verify-suite-checkout.sh || rc=$?
+          [ "$rc" -eq 2 ] || { echo "verifier accepted a wrong SHA (rc=$rc)"; exit 1; }
+          EXPECTED="$(git rev-parse HEAD)" SUITE_DIR=. bash scripts/verify-suite-checkout.sh
+      - name: Rust gate
+        run: bash actions/rust-ci-check/test.sh
+      - name: Creusot gate
+        run: bash actions/creusot-check/test.sh
+      - name: SPARK gate
+        run: bash actions/spark-check/test.sh
+      - name: miniKanren gate
+        run: bash actions/kanren-check/test.sh
+      - name: Caller templates carry the placeholder, a full-SHA form and no secrets
+        run: |
+          set -euo pipefail
+          for t in templates/rust-ci-caller.yml templates/creusot-gate-caller.yml templates/spark-gate-caller.yml templates/kanren-gate-caller.yml; do
+            grep -qE 'uses: hyperpolymath/cicd-suite/\.github/workflows/[a-z-]+\.yml@__CICD_SUITE_SHA__' "$t" \
+              || { echo "$t does not call a cicd-suite reusable at __CICD_SUITE_SHA__"; exit 1; }
+            ! grep -qE '^\s*secrets:' "$t" || { echo "$t hands secrets to a reusable that consumes none"; exit 1; }
+          done

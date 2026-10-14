@@ -1,0 +1,309 @@
+# SPDX-License-Identifier: MPL-2.0
+# Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+#
+# creusot-gate.yml — Rust deductive verification (Creusot), as a reusable
+# workflow. The Rust twin of spark-gate.yml, and the "reusable verifier gate
+# with a planted failing contract" that hyperpolymath/standards#692 asks for.
+#
+#   detect   facts about the tree (obligations? claims? which crates?)
+#   theatre  a "verified with Creusot" claim with no contracts behind it is
+#            a hard failure (T1); a creusot-std dependency that annotates
+#            nothing is named (T2, warning unless enforce_hollow); every
+#            #[trusted] axiom is listed (T3, the proof's residue)
+#   prove    installs Creusot at a PINNED release (opam switch cached), proves
+#            a planted FALSE contract and REQUIRES the prover to refuse it,
+#            proves a planted TRUE one and requires success, and only then
+#            runs `cargo creusot prove` in every crate with obligations
+#   verdict  one context to require; a skipped prove with obligations present
+#            is VOID, not green
+#
+# Creusot + nightly pairing: Creusot is built against one specific nightly
+# (its rust-toolchain file). v0.14.0 (2026-10-12) pairs with
+# nightly-2026-08-03. Move both inputs together; the install step installs
+# the clone's own pin regardless, so a mismatch costs time, not soundness.
+#
+# Gate scripts are pinned at the caller's own `uses:` SHA — see rust-ci.yml.
+
+name: Creusot Gate (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        type: string
+        required: false
+        default: ubuntu-24.04
+      working_directory:
+        description: Tree root to scan (Cargo manifests are found beneath it)
+        type: string
+        required: false
+        default: "."
+      creusot_version:
+        description: Creusot release tag to install (without the leading v)
+        type: string
+        required: false
+        default: "0.14.0"
+      rust_nightly:
+        description: The nightly Creusot is built against (must match the release)
+        type: string
+        required: false
+        default: "nightly-2026-08-03"
+      enforce_hollow:
+        description: Fail (not warn) when creusot-std is a dependency but no contract exists
+        type: boolean
+        required: false
+        default: false
+      prove_args:
+        description: Extra arguments for `cargo creusot prove`
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+# Every `run:` step gets bash with -e AND pipefail. GitHub's default when no
+# shell is named is `bash -e` without pipefail, which would let a failing
+# gate script hide behind the `| tee` that records its facts.
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  detect:
+    name: Detect Creusot obligations
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      obligations: ${{ steps.facts.outputs.obligations }}
+      claims: ${{ steps.facts.outputs.claims }}
+      creusot_version: ${{ steps.facts.outputs.creusot_version }}
+      contract_count: ${{ steps.facts.outputs.contract_count }}
+      trusted_count: ${{ steps.facts.outputs.trusted_count }}
+    steps:
+      - name: Check out the calling repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Resolve the cicd-suite commit this caller pins
+        id: suite
+        env:
+          SUITE_WORKFLOW: creusot-gate.yml
+        # Inside a reusable workflow the `github` context is the CALLER's, so
+        # GITHUB_WORKFLOW_REF names the caller's workflow file — which is in
+        # the tree just checked out and holds the very `uses:` line GitHub
+        # resolved to reach this file. That SHA pins the gate scripts: one
+        # pin, held by the caller, selects both the workflow and its scripts.
+        # (`github.job_workflow_sha` is an OIDC claim, not a context property,
+        # and reading the token would need id-token: write from every caller.)
+        run: |
+          set -euo pipefail
+          path="${GITHUB_WORKFLOW_REF#"$GITHUB_REPOSITORY"/}"; path="${path%@*}"
+          [ -f "$path" ] || { echo "::error::caller workflow '$path' is not in the checkout, so the gate scripts cannot be pinned. NO CHECK WAS PERFORMED."; exit 2; }
+          shas="$(grep -oE "uses:[[:space:]]*hyperpolymath/cicd-suite/\.github/workflows/${SUITE_WORKFLOW}@[0-9a-f]{40}" "$path" | sed 's/.*@//' | sort -u || true)"
+          n="$(printf '%s' "$shas" | grep -c . || true)"
+          if [ "$n" -ne 1 ]; then
+            echo "::error::$path pins hyperpolymath/cicd-suite/.github/workflows/${SUITE_WORKFLOW} at $n distinct full SHAs; exactly one is required (a branch or tag ref does not count). NO CHECK WAS PERFORMED."
+            exit 2
+          fi
+          echo "sha=$shas" >> "$GITHUB_OUTPUT"
+          echo "cicd-suite pinned at $shas by $path"
+      - name: Check out cicd-suite at that commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: hyperpolymath/cicd-suite
+          ref: ${{ steps.suite.outputs.sha }}
+          path: .cicd-suite
+          persist-credentials: false
+      - name: Refuse gate scripts from an unverified cicd-suite commit
+        env:
+          EXPECTED: ${{ steps.suite.outputs.sha }}
+        run: bash .cicd-suite/scripts/verify-suite-checkout.sh
+      - name: Facts
+        id: facts
+        env:
+          CREUSOT_GATE_PHASE: detect
+          WORKING_DIRECTORY: ${{ inputs.working_directory }}
+        run: bash .cicd-suite/actions/creusot-check/check.sh | tee -a "$GITHUB_OUTPUT"
+
+  theatre:
+    name: Creusot theatre gate
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 5
+    needs: detect
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the calling repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Resolve the cicd-suite commit this caller pins
+        id: suite
+        env:
+          SUITE_WORKFLOW: creusot-gate.yml
+        # Inside a reusable workflow the `github` context is the CALLER's, so
+        # GITHUB_WORKFLOW_REF names the caller's workflow file — which is in
+        # the tree just checked out and holds the very `uses:` line GitHub
+        # resolved to reach this file. That SHA pins the gate scripts: one
+        # pin, held by the caller, selects both the workflow and its scripts.
+        # (`github.job_workflow_sha` is an OIDC claim, not a context property,
+        # and reading the token would need id-token: write from every caller.)
+        run: |
+          set -euo pipefail
+          path="${GITHUB_WORKFLOW_REF#"$GITHUB_REPOSITORY"/}"; path="${path%@*}"
+          [ -f "$path" ] || { echo "::error::caller workflow '$path' is not in the checkout, so the gate scripts cannot be pinned. NO CHECK WAS PERFORMED."; exit 2; }
+          shas="$(grep -oE "uses:[[:space:]]*hyperpolymath/cicd-suite/\.github/workflows/${SUITE_WORKFLOW}@[0-9a-f]{40}" "$path" | sed 's/.*@//' | sort -u || true)"
+          n="$(printf '%s' "$shas" | grep -c . || true)"
+          if [ "$n" -ne 1 ]; then
+            echo "::error::$path pins hyperpolymath/cicd-suite/.github/workflows/${SUITE_WORKFLOW} at $n distinct full SHAs; exactly one is required (a branch or tag ref does not count). NO CHECK WAS PERFORMED."
+            exit 2
+          fi
+          echo "sha=$shas" >> "$GITHUB_OUTPUT"
+          echo "cicd-suite pinned at $shas by $path"
+      - name: Check out cicd-suite at that commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: hyperpolymath/cicd-suite
+          ref: ${{ steps.suite.outputs.sha }}
+          path: .cicd-suite
+          persist-credentials: false
+      - name: Refuse gate scripts from an unverified cicd-suite commit
+        env:
+          EXPECTED: ${{ steps.suite.outputs.sha }}
+        run: bash .cicd-suite/scripts/verify-suite-checkout.sh
+      - name: Claims must be backed by contracts
+        env:
+          CREUSOT_GATE_PHASE: theatre
+          WORKING_DIRECTORY: ${{ inputs.working_directory }}
+          ENFORCE_HOLLOW: ${{ inputs.enforce_hollow }}
+        run: bash .cicd-suite/actions/creusot-check/check.sh
+
+  prove:
+    name: Creusot proofs (cargo creusot prove)
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 90
+    needs: [detect, theatre]
+    if: ${{ needs.detect.outputs.obligations == 'true' }}
+    permissions:
+      contents: read
+    env:
+      CREUSOT_VERSION: ${{ inputs.creusot_version }}
+    steps:
+      - name: Check out the calling repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Resolve the cicd-suite commit this caller pins
+        id: suite
+        env:
+          SUITE_WORKFLOW: creusot-gate.yml
+        # Inside a reusable workflow the `github` context is the CALLER's, so
+        # GITHUB_WORKFLOW_REF names the caller's workflow file — which is in
+        # the tree just checked out and holds the very `uses:` line GitHub
+        # resolved to reach this file. That SHA pins the gate scripts: one
+        # pin, held by the caller, selects both the workflow and its scripts.
+        # (`github.job_workflow_sha` is an OIDC claim, not a context property,
+        # and reading the token would need id-token: write from every caller.)
+        run: |
+          set -euo pipefail
+          path="${GITHUB_WORKFLOW_REF#"$GITHUB_REPOSITORY"/}"; path="${path%@*}"
+          [ -f "$path" ] || { echo "::error::caller workflow '$path' is not in the checkout, so the gate scripts cannot be pinned. NO CHECK WAS PERFORMED."; exit 2; }
+          shas="$(grep -oE "uses:[[:space:]]*hyperpolymath/cicd-suite/\.github/workflows/${SUITE_WORKFLOW}@[0-9a-f]{40}" "$path" | sed 's/.*@//' | sort -u || true)"
+          n="$(printf '%s' "$shas" | grep -c . || true)"
+          if [ "$n" -ne 1 ]; then
+            echo "::error::$path pins hyperpolymath/cicd-suite/.github/workflows/${SUITE_WORKFLOW} at $n distinct full SHAs; exactly one is required (a branch or tag ref does not count). NO CHECK WAS PERFORMED."
+            exit 2
+          fi
+          echo "sha=$shas" >> "$GITHUB_OUTPUT"
+          echo "cicd-suite pinned at $shas by $path"
+      - name: Check out cicd-suite at that commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: hyperpolymath/cicd-suite
+          ref: ${{ steps.suite.outputs.sha }}
+          path: .cicd-suite
+          persist-credentials: false
+      - name: Refuse gate scripts from an unverified cicd-suite commit
+        env:
+          EXPECTED: ${{ steps.suite.outputs.sha }}
+        run: bash .cicd-suite/scripts/verify-suite-checkout.sh
+      - name: Install the nightly Creusot ${{ inputs.creusot_version }} is built against
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master 2026-08-04 (v1)
+        with:
+          toolchain: ${{ inputs.rust_nightly }}
+          components: rustfmt, rustc-dev, llvm-tools
+      - name: Install opam and Creusot's system dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends opam libzmq3-dev libgmp-dev pkg-config autoconf
+      - name: Cache the Creusot opam switch, provers and cargo-creusot
+        id: cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.local/share/creusot
+            ~/.cargo/bin/cargo-creusot
+            ~/.cargo/bin/creusot-rustc
+            ~/.config/creusot
+          key: creusot-${{ inputs.creusot_version }}-${{ inputs.rust_nightly }}-${{ runner.os }}-${{ runner.arch }}
+      - name: Install Creusot v${{ inputs.creusot_version }} (clone at the tag, ./INSTALL)
+        if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+        run: |
+          set -euo pipefail
+          opam init --bare -y --disable-sandboxing
+          git clone --depth 1 --branch "v${CREUSOT_VERSION}" https://github.com/creusot-rs/creusot "$RUNNER_TEMP/creusot"
+          cd "$RUNNER_TEMP/creusot"
+          ./INSTALL
+      - name: cargo creusot is on PATH
+        run: |
+          set -euo pipefail
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.cargo/bin:$PATH"
+          cargo creusot --help >/dev/null
+          cargo creusot setup status || true
+      - name: Planted controls, then every crate with obligations
+        env:
+          CREUSOT_GATE_PHASE: prove
+          WORKING_DIRECTORY: ${{ inputs.working_directory }}
+          PROVE_ARGS: ${{ inputs.prove_args }}
+        run: bash .cicd-suite/actions/creusot-check/check.sh
+
+  verdict:
+    name: Creusot verdict
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 5
+    needs: [detect, theatre, prove]
+    if: ${{ always() }}
+    permissions:
+      contents: read
+    env:
+      OBLIGATIONS: ${{ needs.detect.outputs.obligations }}
+      CLAIMS: ${{ needs.detect.outputs.claims }}
+      TRUSTED: ${{ needs.detect.outputs.trusted_count }}
+      R_DETECT: ${{ needs.detect.result }}
+      R_THEATRE: ${{ needs.theatre.result }}
+      R_PROVE: ${{ needs.prove.result }}
+    steps:
+      - name: Adjudicate
+        run: |
+          set -euo pipefail
+          fail=0
+          [ "$R_DETECT" = success ]  || { echo "::error::detect: $R_DETECT"; fail=1; }
+          [ "$R_THEATRE" = success ] || { echo "::error::theatre: $R_THEATRE"; fail=1; }
+          case "$R_PROVE" in
+            success) echo "  ok       prove (trusted axioms: ${TRUSTED:-?})" ;;
+            failure|cancelled) echo "::error::prove: $R_PROVE"; fail=1 ;;
+            skipped)
+              if [ "$OBLIGATIONS" = true ]; then
+                echo "::error::prove was SKIPPED although obligations exist — VOID, not green."; fail=1
+              else
+                echo "::notice::No Creusot obligations in this tree: nothing was proved. This verdict is silent, not green-as-assurance (claims=${CLAIMS:-false})."
+              fi ;;
+            *) echo "::error::prove: unknown result '$R_PROVE'"; fail=1 ;;
+          esac
+          [ "$fail" -eq 0 ] || { echo "::error::Creusot verdict: RED."; exit 1; }
+          echo "Creusot verdict: GREEN."

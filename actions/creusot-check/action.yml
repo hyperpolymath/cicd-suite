@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: MPL-2.0
+name: 'Creusot Gate'
+description: >-
+  Rust deductive-verification gate (Creusot). detect: facts; theatre: a
+  "verified with Creusot" claim must be backed by contracts (T1 hard fail),
+  a hollow dependency is named (T2); prove: planted controls, then
+  `cargo creusot prove` in every crate carrying obligations. The reusable
+  workflow .github/workflows/creusot-gate.yml installs Creusot (pinned) and
+  runs all three.
+inputs:
+  phase:
+    description: 'detect | theatre | prove'
+    required: true
+  working_directory:
+    description: 'Tree root to scan'
+    required: false
+    default: '.'
+  enforce_hollow:
+    description: 'Escalate T2 (dependency without contracts) to a failure'
+    required: false
+    default: 'false'
+  prove_args:
+    description: 'Args appended to cargo creusot prove'
+    required: false
+    default: ''
+runs:
+  using: 'composite'
+  steps:
+    - name: Run Creusot gate phase
+      shell: bash
+      env:
+        CREUSOT_GATE_PHASE: ${{ inputs.phase }}
+        WORKING_DIRECTORY: ${{ inputs.working_directory }}
+        ENFORCE_HOLLOW: ${{ inputs.enforce_hollow }}
+        PROVE_ARGS: ${{ inputs.prove_args }}
+      run: bash "$GITHUB_ACTION_PATH/check.sh"
