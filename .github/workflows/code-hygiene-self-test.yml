@@ -85,7 +85,9 @@
           run: "bash tests/lock-transitive-closure.sh",
         },
         {
-          run: "bash tests/deonboard-estate-audit.sh",
+          # scripts/deonboard-estate-audit.sh against every actions.lock schema it
+          # claims to support; an untested schema must fail closed.
+          run: "bash tests/deonboard-lock-schemas.sh",
         },
       ],
     },
