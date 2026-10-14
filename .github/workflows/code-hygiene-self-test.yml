@@ -19,6 +19,7 @@
         "actions/spdx-license-check/**",
         "actions/formatting-check/**",
         "tests/**",
+        "scripts/**",
         ".github/workflows/code-hygiene-self-test.yml",
         ".github/workflows/actions.lock",
         # lock-transitive-closure.sh reads the literal cicd-suite SHA pins in
@@ -38,6 +39,7 @@
         "actions/spdx-license-check/**",
         "actions/formatting-check/**",
         "tests/**",
+        "scripts/**",
         ".github/workflows/code-hygiene-self-test.yml",
         ".github/workflows/actions.lock",
         # lock-transitive-closure.sh reads the literal cicd-suite SHA pins in
@@ -81,6 +83,11 @@
         },
         {
           run: "bash tests/lock-transitive-closure.sh",
+        },
+        {
+          # scripts/deonboard-estate-audit.sh against every actions.lock schema it
+          # claims to support; an untested schema must fail closed.
+          run: "bash tests/deonboard-lock-schemas.sh",
         },
       ],
     },

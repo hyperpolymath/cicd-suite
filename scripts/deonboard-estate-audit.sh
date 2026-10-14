@@ -16,6 +16,7 @@
 # .github/workflows/main-estate-audit.yml records the evidence.
 #
 # Idempotent: a lock that does not list the workflow is left untouched.
+# Fails closed (exit 3) on an actions.lock schema it has not been tested on.
 set -euo pipefail
 
 repo="${1:?usage: deonboard-estate-audit.sh <repo-dir>}"
@@ -34,6 +35,17 @@ if ! w="$wf" yq -e '.workflows | has(strenv(w))' "$lock" >/dev/null 2>&1; then
   echo "$repo: $wf is not onboarded; nothing to do"
   exit 0
 fi
+
+# Lockfile schemas this script is tested against, one fixture each in
+# tests/fixtures/actions-lock/ (tests/deonboard-lock-schemas.sh). An untested
+# schema fails closed: add its fixture first, then its version here.
+known_versions="v0.0.2 v0.0.3"
+ver=$(yq '.version' "$lock")
+case " $known_versions " in
+  *" $ver "*) ;;
+  *) echo "$repo: actions.lock schema '$ver' is untested by this script (tested: $known_versions); see tests/deonboard-lock-schemas.sh" >&2
+     exit 3 ;;
+esac
 
 w="$wf" yq -i -I4 'del(.workflows[strenv(w)])' "$lock"
 
