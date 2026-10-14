@@ -21,6 +21,13 @@ repos="${HYPER_REPOS:-/home/hyperpolymath/developer/hyper-repos}"
 
 git -C "$suite" fetch --quiet origin main
 sha=$(git -C "$suite" rev-parse origin/main)
+# A caller pinned at a commit whose audit is not a reusable workflow cannot
+# start, so refuse before writing anything.
+if ! git -C "$suite" show "$sha:.github/workflows/main-estate-audit.yml" 2>/dev/null \
+     | grep -qE '^[[:space:]]+workflow_call:'; then
+  echo "cicd-suite ${sha:0:7}: main-estate-audit.yml has no workflow_call trigger; refusing to roll out." >&2
+  exit 1
+fi
 echo "Installing the estate-audit caller (cicd-suite ${sha:0:7}) into $repos/* ..."
 
 for repo in "$repos"/*; do

@@ -38,6 +38,7 @@ jobs:
       GH_TOKEN: ${{ secrets.AUTOMATION_TOKEN || secrets.GITHUB_TOKEN }}
       BRANCH: ci/track-estate-audit
       CALLER: .github/workflows/main-estate-audit.yml
+      BOT_EMAIL: 41898583+github-actions[bot]@users.noreply.github.com
     steps:
       - name: Move the cicd-suite pin to HEAD and open a PR
         run: |
@@ -60,10 +61,21 @@ jobs:
             exit 0
           fi
 
+          # The bot branch is rebuilt from the default branch each run, which
+          # would discard anything else on it. If someone has pushed to it
+          # (say, a fix the newer audit needed), leave it for review.
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null; then
+            foreign=$(gh api "repos/$GITHUB_REPOSITORY/compare/$base...$BRANCH" \
+                        --jq "[.commits[] | select(.commit.author.email != \"$BOT_EMAIL\")] | length")
+            if [ "$foreign" != 0 ]; then
+              echo "::warning::$BRANCH carries $foreign commit(s) not made by this workflow; leaving it alone. Merge its PR or delete the branch, then re-run."
+              exit 0
+            fi
+          fi
+
           sed -i "s/$pinned/$head/g" "$CALLER"
           git switch --quiet -c "$BRANCH"
-          git -c user.name='github-actions[bot]' \
-              -c user.email='41898583+github-actions[bot]@users.noreply.github.com' \
+          git -c user.name='github-actions[bot]' -c user.email="$BOT_EMAIL" \
               commit --quiet -am "ci(estate-audit): track cicd-suite ${head:0:7}"
           if ! git push --quiet --force origin "$BRANCH"; then
             echo "::error::Push refused: writing under .github/workflows/ needs the AUTOMATION_TOKEN secret described above."
