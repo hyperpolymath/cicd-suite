@@ -72,6 +72,10 @@ done
 # layout, including the exact ref that killed the first live caller.
 tmp=$(mktemp)
 trap 'rm -f "$tmp" "${tmp}.valid"' EXIT
+# Verify that the planted YAML in $tmp rejects a disallowed owner and a tag
+# pin, then accepts the same layout with allowed owners at full commit SHAs.
+#   $1 - YAML layout label used in diagnostic messages
+# Prints a success message and returns 0, or exits 2 if a control fails.
 check_control() {
     local layout="$1" output n
     if output="$(check_file "$tmp")"; then
