@@ -30,6 +30,12 @@ cd "$(dirname "$0")/.."
 ALLOWED_OWNERS='^(actions|github|hyperpolymath|dtolnay|swatinem|goto-bus-stop|taiki-e)$'
 GATES=(rust-ci creusot-gate spark-gate kanren-gate)
 
+# Scan a workflow file's `uses:` lines against ALLOWED_OWNERS and the
+# full-SHA pin requirement.
+#   $1 - path to the workflow file to check
+# Prints one "FAIL <file>: uses <ref> — <reason>" line per violation found.
+# Returns 0 when every `uses:` ref is from an allowed owner and pinned at a
+# full 40-hex commit SHA; 1 if any ref fails either check.
 check_file() { # <workflow file> -> prints violations, returns 1 if any
     local f="$1" ref owner bad=0
     while IFS= read -r ref; do
