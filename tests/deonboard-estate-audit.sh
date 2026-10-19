@@ -1,24 +1,28 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MPL-2.0
 #
-# scripts/deonboard-estate-audit.sh test.
+# De-onboard prune test: scripts/deonboard-workflow.sh and its estate-audit
+# entry point, scripts/deonboard-estate-audit.sh.
 #
-# The script removes main-estate-audit.yml from a consumer's actions.lock and
-# prunes the dependencies nothing else reaches. Pruning one that IS still
-# reached leaves a dangling edge, and a dangling edge kills the run at startup
-# (standards scripts/close-lock.sh). That is the defect this test pins down:
+# The script removes a workflow from a consumer's actions.lock and prunes the
+# dependencies nothing else reaches. Pruning one that IS still reached leaves
+# a dangling edge, and a dangling edge kills the run at startup (standards
+# scripts/close-lock.sh). That is the defect this test pins down:
 # gh actions-lock writes nested `uses:` in lower case, so a record key
 # 'Swatinem/rust-cache@<sha>' is reached by the edge
 # 'swatinem/rust-cache@<sha>', and a byte-for-byte compare called it orphaned
 # (measured on hyperpolymath/januskey's lock, 2026-10-14).
 #
-# A mutant with the byte-for-byte compare restored must fail, or this suite
-# proves nothing.
+# Both entry points are run, because the fix once landed in one copy and not
+# the other. A mutant of deonboard-workflow.sh with the byte-for-byte compare
+# restored must fail through BOTH: through the wrapper too, or the wrapper is
+# not delegating and this suite proves nothing about it.
 
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SCRIPT="$ROOT/scripts/deonboard-estate-audit.sh"
+WF=".github/workflows/main-estate-audit.yml"
+RUST_CACHE='Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6'
 PASS=0; FAIL=0
 ok()  { printf '  ok   %s\n' "$1"; PASS=$((PASS+1)); }
 bad() { printf '  FAIL %s\n' "$1"; FAIL=$((FAIL+1)); }
@@ -74,6 +78,15 @@ dependencies:
 EOF
 }
 
+# De-onboard main-estate-audit.yml from <fixture> through one entry point of
+# the scripts in <scripts-dir>.
+deonboard() { # <scripts-dir> <wrapper|generic> <fixture>
+  case "$2" in
+    wrapper) bash "$1/deonboard-estate-audit.sh" "$3" ;;
+    generic) bash "$1/deonboard-workflow.sh" "$3" "$WF" ;;
+  esac
+}
+
 has_dep() { k="$2" yq -e '.dependencies | has(strenv(k))' "$1/.github/workflows/actions.lock" >/dev/null 2>&1; }
 
 # Every edge (a workflows: ref or a nested uses:) must name a record, owner and
@@ -85,44 +98,57 @@ dangling() { # <dir> -> prints dangling edges
     | lower | sort -u | grep -vxF -f <(yq '.dependencies | keys | .[]' "$lock" | lower) || true
 }
 
-echo "== the fixed script =="
-FIX="$WORK/fixed"; make_fixture "$FIX"
-if out="$(bash "$SCRIPT" "$FIX" 2>&1)"; then ok "exits 0"; else bad "exits non-zero: $out"; fi
-if w='.github/workflows/main-estate-audit.yml' yq -e '.workflows | has(strenv(w))' "$FIX/.github/workflows/actions.lock" >/dev/null 2>&1; then
-  bad "main-estate-audit.yml is still onboarded"
-else
-  ok "main-estate-audit.yml is de-onboarded"
-fi
-for k in 'hyperpolymath/cicd-suite@main' 'hyperpolymath/deed-ecosystem@f9d999b60cb5f383679ea19912bcdc49c944973a' 'actions/checkout@v7.0.1'; do
-  if has_dep "$FIX" "$k"; then bad "kept $k, which nothing reaches any more"; else ok "pruned $k"; fi
+for entry in wrapper generic; do
+  echo "== the fixed script, through the $entry entry point =="
+  FIX="$WORK/fixed-$entry"; make_fixture "$FIX"
+  if out="$(deonboard "$ROOT/scripts" "$entry" "$FIX" 2>&1)"; then ok "exits 0"; else bad "exits non-zero: $out"; fi
+  if w="$WF" yq -e '.workflows | has(strenv(w))' "$FIX/.github/workflows/actions.lock" >/dev/null 2>&1; then
+    bad "main-estate-audit.yml is still onboarded"
+  else
+    ok "main-estate-audit.yml is de-onboarded"
+  fi
+  for k in 'hyperpolymath/cicd-suite@main' 'hyperpolymath/deed-ecosystem@f9d999b60cb5f383679ea19912bcdc49c944973a' 'actions/checkout@v7.0.1'; do
+    if has_dep "$FIX" "$k"; then bad "kept $k, which nothing reaches any more"; else ok "pruned $k"; fi
+  done
+  if has_dep "$FIX" "$RUST_CACHE"; then
+    ok "kept Swatinem/rust-cache, still reached as swatinem/rust-cache"
+  else
+    bad "pruned Swatinem/rust-cache, which the standards record still reaches"
+  fi
+  d="$(dangling "$FIX")"
+  if [ -z "$d" ]; then ok "no dangling edge"; else bad "dangling edge(s): $d"; fi
+  cp "$FIX/.github/workflows/actions.lock" "$WORK/after-first"
+  if deonboard "$ROOT/scripts" "$entry" "$FIX" >/dev/null 2>&1 && cmp -s "$WORK/after-first" "$FIX/.github/workflows/actions.lock"; then
+    ok "a second run changes nothing"
+  else
+    bad "a second run changed the lock or failed"
+  fi
 done
-if has_dep "$FIX" 'Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6'; then
-  ok "kept Swatinem/rust-cache, still reached as swatinem/rust-cache"
+
+echo "== both entry points give the same lock =="
+if cmp -s "$WORK/fixed-wrapper/.github/workflows/actions.lock" "$WORK/fixed-generic/.github/workflows/actions.lock"; then
+  ok "identical results"
 else
-  bad "pruned Swatinem/rust-cache, which the standards record still reaches"
-fi
-d="$(dangling "$FIX")"
-if [ -z "$d" ]; then ok "no dangling edge"; else bad "dangling edge(s): $d"; fi
-cp "$FIX/.github/workflows/actions.lock" "$WORK/after-first"
-if bash "$SCRIPT" "$FIX" >/dev/null 2>&1 && cmp -s "$WORK/after-first" "$FIX/.github/workflows/actions.lock"; then
-  ok "a second run changes nothing"
-else
-  bad "a second run changed the lock or failed"
+  bad "the entry points disagree: $(diff "$WORK/fixed-wrapper/.github/workflows/actions.lock" "$WORK/fixed-generic/.github/workflows/actions.lock" | tr '\n' ' ')"
 fi
 
-echo "== a mutant with the byte-for-byte compare must fail =="
-MUT="$WORK/mutant.sh"
-sed 's/ | lower_repo//g' "$SCRIPT" > "$MUT"
-if cmp -s "$SCRIPT" "$MUT"; then
+echo "== a mutant with the byte-for-byte compare must fail through both entry points =="
+MUT="$WORK/mutant/scripts"; mkdir -p "$MUT"
+cp "$ROOT/scripts/deonboard-estate-audit.sh" "$MUT/"
+sed 's/ | lower_repo//g' "$ROOT/scripts/deonboard-workflow.sh" > "$MUT/deonboard-workflow.sh"
+chmod +x "$MUT/deonboard-estate-audit.sh" "$MUT/deonboard-workflow.sh"
+if cmp -s "$ROOT/scripts/deonboard-workflow.sh" "$MUT/deonboard-workflow.sh"; then
   bad "mutant is identical to the script: the case-folding the test exists for is gone"
 else
-  MFIX="$WORK/mutated"; make_fixture "$MFIX"
-  bash "$MUT" "$MFIX" >/dev/null 2>&1 || true
-  if has_dep "$MFIX" 'Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6' && [ -z "$(dangling "$MFIX")" ]; then
-    bad "mutant survived: the checks above do not detect the defect"
-  else
-    ok "mutant killed: it prunes Swatinem/rust-cache and leaves a dangling edge"
-  fi
+  for entry in wrapper generic; do
+    MFIX="$WORK/mutated-$entry"; make_fixture "$MFIX"
+    deonboard "$MUT" "$entry" "$MFIX" >/dev/null 2>&1 || true
+    if has_dep "$MFIX" "$RUST_CACHE" && [ -z "$(dangling "$MFIX")" ]; then
+      bad "mutant survived through the $entry entry point: the checks above do not detect the defect"
+    else
+      ok "mutant killed through the $entry entry point: it prunes Swatinem/rust-cache and leaves a dangling edge"
+    fi
+  done
 fi
 
 echo

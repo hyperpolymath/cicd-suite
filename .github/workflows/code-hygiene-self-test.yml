@@ -20,6 +20,7 @@
         "actions/formatting-check/**",
         "tests/**",
         "scripts/deonboard-estate-audit.sh",
+        "scripts/deonboard-workflow.sh",
         ".github/workflows/code-hygiene-self-test.yml",
         ".github/workflows/actions.lock",
         # lock-transitive-closure.sh reads the literal cicd-suite SHA pins in
@@ -40,6 +41,7 @@
         "actions/formatting-check/**",
         "tests/**",
         "scripts/deonboard-estate-audit.sh",
+        "scripts/deonboard-workflow.sh",
         ".github/workflows/code-hygiene-self-test.yml",
         ".github/workflows/actions.lock",
         # lock-transitive-closure.sh reads the literal cicd-suite SHA pins in
@@ -85,9 +87,15 @@
           run: "bash tests/lock-transitive-closure.sh",
         },
         {
-          # scripts/deonboard-estate-audit.sh against every actions.lock schema it
-          # claims to support; an untested schema must fail closed.
+          # scripts/deonboard-workflow.sh, through both entry points, against
+          # every actions.lock schema it claims to support; an untested schema
+          # must fail closed.
           run: "bash tests/deonboard-lock-schemas.sh",
+        },
+        {
+          # The same script must not prune a dependency still reached by a
+          # lower-case nested `uses:` edge, through either entry point.
+          run: "bash tests/deonboard-estate-audit.sh",
         },
       ],
     },

@@ -175,10 +175,13 @@ every consuming repository at once.
 . The caller must be *de-onboarded* from the repository's
 `+actions.lock+`. Onboarded, a cross-repository reusable-workflow call
 startup-fails with zero jobs. `+scripts/deonboard-estate-audit.sh <repo>+`
-removes the entry and prunes the dependencies only it reached. It needs
-mikefarah `+yq+` v4, and it is idempotent. It refuses any `+actions.lock+`
-schema it has not been tested on; `+tests/deonboard-lock-schemas.sh+` holds
-one fixture per supported schema (v0.0.2, v0.0.3).
+removes the entry and prunes the dependencies only it reached, comparing
+owner and repository names case-insensitively as GitHub does. It is the
+estate-audit entry point to `+scripts/deonboard-workflow.sh+`, the one
+implementation every de-onboard goes through. It needs mikefarah `+yq+` v4,
+and it is idempotent. It refuses any `+actions.lock+` schema it has not been
+tested on; `+tests/deonboard-lock-schemas.sh+` holds one fixture per
+supported schema (v0.0.2, v0.0.3) and runs each through both entry points.
 . `+templates/track-estate-audit.yml+` becomes
 `+.github/workflows/track-estate-audit.yml+`. Weekly, it opens a PR that
 moves the pin to cicd-suite HEAD; that PR's own audit run is the check.
