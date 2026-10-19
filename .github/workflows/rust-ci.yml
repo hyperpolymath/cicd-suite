@@ -125,7 +125,17 @@ on:
         required: false
         default: "0.20.2"
       deny_args:
-        description: cargo-deny check arguments (placed after check)
+        description: >-
+          cargo-deny global options, placed before `check` (e.g. `--offline`,
+          `--all-features`, `--locked`). Replaces the default; keep its two
+          flags unless you mean to drop them.
+        type: string
+        required: false
+        default: "--all-features --locked"
+      deny_check_args:
+        description: >-
+          `cargo deny check` options, placed after `check` (e.g. `--warn
+          unmaintained`, `--hide-inclusion-graph`).
         type: string
         required: false
         default: "--warn unmaintained --warn yanked"
@@ -538,12 +548,14 @@ jobs:
         env:
           WORKING_DIRECTORY: ${{ inputs.working_directory }}
           DENY_ARGS: ${{ inputs.deny_args }}
-        # Global options precede check; lint options follow it. DENY_ARGS is
-        # word-split on purpose: it is a caller-authored argument list.
+          DENY_CHECK_ARGS: ${{ inputs.deny_check_args }}
+        # Global options (deny_args) precede `check`; check options
+        # (deny_check_args) follow it. Both are word-split on purpose: they are
+        # caller-authored argument lists.
         run: |
           set -euo pipefail
           # shellcheck disable=SC2086
-          cargo deny --log-level warn --all-features --locked --manifest-path "${WORKING_DIRECTORY}/Cargo.toml" check $DENY_ARGS advisories bans sources
+          cargo deny --log-level warn $DENY_ARGS --manifest-path "${WORKING_DIRECTORY}/Cargo.toml" check $DENY_CHECK_ARGS advisories bans sources
       - name: cargo-deny — licences (only against an owner-authored deny.toml)
         # Licence policy is manual and owner-only (doctrine #6). With no
         # deny.toml there is no policy to check against, and the gate does
@@ -552,10 +564,11 @@ jobs:
         env:
           WORKING_DIRECTORY: ${{ inputs.working_directory }}
           DENY_ARGS: ${{ inputs.deny_args }}
+          DENY_CHECK_ARGS: ${{ inputs.deny_check_args }}
         run: |
           set -euo pipefail
           # shellcheck disable=SC2086
-          cargo deny --log-level warn --all-features --locked --manifest-path "${WORKING_DIRECTORY}/Cargo.toml" check $DENY_ARGS licenses
+          cargo deny --log-level warn $DENY_ARGS --manifest-path "${WORKING_DIRECTORY}/Cargo.toml" check $DENY_CHECK_ARGS licenses
 
   coverage:
     name: llvm-cov line coverage
