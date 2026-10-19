@@ -12,7 +12,7 @@ actions/<name>-check/action.yml       one composite action per gate (26; 24 run)
 .github/workflows/main-estate-audit.yml  the reusable audit: five component jobs
 templates/estate-audit-caller.yml     the ten-line caller each repository holds
 templates/track-estate-audit.yml      weekly bot: moves the caller's pin to HEAD
-scripts/deonboard-estate-audit.sh     removes the caller from a repo's actions.lock
+scripts/deonboard-estate-audit.sh     removes the caller from a repo's actions.lock (delegates)
 rollout_estate.sh                     installs the three above in every estate clone
 actions/rust-ci-check/               the strict Rust gate (resolve.sh, check.sh, test.sh)
 actions/creusot-check/               Creusot: detect · theatre · prove (planted controls)
@@ -25,7 +25,7 @@ actions/kanren-check/                miniKanren: detect · run · purity
 .github/workflows/language-gates-self-test.yml  each gate's test.sh, every PR
 templates/*-caller.yml                the thin callers for the four gates
 scripts/verify-suite-checkout.sh      proves the self-checkout is the caller's pin
-scripts/deonboard-workflow.sh         general form of deonboard-estate-audit.sh
+scripts/deonboard-workflow.sh         the one de-onboard implementation, every caller
 rollout_language_gates.sh             installs the callers by what a tree contains
 ....
 
