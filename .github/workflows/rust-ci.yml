@@ -125,10 +125,10 @@ on:
         required: false
         default: "0.20.2"
       deny_args:
-        description: Global cargo-deny arguments (placed before the command)
+        description: cargo-deny check arguments (placed after check)
         type: string
         required: false
-        default: "--all-features --locked --warn unmaintained --warn yanked"
+        default: "--warn unmaintained --warn yanked"
       enable_audit:
         description: >-
           Accepted for compatibility with standards' rust-ci-reusable; advisories
@@ -538,13 +538,12 @@ jobs:
         env:
           WORKING_DIRECTORY: ${{ inputs.working_directory }}
           DENY_ARGS: ${{ inputs.deny_args }}
-        # Same shape cargo-deny-action used: global args, then the manifest,
-        # then the command. DENY_ARGS is word-split on purpose: it is a
-        # caller-authored argument list, never data.
+        # Global options precede check; lint options follow it. DENY_ARGS is
+        # word-split on purpose: it is a caller-authored argument list.
         run: |
           set -euo pipefail
           # shellcheck disable=SC2086
-          cargo deny --log-level warn $DENY_ARGS --manifest-path "${WORKING_DIRECTORY}/Cargo.toml" check advisories bans sources
+          cargo deny --log-level warn --all-features --locked --manifest-path "${WORKING_DIRECTORY}/Cargo.toml" check $DENY_ARGS advisories bans sources
       - name: cargo-deny — licences (only against an owner-authored deny.toml)
         # Licence policy is manual and owner-only (doctrine #6). With no
         # deny.toml there is no policy to check against, and the gate does
@@ -556,7 +555,7 @@ jobs:
         run: |
           set -euo pipefail
           # shellcheck disable=SC2086
-          cargo deny --log-level warn $DENY_ARGS --manifest-path "${WORKING_DIRECTORY}/Cargo.toml" check licenses
+          cargo deny --log-level warn --all-features --locked --manifest-path "${WORKING_DIRECTORY}/Cargo.toml" check $DENY_ARGS licenses
 
   coverage:
     name: llvm-cov line coverage

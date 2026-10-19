@@ -33,6 +33,7 @@ on:
   workflow_call:
     inputs:
       runs-on:
+        description: Linux x86_64 runner label (the pinned Alire archive supports Linux x86_64 only)
         type: string
         required: false
         default: ubuntu-24.04
@@ -230,9 +231,9 @@ jobs:
           ALR_SHA256: ${{ inputs.alr_sha256 }}
         run: |
           set -euo pipefail
-          case "$(uname -m)" in
-            x86_64) arch=x86_64 ;;
-            *) echo "::error::Alire release binaries are pinned for x86_64 only; runner is $(uname -m). NO CHECK WAS PERFORMED."; exit 2 ;;
+          case "$(uname -s)/$(uname -m)" in
+            Linux/x86_64) arch=x86_64 ;;
+            *) echo "::error::Alire release binary is pinned for Linux x86_64 only; runner is $(uname -s)/$(uname -m). NO CHECK WAS PERFORMED."; exit 2 ;;
           esac
           zip="alr-${ALR_VERSION}-bin-${arch}-linux.zip"
           curl -fsSL --retry 3 -o "$zip" "https://github.com/alire-project/alire/releases/download/v${ALR_VERSION}/${zip}"

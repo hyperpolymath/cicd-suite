@@ -23,21 +23,32 @@
 # admits it: prove it on a caller first.
 #
 # Exit 0 when every ref passes; 1 on any violation; 2 when a gate file is
-# missing or the planted control did not trip (the guard cannot fail).
+# missing, yq is unavailable, or a planted control did not trip.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 ALLOWED_OWNERS='^(actions|github|hyperpolymath|dtolnay|swatinem|goto-bus-stop|taiki-e)$'
 GATES=(rust-ci creusot-gate spark-gate kanren-gate)
 
-# Scan a workflow file's `uses:` lines against ALLOWED_OWNERS and the
+command -v yq >/dev/null || { echo "yq is required (mikefarah v4)"; exit 2; }
+
+# Scan a workflow file's `uses` values against ALLOWED_OWNERS and the
 # full-SHA pin requirement.
 #   $1 - path to the workflow file to check
 # Prints one "FAIL <file>: uses <ref> — <reason>" line per violation found.
 # Returns 0 when every `uses:` ref is from an allowed owner and pinned at a
 # full 40-hex commit SHA; 1 if any ref fails either check.
 check_file() { # <workflow file> -> prints violations, returns 1 if any
-    local f="$1" ref owner bad=0
+    local f="$1" refs ref owner bad=0
+    # Parse quoted keys, flow mappings and aliases as YAML. Capture the
+    # status before iterating: a failed process substitution would look empty
+    # and silently pass. An empty extraction is also a failure for these gates.
+    if ! refs="$(yq -r 'explode(.) | .. | select(tag == "!!map") | select(has("uses")) | .uses' "$f")"; then
+        echo "FAIL $f: cannot inspect workflow YAML"; return 1
+    fi
+    if [ -z "$refs" ]; then
+        echo "FAIL $f: no action references found"; return 1
+    fi
     while IFS= read -r ref; do
         owner="${ref%%/*}"
         if ! [[ "$owner" =~ $ALLOWED_OWNERS ]]; then
@@ -46,7 +57,7 @@ check_file() { # <workflow file> -> prints violations, returns 1 if any
         if ! [[ "$ref" =~ @[0-9a-f]{40}$ ]]; then
             echo "FAIL $f: uses $ref — not pinned at a full 40-hex commit SHA (sha_pinning_required)"; bad=1
         fi
-    done < <(grep -oE '^[[:space:]]*(-[[:space:]]+)?uses:[[:space:]]*[^[:space:]#]+' "$f" | sed -E 's/^[[:space:]]*(-[[:space:]]+)?uses:[[:space:]]*//')
+    done <<< "$refs"
     return "$bad"
 }
 
@@ -57,16 +68,36 @@ for g in "${GATES[@]}"; do
     if check_file "$f"; then echo "ok   $f"; else fail=1; fi
 done
 
-# Planted control: the guard must be able to fail, on the exact ref that
-# killed the first live caller.
+# Planted controls: the guard must refuse both violations in each YAML
+# layout, including the exact ref that killed the first live caller.
 tmp=$(mktemp)
-printf 'jobs:\n  a:\n    steps:\n      - uses: embarkstudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25\n      - uses: actions/checkout@v7.0.1\n' > "$tmp"
+trap 'rm -f "$tmp" "${tmp}.valid"' EXIT
+check_control() {
+    local layout="$1" output n
+    if output="$(check_file "$tmp")"; then
+        echo "NO CHECK: $layout planted violations were not refused"; exit 2
+    fi
+    n=$(printf '%s\n' "$output" | grep -c '^FAIL' || true)
+    [ "$n" -eq 2 ] || { echo "NO CHECK: $layout expected 2 planted failures, saw $n"; exit 2; }
+    # The same layout must accept allowed owners at full SHAs.
+    sed 's#embarkstudios/cargo-deny-action#actions/checkout#g; s#@v7.0.1#@3c6349835b2b7b196a839186cb8b78e02f7b5f25#g' "$tmp" > "${tmp}.valid"
+    if ! check_file "${tmp}.valid"; then
+        echo "NO CHECK: $layout valid references were refused"; exit 2
+    fi
+    echo "ok   planted control: $layout accepts full SHAs and refuses a disallowed owner and a tag pin"
+}
+for key in uses "'uses'" '"uses"' 'uses '; do
+    printf 'jobs:\n  a:\n    steps:\n      - %s: embarkstudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25\n      - %s: actions/checkout@v7.0.1\n' "$key" "$key" > "$tmp"
+    check_control "key $key"
+done
+printf 'jobs: {a: {steps: [{uses : embarkstudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25}, {"uses": actions/checkout@v7.0.1}]}}\n' > "$tmp"
+check_control 'flow mappings'
+
+printf 'jobs: [\n' > "$tmp"
 if check_file "$tmp" >/dev/null 2>&1; then
-    echo "NO CHECK: the planted disallowed owner and the planted tag pin were not refused — the guard cannot fail"; rm -f "$tmp"; exit 2
+    echo "NO CHECK: malformed YAML was accepted"; exit 2
 fi
-n=$(check_file "$tmp" 2>/dev/null | grep -c '^FAIL' || true); rm -f "$tmp"
-[ "$n" -eq 2 ] || { echo "NO CHECK: expected 2 planted failures, saw $n"; exit 2; }
-echo "ok   planted control: a disallowed owner and a tag pin are both refused"
+echo "ok   planted control: malformed YAML fails"
 
 if [ "$fail" -ne 0 ]; then
     echo "gate-action-owners: a gate uses an action the estate's Actions policy would refuse at the caller's startup."; exit 1
