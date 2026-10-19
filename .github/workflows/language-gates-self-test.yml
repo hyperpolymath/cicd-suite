@@ -25,6 +25,7 @@ on:
       - "actions/kanren-check/**"
       - "scripts/verify-suite-checkout.sh"
       - "scripts/deonboard-workflow.sh"
+      - "tests/gate-action-owners.sh"
       - ".github/workflows/rust-ci.yml"
       - ".github/workflows/creusot-gate.yml"
       - ".github/workflows/spark-gate.yml"
@@ -39,6 +40,7 @@ on:
       - "actions/kanren-check/**"
       - "scripts/verify-suite-checkout.sh"
       - "scripts/deonboard-workflow.sh"
+      - "tests/gate-action-owners.sh"
       - ".github/workflows/rust-ci.yml"
       - ".github/workflows/creusot-gate.yml"
       - ".github/workflows/spark-gate.yml"
@@ -85,7 +87,7 @@ jobs:
       - name: The suite-checkout verifier refuses an empty or wrong SHA
         run: |
           set -euo pipefail
-          rc=0; EXPECTED= SUITE_DIR=. bash scripts/verify-suite-checkout.sh || rc=$?
+          rc=0; EXPECTED='' SUITE_DIR=. bash scripts/verify-suite-checkout.sh || rc=$?
           [ "$rc" -eq 2 ] || { echo "verifier accepted an empty SHA (rc=$rc)"; exit 1; }
           rc=0; EXPECTED=0000000000000000000000000000000000000000 SUITE_DIR=. bash scripts/verify-suite-checkout.sh || rc=$?
           [ "$rc" -eq 2 ] || { echo "verifier accepted a wrong SHA (rc=$rc)"; exit 1; }
@@ -98,6 +100,12 @@ jobs:
         run: bash actions/spark-check/test.sh
       - name: miniKanren gate
         run: bash actions/kanren-check/test.sh
+      - name: Every gate uses only action owners the callers' Actions policy admits, at full SHAs
+        # The policy is evaluated in the CALLER's repository, so cicd-suite's own
+        # CI never sees a refusal; this guard is that refusal, moved here
+        # (plasma-parser-writer#108: embarkstudios/cargo-deny-action was refused
+        # at startup while the Creusot gate from the same commit ran).
+        run: bash tests/gate-action-owners.sh
       - name: Caller templates carry the placeholder, a full-SHA form and no secrets
         run: |
           set -euo pipefail
