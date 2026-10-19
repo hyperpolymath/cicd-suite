@@ -87,7 +87,7 @@ jobs:
       - name: The suite-checkout verifier refuses an empty or wrong SHA
         run: |
           set -euo pipefail
-          rc=0; EXPECTED= SUITE_DIR=. bash scripts/verify-suite-checkout.sh || rc=$?
+          rc=0; EXPECTED='' SUITE_DIR=. bash scripts/verify-suite-checkout.sh || rc=$?
           [ "$rc" -eq 2 ] || { echo "verifier accepted an empty SHA (rc=$rc)"; exit 1; }
           rc=0; EXPECTED=0000000000000000000000000000000000000000 SUITE_DIR=. bash scripts/verify-suite-checkout.sh || rc=$?
           [ "$rc" -eq 2 ] || { echo "verifier accepted a wrong SHA (rc=$rc)"; exit 1; }

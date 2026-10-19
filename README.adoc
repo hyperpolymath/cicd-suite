@@ -184,7 +184,10 @@ one fixture per supported schema (v0.0.2, v0.0.3).
 moves the pin to cicd-suite HEAD; that PR's own audit run is the check.
 It needs an `+AUTOMATION_TOKEN+` secret (a fine-grained token on that
 repository with Contents, Pull requests and Workflows set to read/write),
-because `+GITHUB_TOKEN+` may not write under `+.github/workflows/+`.
+because `+GITHUB_TOKEN+` may not write under `+.github/workflows/+`. Its one
+`+uses:+` is `+step-security/harden-runner+` at a full SHA (egress to GitHub
+only); a repository that carries `+actions.lock+` must add that record
+(`+gh actions-lock+`) or the first run dies at Set up job.
 
 `+rollout_estate.sh+` does all three for every local estate clone. It
 writes files and does not commit them.

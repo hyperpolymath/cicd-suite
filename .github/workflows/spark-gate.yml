@@ -236,7 +236,7 @@ jobs:
             *) echo "::error::Alire release binary is pinned for Linux x86_64 only; runner is $(uname -s)/$(uname -m). NO CHECK WAS PERFORMED."; exit 2 ;;
           esac
           zip="alr-${ALR_VERSION}-bin-${arch}-linux.zip"
-          curl -fsSL --retry 3 -o "$zip" "https://github.com/alire-project/alire/releases/download/v${ALR_VERSION}/${zip}"
+          curl -fsSL --proto '=https' --proto-redir '=https' --retry 3 -o "$zip" "https://github.com/alire-project/alire/releases/download/v${ALR_VERSION}/${zip}"
           echo "${ALR_SHA256}  ${zip}" | sha256sum -c -
           mkdir -p "$HOME/.local/alr"
           unzip -o -q "$zip" 'bin/alr*' -d "$HOME/.local/alr"
