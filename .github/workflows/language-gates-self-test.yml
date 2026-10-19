@@ -98,6 +98,12 @@ jobs:
         run: bash actions/spark-check/test.sh
       - name: miniKanren gate
         run: bash actions/kanren-check/test.sh
+      - name: Every gate uses only action owners the callers' Actions policy admits, at full SHAs
+        # The policy is evaluated in the CALLER's repository, so cicd-suite's own
+        # CI never sees a refusal; this guard is that refusal, moved here
+        # (plasma-parser-writer#108: embarkstudios/cargo-deny-action was refused
+        # at startup while the Creusot gate from the same commit ran).
+        run: bash tests/gate-action-owners.sh
       - name: Caller templates carry the placeholder, a full-SHA form and no secrets
         run: |
           set -euo pipefail

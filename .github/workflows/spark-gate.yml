@@ -71,6 +71,16 @@ on:
         type: string
         required: false
         default: "16.1.0"
+      alr_version:
+        description: Alire release installed from alire-project/alire's GitHub release (x86_64 Linux zip), the version setup-alire v6.0.0 defaults to
+        type: string
+        required: false
+        default: "2.1.1"
+      alr_sha256:
+        description: sha256 of that release zip (alr-<version>-bin-x86_64-linux.zip); the install refuses a mismatch. Recorded 2026-10-19 from the downloaded asset.
+        type: string
+        required: false
+        default: "09c66bcd8c35dd4b97b72c3d9b76e44caa6964a2db35aba069f396f00f1f64c7"
       gnatprove_version:
         description: Alire gnatprove crate version
         type: string
@@ -91,7 +101,7 @@ defaults:
 jobs:
   theatre:
     name: SPARK theatre gate (standards)
-    uses: hyperpolymath/standards/.github/workflows/spark-theatre-gate.yml@95de3dfc3fcf09a1cf3325ab42723e3d81682b45 # standards main 2026-10-14
+    uses: hyperpolymath/standards/.github/workflows/spark-theatre-gate.yml@75bd5994470661a099df562d6d5ad2fe744dbd66 # standards main 2026-10-19 — the first commit whose own actions.lock GitHub accepts at job setup (hypatia PIN-003)
     permissions:
       actions: read
       contents: read
@@ -206,10 +216,40 @@ jobs:
         env:
           EXPECTED: ${{ steps.suite.outputs.sha }}
         run: bash .cicd-suite/scripts/verify-suite-checkout.sh
-      - name: Set up Alire with GNAT ${{ inputs.gnat_version }} and gprbuild
-        uses: alire-project/setup-alire@fc4c8ce471aa30b3af0d39ce15add1ee9eaf28f2 # v6.0.0
-        with:
-          toolchain: gnat_native=${{ inputs.gnat_version }} gprbuild
+      # Alire is a pinned release binary, sha256-verified, not the
+      # alire-project/setup-alire action: that action is neither
+      # hyperpolymath-owned, GitHub-made nor Marketplace-verified, so the
+      # estate's Actions policy would refuse it at startup for every caller
+      # (as it refused EmbarkStudios/cargo-deny-action, plasma-parser-writer#108),
+      # and it nests `actions/cache/restore@v4` and `actions/setup-node@v4`,
+      # floating tags no caller under sha_pinning_required may carry. The
+      # steps below are what that action does on Linux, pinned by hash.
+      - name: Install Alire ${{ inputs.alr_version }} (pinned release, sha256-verified)
+        env:
+          ALR_VERSION: ${{ inputs.alr_version }}
+          ALR_SHA256: ${{ inputs.alr_sha256 }}
+        run: |
+          set -euo pipefail
+          case "$(uname -m)" in
+            x86_64) arch=x86_64 ;;
+            *) echo "::error::Alire release binaries are pinned for x86_64 only; runner is $(uname -m). NO CHECK WAS PERFORMED."; exit 2 ;;
+          esac
+          zip="alr-${ALR_VERSION}-bin-${arch}-linux.zip"
+          curl -fsSL --retry 3 -o "$zip" "https://github.com/alire-project/alire/releases/download/v${ALR_VERSION}/${zip}"
+          echo "${ALR_SHA256}  ${zip}" | sha256sum -c -
+          mkdir -p "$HOME/.local/alr"
+          unzip -o -q "$zip" 'bin/alr*' -d "$HOME/.local/alr"
+          rm -f "$zip"
+          echo "$HOME/.local/alr/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/alr/bin/alr" --version
+      - name: Select GNAT ${{ inputs.gnat_version }} and gprbuild through Alire
+        env:
+          GNAT_VERSION: ${{ inputs.gnat_version }}
+        run: |
+          set -euo pipefail
+          alr -n settings --global --set msys2.do_not_install true >/dev/null 2>&1 || true
+          alr -n toolchain --select "gnat_native=${GNAT_VERSION}" gprbuild
+          alr -n toolchain
       - name: Cache the GNATprove ${{ inputs.gnatprove_version }} install
         id: cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

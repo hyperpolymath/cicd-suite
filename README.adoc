@@ -287,6 +287,46 @@ first live subject for SPARK is cicd-squabbler's
 `+spark/squabble_gate.gpr+`; no repository in the first rollout carries
 Creusot obligations yet.
 
+==== What a gate may use, and what a consumer's lock must hold
+
+Two constraints are evaluated in the *caller's* repository, so nothing in
+this repository's own CI can witness them; both are now guarded here.
+
+* *Actions policy.* The estate's GitHub Actions policy admits actions that
+  are hyperpolymath-owned, GitHub-made, Marketplace-verified, or on a short
+  pattern list. A reusable that uses anything else startup-fails for every
+  caller with "The action … is not allowed" — which is how
+  `EmbarkStudios/cargo-deny-action` killed the first live Rust gate caller
+  (plasma-parser-writer#108, 2026-10-19) while the Creusot gate from the same
+  commit ran. The gates now use only `actions/*`, `github/*`,
+  `hyperpolymath/*`, `dtolnay`, `swatinem`, `goto-bus-stop` and `taiki-e`,
+  every one at a full SHA, and `tests/gate-action-owners.sh` (run by the
+  self-test workflow) refuses any other owner or a tag pin. cargo-deny is
+  installed through `taiki-e/install-action`; Alire is a sha256-pinned
+  release binary rather than `alire-project/setup-alire`, which also nested
+  floating `@v4` tags.
+
+* *Callee lock.* Since about 2026-10-15 GitHub validates a called reusable
+  against the *callee* repository's `actions.lock` at the called SHA and
+  rejects a dependency record whose `ref:` is its own commit SHA
+  ("invalid lockfile pin"). The gate workflows are deliberately not keyed in
+  this repository's lock, and that resolves (witnessed: the Creusot gate on
+  plasma-parser-writer#108). The SPARK gate's nested standards theatre gate
+  is pinned at standards `75bd599`, the first standards commit whose lock
+  passes that validation; hypatia's PIN-003 lists the 545 that do not.
+
+* *Consumers with a lock-sync gate.* A repository whose CI requires every
+  job-level reusable ref to be keyed in its own `actions.lock` with a
+  transitively closed `dependencies:` section (cicd-squabbler's
+  `scripts/check-lock-sync.sh`) cannot de-onboard the caller as the
+  templates assume. Such a repository onboards instead: one
+  `hyperpolymath/cicd-suite@<sha>` record whose `uses:` is the union of
+  what the called gates use at that SHA, plus a record for each of those
+  copied from a lock GitHub accepts, with the tag — never the SHA — as
+  `ref:`. cicd-squabbler#135 is the worked example (for its standards
+  callers); gitbot-fleet's `scripts/fix-lock-self-sha-refs.sh` and
+  `scripts/lib/action-ref-tags.tsv` carry the tag map.
+
 === Licence
 
 Code MPL-2.0, prose CC-BY-SA-4.0. See link:LICENSE[`+LICENSE+`].

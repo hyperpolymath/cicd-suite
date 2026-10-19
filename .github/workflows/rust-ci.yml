@@ -119,6 +119,11 @@ on:
         type: boolean
         required: false
         default: true
+      cargo_deny_version:
+        description: cargo-deny release installed for the deny job (prebuilt, checksummed by taiki-e/install-action)
+        type: string
+        required: false
+        default: "0.20.2"
       deny_args:
         description: Global cargo-deny arguments (placed before the command)
         type: string
@@ -514,22 +519,44 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: cargo-deny — advisories, bans, sources
-        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+      # cargo-deny is installed as a prebuilt, checksummed binary through
+      # taiki-e/install-action — the installer the coverage job already uses
+      # and hypatia's green workflows use — and run as plain `cargo deny`
+      # steps. It was EmbarkStudios/cargo-deny-action until 2026-10-19:
+      # that action is neither hyperpolymath-owned, GitHub-made nor
+      # Marketplace-verified, and the estate's Actions policy refused it at
+      # startup for every caller ("The action embarkstudios/cargo-deny-action
+      # … is not allowed", plasma-parser-writer#108 run 39251770946) while the
+      # Creusot gate from the same commit ran. tests/gate-action-owners.sh
+      # keeps every gate inside the owners the policy admits.
+      # The pinned cargo-deny is the version that action shipped (0.20.2).
+      - name: Install cargo-deny ${{ inputs.cargo_deny_version }} (prebuilt, pinned)
+        uses: taiki-e/install-action@1168f6810a3cb30a3514bf5756a3b7f0422c6df8 # v2.87.28
         with:
-          command: check advisories bans sources
-          arguments: ${{ inputs.deny_args }}
-          manifest-path: ${{ inputs.working_directory }}/Cargo.toml
+          tool: cargo-deny@${{ inputs.cargo_deny_version }}
+      - name: cargo-deny — advisories, bans, sources
+        env:
+          WORKING_DIRECTORY: ${{ inputs.working_directory }}
+          DENY_ARGS: ${{ inputs.deny_args }}
+        # Same shape cargo-deny-action used: global args, then the manifest,
+        # then the command. DENY_ARGS is word-split on purpose: it is a
+        # caller-authored argument list, never data.
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC2086
+          cargo deny --log-level warn $DENY_ARGS --manifest-path "${WORKING_DIRECTORY}/Cargo.toml" check advisories bans sources
       - name: cargo-deny — licences (only against an owner-authored deny.toml)
         # Licence policy is manual and owner-only (doctrine #6). With no
         # deny.toml there is no policy to check against, and the gate does
         # not invent one.
         if: ${{ needs.detect.outputs.has_deny_toml == 'true' }}
-        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
-        with:
-          command: check licenses
-          arguments: ${{ inputs.deny_args }}
-          manifest-path: ${{ inputs.working_directory }}/Cargo.toml
+        env:
+          WORKING_DIRECTORY: ${{ inputs.working_directory }}
+          DENY_ARGS: ${{ inputs.deny_args }}
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC2086
+          cargo deny --log-level warn $DENY_ARGS --manifest-path "${WORKING_DIRECTORY}/Cargo.toml" check licenses
 
   coverage:
     name: llvm-cov line coverage
