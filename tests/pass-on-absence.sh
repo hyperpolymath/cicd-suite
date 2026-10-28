@@ -35,14 +35,15 @@ OUT="$WORK/out"
 
 # A PATH with bash/coreutils but provably none of the gate tools.
 NOBIN="$WORK/nobin"; mkdir -p "$NOBIN"
-for t in bash env tr find sort cat grep; do ln -sf "$(command -v "$t")" "$NOBIN/$t"; done
+for t in bash env tr find sort cat grep cp mktemp mkdir; do ln -sf "$(command -v "$t")" "$NOBIN/$t"; done
 
 run_check() { # <check.sh> <dir> <PATH> [env...]
   local script="$1" dir="$2" path="$3"; shift 3
   ( cd "$dir" && env -i PATH="$path" GITHUB_OUTPUT="$WORK/ghout" "$@" \
       bash --noprofile --norc -e -o pipefail "$script" ) > "$OUT" 2>&1
   RC=$?
-  STATUS="$(sed -n 's/^status=//p' "$WORK/ghout" 2>/dev/null | tail -1)"; : > "$WORK/ghout"
+  STATUS="$(sed -n 's/^status=//p' "$WORK/ghout" 2>/dev/null | tail -1)"
+  cp "$WORK/ghout" "$WORK/ghout.last" 2>/dev/null || true; : > "$WORK/ghout"
 }
 
 assert_not_run() { # <label>
@@ -100,6 +101,10 @@ printf 'contractile\n' > "$FIX/Mustfile.deed"
 run_check "$ROOT/actions/contractile-validation-check/check.sh" "$FIX" "$NOBIN"
 [ "$RC" -eq 0 ] && [ "$STATUS" = "detected" ] && ok "exits 0, status=detected" || { bad "exits $RC status=$STATUS, expected 0/detected"; cat "$OUT"; }
 grep -q 'Passed' "$OUT" && bad "detection alone prints Passed" || ok "detection alone claims no pass"
+stage="$(sed -n 's/^validate_path=//p' "$WORK/ghout.last" | tail -1)"
+[ -n "$stage" ] && [ -f "$stage/Mustfile.deed" ] && [ "$(find "$stage" -type f | wc -l)" -eq 1 ] \
+  && ok "only the detected declaration is staged for the validator" \
+  || bad "staging wrong: '$stage' holds $(find "$stage" -type f 2>/dev/null | tr '\n' ' ')"
 
 echo "== contractile-validation-check: Intentfile (not Intendfile) is the canonical stem =="
 FIX="$WORK/cv-intent"; mkdir -p "$FIX/contractiles/intend"

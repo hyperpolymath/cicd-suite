@@ -65,5 +65,13 @@ if [ "${#decls[@]}" -eq 0 ]; then
   exit 0
 fi
 
+# Stage ONLY the detected declarations for the validator. Handing it
+# the scan root would validate every unrelated .deed — and legacy
+# .a2ml, which this gate says is retired — below it, so an unrelated
+# broken manifest could fail an otherwise valid contractile gate.
+stage="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/contractile-validation-XXXXXXXX")"
+for f in "${decls[@]}"; do cp --parents "$f" "$stage"; done
+[ -n "${GITHUB_OUTPUT:-}" ] && echo "validate_path=$stage" >> "$GITHUB_OUTPUT"
+
 emit_status detected
-echo "contractile-validation-check: ${#decls[@]} declaration(s) found: ${decls[*]} — the DEED validator step decides the verdict."
+echo "contractile-validation-check: ${#decls[@]} declaration(s) found: ${decls[*]} — staged at $stage; the DEED validator step decides the verdict."

@@ -16,7 +16,7 @@ inputs:
     default: '.'
 outputs:
   status:
-    description: 'passed | not_applicable | not_run'
+    description: 'passed | failed | not_applicable | not_run'
     value: ${{ steps.verdict.outputs.status || steps.detect.outputs.status }}
 runs:
   using: 'composite'
@@ -28,14 +28,25 @@ runs:
         CONTRACTILE_WORKDIR: ${{ inputs.path }}
       run: bash "$GITHUB_ACTION_PATH/check.sh"
     - name: Validate DEED Declarations
+      id: validate
       if: ${{ steps.detect.outputs.has_declarations == 'true' }}
       uses: hyperpolymath/deed-ecosystem/validate-action@f9d999b60cb5f383679ea19912bcdc49c944973a # main @ 2026-09-17 — same pin as manifest-check
       with:
-        path: ${{ inputs.path }}
+        path: ${{ steps.detect.outputs.validate_path }}
+    # always(): a rejected declaration must still produce a verdict —
+    # status=failed from the validator outcome, never the detector's
+    # internal `detected` leaking into the advertised output contract.
     - name: Contractile Verdict
       id: verdict
-      if: ${{ steps.detect.outputs.has_declarations == 'true' }}
+      if: ${{ always() && steps.detect.outputs.has_declarations == 'true' }}
       shell: bash
+      env:
+        VALIDATE_OUTCOME: ${{ steps.validate.outcome }}
       run: |
-        echo "status=passed" >> "$GITHUB_OUTPUT"
-        echo "Contractile validation passed (the DEED validator ran on the declarations above and exited 0)."
+        if [ "$VALIDATE_OUTCOME" = "success" ]; then
+          echo "status=passed" >> "$GITHUB_OUTPUT"
+          echo "Contractile validation passed (the DEED validator ran on the detected declarations and exited 0)."
+        else
+          echo "status=failed" >> "$GITHUB_OUTPUT"
+          echo "::error::Contractile validation failed: the DEED validator outcome was '$VALIDATE_OUTCOME' (see its step above)."
+        fi
