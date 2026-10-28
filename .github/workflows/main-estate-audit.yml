@@ -95,16 +95,16 @@ jobs:
           persist-credentials: false
       - name: Required Files Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/required-files-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/required-files-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
       - name: SPDX License Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/spdx-license-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/spdx-license-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
       - name: Affirmation Document Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/affirmation-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/affirmation-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
       - name: Academic Referencing Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/referencing-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/referencing-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
 
   hygiene:
     name: hygiene
@@ -116,19 +116,19 @@ jobs:
           persist-credentials: false
       - name: Code Hygiene Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/code-hygiene-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/code-hygiene-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
       - name: Formatting Validation Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/formatting-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/formatting-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
       - name: Linguist & Banned Languages Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/linguist-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/linguist-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
       - name: Are We UnAPI Gate (Secret Scanning)
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/secrets-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/secrets-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
       - name: Reasonably Good Token Validation Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/vaulted-tokens-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/vaulted-tokens-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
 
   manifests:
     name: manifests
@@ -140,13 +140,13 @@ jobs:
           persist-credentials: false
       - name: Manifest Validation Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/manifest-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/manifest-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
         with:
           deed-paths-ignore: ${{ inputs.manifest-deed-paths-ignore }}
           k9-paths-ignore: ${{ inputs.manifest-k9-paths-ignore }}
       - name: Recipes Set Validation Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/recipes-set-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/recipes-set-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
 
   languages:
     name: languages
@@ -158,13 +158,13 @@ jobs:
           persist-credentials: false
       - name: Idris2 ABI Purity Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/idris2-abi-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/idris2-abi-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
       - name: Zig UnifiedApiAdapter API Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/zig-unified-api-adapter-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/zig-unified-api-adapter-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
       - name: BoJ Cartridge Validation Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/boj-cartridge-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/boj-cartridge-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
 
   advisory:
     name: advisory
@@ -176,22 +176,22 @@ jobs:
           persist-credentials: false
       - name: WWW & Well-Known Compliance Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/www-compliance-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/www-compliance-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
       - name: Accreditations & Badges Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/badges-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/badges-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
       - name: Metrics Extraction Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/metrics-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/metrics-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
       - name: Test & Benchmarks Dashboard Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/tests-benches-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/tests-benches-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
       - name: Hosting & Site Status Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/hosting-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/hosting-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
       - name: Git-Sea Analytics Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/gitsea-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/gitsea-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
       - name: Trust & Humans Validation Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/trust-humans-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/trust-humans-check@c82ef311fd3f989b2b40cc4cba243576644dc990 # 2026-10-14 (#54)
