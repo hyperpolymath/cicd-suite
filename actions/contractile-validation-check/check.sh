@@ -41,9 +41,18 @@ cd "$dir" || { emit_status not_run; echo "::error::contractile-validation-check:
 declare -A stems=( [must]=Mustfile [trust]=Trustfile [adjust]=Adjustfile
                    [dust]=Dustfile [bust]=Bustfile [intend]=Intentfile )
 
+# Search roots: the repository root, contractiles/<verb>/, and the
+# estate's canonical serialization layout
+# .machine_readable/contractiles/ (with or without a <verb>/ level) —
+# hyperpolymath/contractiles documents that hierarchy as canonical, and
+# missing it reported such a repository not_applicable without ever
+# invoking the validator.
 declare -a decls=()
 for runner in must trust adjust dust bust intend; do
-  for f in "${stems[$runner]}.deed" "contractiles/$runner/${stems[$runner]}.deed"; do
+  for f in "${stems[$runner]}.deed" \
+           "contractiles/$runner/${stems[$runner]}.deed" \
+           ".machine_readable/contractiles/${stems[$runner]}.deed" \
+           ".machine_readable/contractiles/$runner/${stems[$runner]}.deed"; do
     [ -f "$f" ] && decls+=("$f")
   done
 done

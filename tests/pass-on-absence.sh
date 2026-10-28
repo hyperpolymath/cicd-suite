@@ -35,7 +35,7 @@ OUT="$WORK/out"
 
 # A PATH with bash/coreutils but provably none of the gate tools.
 NOBIN="$WORK/nobin"; mkdir -p "$NOBIN"
-for t in bash env tr find sort cat grep cp mktemp mkdir; do ln -sf "$(command -v "$t")" "$NOBIN/$t"; done
+for t in bash env tr find sort cat grep cp mktemp mkdir rm; do ln -sf "$(command -v "$t")" "$NOBIN/$t"; done
 
 run_check() { # <check.sh> <dir> <PATH> [env...]
   local script="$1" dir="$2" path="$3"; shift 3
@@ -87,6 +87,12 @@ FIX="$WORK/ct"
 run_check "$ROOT/actions/custom-tools-check/check.sh" "$FIX" "$NOBIN" CUSTOM_TOOLS_WORKDIR=/nonexistent
 [ "$RC" -eq 2 ] && [ "$STATUS" = "not_run" ] && ok "exits 2, status=not_run" || bad "exits $RC status=$STATUS, expected 2/not_run"
 
+echo "== custom-tools-check: pons exit 2 (zero files analysed) is not_run, not failed =="
+mkstandin pons 2; mkstandin panic-attack 0
+run_check "$ROOT/actions/custom-tools-check/check.sh" "$FIX" "$STAND:$NOBIN"
+[ "$RC" -eq 2 ] && [ "$STATUS" = "not_run" ] && ok "exits 2, status=not_run" || bad "exits $RC status=$STATUS, expected 2/not_run"
+mkstandin pons 0
+
 echo "== custom-tools-check: a failing tool is exit 1, not 2 and not 0 =="
 mkstandin panic-attack 3
 run_check "$ROOT/actions/custom-tools-check/check.sh" "$FIX" "$STAND:$NOBIN"
@@ -111,6 +117,12 @@ FIX="$WORK/cv-intent"; mkdir -p "$FIX/contractiles/intend"
 printf 'contractile\n' > "$FIX/contractiles/intend/Intentfile.deed"
 run_check "$ROOT/actions/contractile-validation-check/check.sh" "$FIX" "$NOBIN"
 [ "$STATUS" = "detected" ] && ok "intent-only repo is detected" || { bad "intent-only repo status=$STATUS (Intendfile spelling bug?)"; cat "$OUT"; }
+
+echo "== contractile-validation-check: the canonical .machine_readable layout is scanned =="
+FIX="$WORK/cv-canonical"; mkdir -p "$FIX/.machine_readable/contractiles/intend"
+printf 'contractile\n' > "$FIX/.machine_readable/contractiles/intend/Intentfile.deed"
+run_check "$ROOT/actions/contractile-validation-check/check.sh" "$FIX" "$NOBIN"
+[ "$STATUS" = "detected" ] && ok "canonical-layout repo is detected" || { bad "canonical-layout status=$STATUS"; cat "$OUT"; }
 
 echo "== contractile-validation-check: no declarations is not_applicable, not a pass =="
 FIX="$WORK/cv-empty"; mkdir -p "$FIX"
@@ -160,6 +172,18 @@ printf 'name = "dep"\n' > "$FIX/.lake/packages/dep/lakefile.toml"
 run_check "$ROOT/actions/proof-runner-check/check.sh" "$FIX" "$STAND:$NOBIN"
 [ "$RC" -eq 0 ] && [ "$STATUS" = "passed" ] && ok "exits 0, status=passed" || { bad "exits $RC status=$STATUS"; cat "$OUT"; }
 [ "$(grep -c 'stand-in lake ran' "$OUT")" -eq 1 ] && ok "lake ran once (root only, .lake pruned)" || { bad "lake ran $(grep -c 'stand-in lake ran' "$OUT") times, expected 1"; cat "$OUT"; }
+
+echo "== proof-runner-check: incomplete discovery is not_run, never a quiet pass =="
+FIX="$WORK/pr-locked"; mkdir -p "$FIX/locked"
+printf 'package hidden\n' > "$FIX/locked/abi.ipkg"
+chmod 000 "$FIX/locked"
+if [ "$(id -u)" -ne 0 ]; then
+  run_check "$ROOT/actions/proof-runner-check/check.sh" "$FIX" "$STAND:$NOBIN"
+  [ "$RC" -eq 2 ] && [ "$STATUS" = "not_run" ] && ok "unreadable tree: exits 2, status=not_run" || { bad "unreadable tree exits $RC status=$STATUS"; cat "$OUT"; }
+else
+  ok "unreadable-tree control skipped (running as root: permissions do not bite)"
+fi
+chmod 755 "$FIX/locked"
 
 # --- the fixed gates must not be back in the estate audit -----------------------
 # main-estate-audit installs none of these tools; a step there would be
