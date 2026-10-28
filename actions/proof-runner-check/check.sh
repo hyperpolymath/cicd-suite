@@ -24,20 +24,24 @@
 
 set -uo pipefail
 
-dir="${PROOF_RUNNER_WORKDIR:-.}"
-cd "$dir" || { echo "::error::proof-runner-check: cannot enter $dir — NO CHECK WAS PERFORMED." >&2; exit 2; }
-
 emit_status() {
   [ -n "${GITHUB_OUTPUT:-}" ] && echo "status=$1" >> "$GITHUB_OUTPUT"
   echo "proof-runner-check status=$1"
 }
 
-declare -a projects=() tools=()
-while IFS= read -r f; do projects+=("$f"); tools+=(idris2); done \
+dir="${PROOF_RUNNER_WORKDIR:-.}"
+cd "$dir" || { emit_status not_run; echo "::error::proof-runner-check: cannot enter $dir — NO CHECK WAS PERFORMED (status=not_run)." >&2; exit 2; }
+
+# projects[i] is built by tools[i] from rundirs[i]: `lake build` resolves
+# the package from its working directory, so a Lean project below the
+# scan root must be built in its own directory (and must be FOUND there
+# first — root-only discovery reported monorepos not_applicable without
+# ever invoking Lake).
+declare -a projects=() tools=() rundirs=()
+while IFS= read -r f; do projects+=("$f"); tools+=(idris2); rundirs+=("."); done \
   < <(find . -path ./.git -prune -o -name '*.ipkg' -print 2>/dev/null | sort)
-for lf in lakefile.lean lakefile.toml; do
-  [ -f "$lf" ] && { projects+=("$lf"); tools+=(lake); }
-done
+while IFS= read -r f; do projects+=("$f"); tools+=(lake); rundirs+=("${f%/*}"); done \
+  < <(find . -path ./.git -prune -o \( -name 'lakefile.lean' -o -name 'lakefile.toml' \) -print 2>/dev/null | sort)
 
 if [ "${#projects[@]}" -eq 0 ]; then
   emit_status not_applicable
@@ -63,9 +67,9 @@ for i in "${!projects[@]}"; do
       idris2 --typecheck "${projects[$i]}" \
         || { rc=$?; echo "::error::proof-runner-check: idris2 exited $rc on ${projects[$i]}."; fail=1; } ;;
     lake)
-      echo "Running: lake build"
-      lake build \
-        || { rc=$?; echo "::error::proof-runner-check: 'lake build' exited $rc."; fail=1; } ;;
+      echo "Running: (cd ${rundirs[$i]} && lake build)"
+      (cd "${rundirs[$i]}" && lake build) \
+        || { rc=$?; echo "::error::proof-runner-check: 'lake build' exited $rc in ${rundirs[$i]}."; fail=1; } ;;
   esac
 done
 

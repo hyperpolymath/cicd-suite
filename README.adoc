@@ -26,15 +26,19 @@ after 8s".
 
 Published 2026-08-07. Defects (1)–(3) are *fixed and verified against two
 live estate repositories*; (4) is partly fixed; (5) is closed by removing
-the stubs from the workflow; (6) is open.
+the stubs from the workflow; (6) is open; (7) is fixed by making an
+absent tool a `not_run`/exit 2 instead of a pass.
 
 Before wiring this into a repository, read _Known defects_ and _Consuming
 it_.
 
 === What actually enforces
 
-Of 26 actions, *15 can fail a build and 11 cannot* — and the 11 are not
-one kind of thing. Conflating them was the original error.
+Of 26 actions, *17 can fail a build and 9 cannot* — and neither group
+is one kind of thing: the 17 split into 14 always-in-the-audit enforcing
+gates and 3 tool-dependent gates that also refuse (`not_run`, exit 2)
+when their tool is absent, while the 9 split into 7 advisory gates and
+2 unimplemented stubs. Conflating them was the original error.
 
 [width="100%",cols="34%,33%,33%",options="header",]
 |===

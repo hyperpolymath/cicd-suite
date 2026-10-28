@@ -21,13 +21,13 @@
 
 set -uo pipefail
 
-dir="${CUSTOM_TOOLS_WORKDIR:-.}"
-cd "$dir" || { echo "::error::custom-tools-check: cannot enter $dir — NO CHECK WAS PERFORMED." >&2; exit 2; }
-
 emit_status() { # <status>
   [ -n "${GITHUB_OUTPUT:-}" ] && echo "status=$1" >> "$GITHUB_OUTPUT"
   echo "custom-tools-check status=$1"
 }
+
+dir="${CUSTOM_TOOLS_WORKDIR:-.}"
+cd "$dir" || { emit_status not_run; echo "::error::custom-tools-check: cannot enter $dir — NO CHECK WAS PERFORMED (status=not_run)." >&2; exit 2; }
 
 missing=()
 command -v pons >/dev/null 2>&1         || missing+=(pons)

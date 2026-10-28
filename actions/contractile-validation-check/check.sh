@@ -20,13 +20,13 @@
 
 set -uo pipefail
 
-dir="${CONTRACTILE_WORKDIR:-.}"
-cd "$dir" || { echo "::error::contractile-validation-check: cannot enter $dir — NO CHECK WAS PERFORMED." >&2; exit 2; }
-
 emit_status() {
   [ -n "${GITHUB_OUTPUT:-}" ] && echo "status=$1" >> "$GITHUB_OUTPUT"
   echo "contractile-validation-check status=$1"
 }
+
+dir="${CONTRACTILE_WORKDIR:-.}"
+cd "$dir" || { emit_status not_run; echo "::error::contractile-validation-check: cannot enter $dir — NO CHECK WAS PERFORMED (status=not_run)." >&2; exit 2; }
 
 declare -a decls=() verbs=()
 for runner in must trust adjust dust bust intend; do

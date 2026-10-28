@@ -76,6 +76,16 @@ run_check "$ROOT/actions/custom-tools-check/check.sh" "$FIX" "$STAND:$NOBIN"
 grep -q 'stand-in pons ran (verify .)' "$OUT" && grep -q 'stand-in panic-attack ran (scan .)' "$OUT" \
   && ok "both tools were actually invoked" || bad "stand-ins were not both invoked"
 
+echo "== custom-tools-check: only one tool absent is still not_run =="
+rm -f "$STAND/panic-attack"
+run_check "$ROOT/actions/custom-tools-check/check.sh" "$FIX" "$STAND:$NOBIN"
+assert_not_run "custom-tools (panic-attack absent)"
+
+echo "== custom-tools-check: an invalid workdir still emits not_run =="
+FIX="$WORK/ct"
+run_check "$ROOT/actions/custom-tools-check/check.sh" "$FIX" "$NOBIN" CUSTOM_TOOLS_WORKDIR=/nonexistent
+[ "$RC" -eq 2 ] && [ "$STATUS" = "not_run" ] && ok "exits 2, status=not_run" || bad "exits $RC status=$STATUS, expected 2/not_run"
+
 echo "== custom-tools-check: a failing tool is exit 1, not 2 and not 0 =="
 mkstandin panic-attack 3
 run_check "$ROOT/actions/custom-tools-check/check.sh" "$FIX" "$STAND:$NOBIN"
@@ -99,6 +109,11 @@ mkstandin deed-lint 0
 FIX="$WORK/cv"; run_check "$ROOT/actions/contractile-validation-check/check.sh" "$FIX" "$STAND:$NOBIN"
 [ "$RC" -eq 0 ] && [ "$STATUS" = "passed" ] && ok "exits 0, status=passed" || { bad "exits $RC status=$STATUS"; cat "$OUT"; }
 
+echo "== contractile-validation-check: a failing deed-lint is exit 1 =="
+mkstandin deed-lint 4
+run_check "$ROOT/actions/contractile-validation-check/check.sh" "$WORK/cv" "$STAND:$NOBIN"
+[ "$RC" -eq 1 ] && [ "$STATUS" = "failed" ] && ok "exits 1, status=failed" || bad "exits $RC status=$STATUS, expected 1/failed"
+
 # --- proof-runner-check ---------------------------------------------------------
 echo "== proof-runner-check: .ipkg present, idris2 absent =="
 FIX="$WORK/pr"; mkdir -p "$FIX"
@@ -116,6 +131,19 @@ echo "== proof-runner-check: idris2 stand-in runs =="
 mkstandin idris2 0
 FIX="$WORK/pr"; run_check "$ROOT/actions/proof-runner-check/check.sh" "$FIX" "$STAND:$NOBIN"
 [ "$RC" -eq 0 ] && [ "$STATUS" = "passed" ] && ok "exits 0, status=passed" || { bad "exits $RC status=$STATUS"; cat "$OUT"; }
+
+echo "== proof-runner-check: a failing idris2 is exit 1 =="
+mkstandin idris2 5
+run_check "$ROOT/actions/proof-runner-check/check.sh" "$WORK/pr" "$STAND:$NOBIN"
+[ "$RC" -eq 1 ] && [ "$STATUS" = "failed" ] && ok "exits 1, status=failed" || bad "exits $RC status=$STATUS, expected 1/failed"
+
+echo "== proof-runner-check: a Lean project in a subdirectory is found and built there =="
+printf '#!/usr/bin/env bash\necho "stand-in lake ran in $PWD"\nexit 0\n' > "$STAND/lake"; chmod +x "$STAND/lake"
+FIX="$WORK/pr-lean"; mkdir -p "$FIX/proofs/sub"
+printf 'name = "sub"\n' > "$FIX/proofs/sub/lakefile.toml"
+run_check "$ROOT/actions/proof-runner-check/check.sh" "$FIX" "$STAND:$NOBIN"
+[ "$RC" -eq 0 ] && [ "$STATUS" = "passed" ] && ok "subdir lakefile: exits 0, status=passed" || { bad "exits $RC status=$STATUS"; cat "$OUT"; }
+grep -q "stand-in lake ran in $FIX/proofs/sub" "$OUT" && ok "lake build ran in the project directory" || { bad "lake did not run in the project directory"; cat "$OUT"; }
 
 # --- the fixed gates must not be back in the estate audit -----------------------
 # main-estate-audit installs none of these tools; a step there would be
