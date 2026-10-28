@@ -73,7 +73,7 @@ mkstandin pons 0; mkstandin panic-attack 0
 run_check "$ROOT/actions/custom-tools-check/check.sh" "$FIX" "$STAND:$NOBIN"
 [ "$RC" -eq 0 ] && [ "$STATUS" = "passed" ] && ok "both ran clean: exits 0, status=passed" \
   || { bad "both ran clean: exits $RC status=$STATUS"; cat "$OUT"; }
-grep -q 'stand-in pons ran (verify .)' "$OUT" && grep -q 'stand-in panic-attack ran (scan .)' "$OUT" \
+grep -q 'stand-in pons ran (scan .)' "$OUT" && grep -q 'stand-in panic-attack ran (assail .)' "$OUT" \
   && ok "both tools were actually invoked" || bad "stand-ins were not both invoked"
 
 echo "== custom-tools-check: only one tool absent is still not_run =="
@@ -144,6 +144,14 @@ printf 'name = "sub"\n' > "$FIX/proofs/sub/lakefile.toml"
 run_check "$ROOT/actions/proof-runner-check/check.sh" "$FIX" "$STAND:$NOBIN"
 [ "$RC" -eq 0 ] && [ "$STATUS" = "passed" ] && ok "subdir lakefile: exits 0, status=passed" || { bad "exits $RC status=$STATUS"; cat "$OUT"; }
 grep -q "stand-in lake ran in $FIX/proofs/sub" "$OUT" && ok "lake build ran in the project directory" || { bad "lake did not run in the project directory"; cat "$OUT"; }
+
+echo "== proof-runner-check: lakefiles under .lake (dependencies) are not projects =="
+FIX="$WORK/pr-lake-dep"; mkdir -p "$FIX/.lake/packages/dep"
+printf 'name = "root"\n' > "$FIX/lakefile.toml"
+printf 'name = "dep"\n' > "$FIX/.lake/packages/dep/lakefile.toml"
+run_check "$ROOT/actions/proof-runner-check/check.sh" "$FIX" "$STAND:$NOBIN"
+[ "$RC" -eq 0 ] && [ "$STATUS" = "passed" ] && ok "exits 0, status=passed" || { bad "exits $RC status=$STATUS"; cat "$OUT"; }
+[ "$(grep -c 'stand-in lake ran' "$OUT")" -eq 1 ] && ok "lake ran once (root only, .lake pruned)" || { bad "lake ran $(grep -c 'stand-in lake ran' "$OUT") times, expected 1"; cat "$OUT"; }
 
 # --- the fixed gates must not be back in the estate audit -----------------------
 # main-estate-audit installs none of these tools; a step there would be

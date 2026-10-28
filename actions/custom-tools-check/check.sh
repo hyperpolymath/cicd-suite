@@ -40,10 +40,15 @@ if [ "${#missing[@]}" -gt 0 ]; then
 fi
 
 fail=0
-echo "Running: pons verify ."
-pons verify . || { rc=$?; echo "::error::custom-tools-check: 'pons verify .' exited $rc."; fail=1; }
-echo "Running: panic-attack scan ."
-panic-attack scan . || { rc=$?; echo "::error::custom-tools-check: 'panic-attack scan .' exited $rc."; fail=1; }
+# Real subcommands, per the tools' own CLI docs: panic-attack's static
+# analysis entry point is `assail`; pons's is `scan`. The stub this
+# replaces guessed `panic-attack scan` / `pons verify`, which neither
+# CLI defines — a caller with both tools installed would have failed
+# every repo on a usage error.
+echo "Running: pons scan ."
+pons scan . || { rc=$?; echo "::error::custom-tools-check: 'pons scan .' exited $rc."; fail=1; }
+echo "Running: panic-attack assail ."
+panic-attack assail . || { rc=$?; echo "::error::custom-tools-check: 'panic-attack assail .' exited $rc."; fail=1; }
 
 if [ "$fail" -eq 1 ]; then
   emit_status failed

@@ -36,12 +36,14 @@ cd "$dir" || { emit_status not_run; echo "::error::proof-runner-check: cannot en
 # the package from its working directory, so a Lean project below the
 # scan root must be built in its own directory (and must be FOUND there
 # first — root-only discovery reported monorepos not_applicable without
-# ever invoking Lake).
+# ever invoking Lake). `.lake` is pruned: it holds dependency copies,
+# not workspace projects, and building each as a project would multiply
+# the work and can fail on dependency default targets.
 declare -a projects=() tools=() rundirs=()
 while IFS= read -r f; do projects+=("$f"); tools+=(idris2); rundirs+=("."); done \
   < <(find . -path ./.git -prune -o -name '*.ipkg' -print 2>/dev/null | sort)
 while IFS= read -r f; do projects+=("$f"); tools+=(lake); rundirs+=("${f%/*}"); done \
-  < <(find . -path ./.git -prune -o \( -name 'lakefile.lean' -o -name 'lakefile.toml' \) -print 2>/dev/null | sort)
+  < <(find . -path ./.git -prune -o -path '*/.lake' -prune -o \( -name 'lakefile.lean' -o -name 'lakefile.toml' \) -print 2>/dev/null | sort)
 
 if [ "${#projects[@]}" -eq 0 ]; then
   emit_status not_applicable

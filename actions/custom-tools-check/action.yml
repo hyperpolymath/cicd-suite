@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MPL-2.0
 name: 'Panic Attack & Pons Gate'
 description: >-
-  Runs `pons verify .` and `panic-attack scan .` — for real. If either
+  Runs `pons scan .` and `panic-attack assail .` — for real. If either
   binary is not on PATH the gate reports status=not_run and exits 2
   (NO CHECK WAS PERFORMED); it never prints a pass for a scan that did
   not run. Install both tools before this step. Not run by
