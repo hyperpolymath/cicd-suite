@@ -124,6 +124,12 @@ printf 'contractile\n' > "$FIX/.machine_readable/contractiles/intend/Intentfile.
 run_check "$ROOT/actions/contractile-validation-check/check.sh" "$FIX" "$NOBIN"
 [ "$STATUS" = "detected" ] && ok "canonical-layout repo is detected" || { bad "canonical-layout status=$STATUS"; cat "$OUT"; }
 
+echo "== contractile-validation-check: staging failure is not_run, not a partial pass =="
+NOCP="$WORK/nocp"; mkdir -p "$NOCP"
+for t in bash env tr find sort cat grep mktemp mkdir rm; do ln -sf "$(command -v "$t")" "$NOCP/$t"; done
+run_check "$ROOT/actions/contractile-validation-check/check.sh" "$WORK/cv" "$NOCP"
+[ "$RC" -eq 2 ] && [ "$STATUS" = "not_run" ] && ok "no cp on PATH: exits 2, status=not_run" || { bad "exits $RC status=$STATUS, expected 2/not_run"; cat "$OUT"; }
+
 echo "== contractile-validation-check: no declarations is not_applicable, not a pass =="
 FIX="$WORK/cv-empty"; mkdir -p "$FIX"
 run_check "$ROOT/actions/contractile-validation-check/check.sh" "$FIX" "$NOBIN"
