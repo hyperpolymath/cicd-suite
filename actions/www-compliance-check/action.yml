@@ -23,7 +23,7 @@ runs:
              echo "::warning::security.txt is missing from .well-known."
           fi
         else
-          echo "No www or public directory found. Skipping compliance check."
+          echo "::notice::No www or public directory found — not applicable, no compliance check was performed (this is not a pass)."
         fi
-        
-        echo "WWW compliance validation passed."
+
+        echo "WWW compliance advisory check complete (any findings above are advisory warnings, not a pass/fail verdict)."

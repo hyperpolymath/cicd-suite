@@ -1,43 +1,28 @@
+# SPDX-License-Identifier: MPL-2.0
 name: 'Contractile Validation Gate'
-description: 'Validates that contractiles (must, trust, adjust, dust, bust, intend) are readable by their runners and the self-validating folder has required k9s. Declarations are <Verb>file.deed - a2ml is retired (standards #837) and is no longer read by this gate.'
+description: >-
+  Validates contractile declarations (<Verb>file.deed; a2ml is retired,
+  standards #837) by actually invoking deed-lint on each one. If a
+  declaration is present but deed-lint is not on PATH the gate reports
+  status=not_run and exits 2 (NO CHECK WAS PERFORMED); with no
+  declarations it reports not_applicable. It never prints a pass for a
+  runner that did not run. Not run by main-estate-audit, which installs
+  no deed-lint.
+inputs:
+  path:
+    description: 'Directory to scan for contractile declarations'
+    required: false
+    default: '.'
+outputs:
+  status:
+    description: 'passed | failed | not_run | not_applicable'
+    value: ${{ steps.contractile.outputs.status }}
 runs:
   using: 'composite'
   steps:
     - name: Run Contractile Validation
+      id: contractile
       shell: bash
-      run: |
-        echo "Validating Contractiles via Runners..."
-        
-        # Check runners are working (mocked for now, assumes global runners or repo scripts)
-        runners=("must" "trust" "adjust" "dust" "bust" "intend")
-
-        for runner in "${runners[@]}"; do
-          # Capitalised verb + 'file' (e.g. Mustfile). Declarations are
-          # <Verb>file.deed; a2ml is retired (standards #837) and this gate
-          # no longer reads <Verb>file.a2ml.
-          stem="$(tr '[:lower:]' '[:upper:]' <<< ${runner:0:1})${runner:1}file"
-          verbfile="$stem.deed"
-
-          # We only validate if the verb file exists in the repo
-          if [ -f "$verbfile" ] || [ -f "contractiles/$runner/$verbfile" ]; then
-             echo "Invoking $runner runner on $verbfile..."
-             # Placeholder for actual runner command
-             # e.g., deed-lint "$verbfile" --runner="$runner"
-          fi
-        done
-        
-        # Just runner check
-        if [ -f "Justfile" ]; then
-          echo "Invoking just runner on Justfile..."
-          # just --dry-run
-        fi
-        
-        # Self-Validating folder k9 check
-        if [ -d ".machine_readable/k9" ] || [ -d "contractiles/k9" ]; then
-           echo "Verifying self-validating folder contains appropriate k9 automation..."
-           # Check for kennel, yard, hunt tiers
-        else
-           echo "::warning::No self-validating k9 folder found."
-        fi
-        
-        echo "Contractile Validation Passed."
+      env:
+        CONTRACTILE_WORKDIR: ${{ inputs.path }}
+      run: bash "$GITHUB_ACTION_PATH/check.sh"

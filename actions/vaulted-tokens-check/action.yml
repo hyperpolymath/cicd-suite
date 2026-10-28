@@ -19,7 +19,7 @@ runs:
            fi
            echo "Token formats appear to comply with UUID obfuscation standard."
         else
-           echo "No explicit configuration files found. Passing token validation."
+           echo "::notice::No explicit configuration files found — not applicable, no files were scanned (this is not a pass)."
         fi
         
         echo "Reasonably Good Token Validation complete."

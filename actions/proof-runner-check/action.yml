@@ -1,21 +1,28 @@
+# SPDX-License-Identifier: MPL-2.0
 name: 'Proof Runner Gate'
-description: 'Detects formally verified proofs and runs them to ensure correctness.'
+description: >-
+  Runs the proof projects in the tree (Idris2 *.ipkg via
+  `idris2 --typecheck`, Lean lakefile via `lake build`) — for real. If
+  a project is present but its tool is not on PATH the gate reports
+  status=not_run and exits 2 (NO CHECK WAS PERFORMED); with no proof
+  project it reports not_applicable. Install the toolchain before this
+  step. Not run by main-estate-audit: the language gates install and
+  run their own provers.
+inputs:
+  path:
+    description: 'Directory to scan for proof projects'
+    required: false
+    default: '.'
+outputs:
+  status:
+    description: 'passed | failed | not_run | not_applicable'
+    value: ${{ steps.proof-runner.outputs.status }}
 runs:
   using: 'composite'
   steps:
     - name: Run Formal Proofs
+      id: proof-runner
       shell: bash
-      run: |
-        echo "Executing Formal Proofs..."
-        
-        # Check for Idris2 proofs
-        if [ -f "*.ipkg" ] || [ -d "src" ]; then
-           # Heuristic for Idris2
-           echo "Running Idris2 proofs (typechecking)..."
-           # idris2 --typecheck *.ipkg || exit 1
-        fi
-        
-        # Check for Lean/Coq/Agda, etc. (Stubs for future implementation)
-        # e.g., if [ -f "lakefile.lean" ]; then lake build; fi
-        
-        echo "All detected proofs executed successfully."
+      env:
+        PROOF_RUNNER_WORKDIR: ${{ inputs.path }}
+      run: bash "$GITHUB_ACTION_PATH/check.sh"

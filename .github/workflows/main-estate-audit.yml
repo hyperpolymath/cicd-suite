@@ -14,9 +14,20 @@ name: Central Estate CI/CD Audit
 #   governance  required-files, spdx-license, affirmation, referencing
 #   hygiene     code-hygiene, formatting, linguist, secrets, vaulted-tokens
 #   manifests   manifest, recipes-set
-#   languages   idris2-abi, zig-unified-api-adapter, proof-runner, boj-cartridge
-#   advisory    nine gates that cannot fail BY DESIGN (README: "What actually
+#   languages   idris2-abi, zig-unified-api-adapter, boj-cartridge
+#   advisory    seven gates that cannot fail BY DESIGN (README: "What actually
 #               enforces"); a green tick here is information, not assurance.
+#
+# Removed for pass-on-absence (README, Known defect 7): custom-tools,
+# contractile-validation and proof-runner. Each claimed a pass when the
+# tool it exists to run was absent -- custom-tools printed "Custom tools
+# validation passed" with neither pons nor panic-attack on PATH, the
+# normal case on GitHub runners -- and this workflow installs none of
+# those tools, so it could only ever certify scans that never ran. The
+# actions now report status=not_run and exit 2 in that case, so they
+# cannot stay in a workflow that cannot feed them; callers that install
+# the tools may still call them directly. Panic-attack/pons evidence
+# comes from the standards Hypatia lane's envelopes, not from here.
 #
 # Removed: prat and semantic-audit. They were stubs (README, Known defect 5):
 # semantic-audit printed "Semantic Audit Passed." unconditionally and prat
@@ -151,9 +162,6 @@ jobs:
       - name: Zig UnifiedApiAdapter API Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
         uses: hyperpolymath/cicd-suite/actions/zig-unified-api-adapter-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
-      - name: Proof Runner Gate
-        if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/proof-runner-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
       - name: BoJ Cartridge Validation Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
         uses: hyperpolymath/cicd-suite/actions/boj-cartridge-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
@@ -166,12 +174,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Contractile Validation Gate
-        if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/contractile-validation-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
-      - name: Panic Attack & Pons Gate
-        if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/custom-tools-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
       - name: WWW & Well-Known Compliance Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
         uses: hyperpolymath/cicd-suite/actions/www-compliance-check@9a947faad4f7f6640148980dd892b39f216fd091 # 2026-10-14 (#54)
