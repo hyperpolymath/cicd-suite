@@ -14,6 +14,11 @@
         "actions/referencing-check/**",
         "actions/secrets-check/**",
         "actions/boj-cartridge-check/**",
+        "actions/custom-tools-check/**",
+        "actions/contractile-validation-check/**",
+        "actions/proof-runner-check/**",
+        "actions/vaulted-tokens-check/**",
+        "actions/www-compliance-check/**",
         "actions/manifest-check/**",
         "actions/required-files-check/**",
         "actions/spdx-license-check/**",
@@ -35,6 +40,11 @@
         "actions/referencing-check/**",
         "actions/secrets-check/**",
         "actions/boj-cartridge-check/**",
+        "actions/custom-tools-check/**",
+        "actions/contractile-validation-check/**",
+        "actions/proof-runner-check/**",
+        "actions/vaulted-tokens-check/**",
+        "actions/www-compliance-check/**",
         "actions/manifest-check/**",
         "actions/required-files-check/**",
         "actions/spdx-license-check/**",
@@ -82,6 +92,12 @@
         },
         {
           run: "bash tests/composite-shell-contract.sh",
+        },
+        {
+          # Tool-absent gates must report not_run/exit 2, never a pass;
+          # the fixed gates must also stay out of main-estate-audit,
+          # which installs none of their tools.
+          run: "bash tests/pass-on-absence.sh",
         },
         {
           run: "bash tests/lock-transitive-closure.sh",

@@ -1,25 +1,27 @@
+# SPDX-License-Identifier: MPL-2.0
 name: 'Panic Attack & Pons Gate'
-description: 'Validates that code has been run through the panic-attack and pons tools.'
+description: >-
+  Runs `pons scan .` and `panic-attack assail .` — for real. If either
+  binary is not on PATH the gate reports status=not_run and exits 2
+  (NO CHECK WAS PERFORMED); it never prints a pass for a scan that did
+  not run. Install both tools before this step. Not run by
+  main-estate-audit: panic-attack/pons evidence comes from the
+  standards Hypatia lane's envelopes.
+inputs:
+  path:
+    description: 'Directory to scan'
+    required: false
+    default: '.'
+outputs:
+  status:
+    description: 'passed | failed | not_run'
+    value: ${{ steps.custom-tools.outputs.status }}
 runs:
   using: 'composite'
   steps:
     - name: Run Custom Tools Check
+      id: custom-tools
       shell: bash
-      run: |
-        echo "Validating Panic Attack and Pons execution..."
-        # In a real execution, this would check logs, invoke the tools, or check for a generated `.pons` lockfile.
-        # Check for Pons
-        if command -v pons &> /dev/null; then
-          pons verify .
-        else
-          echo "Pons tool not found in PATH, assuming it needs to run via standard caller."
-        fi
-        
-        # Check for Panic Attack
-        if command -v panic-attack &> /dev/null; then
-          panic-attack scan .
-        else
-          echo "Panic Attack tool not found in PATH, assuming it needs to run via standard caller."
-        fi
-        
-        echo "Custom tools validation passed."
+      env:
+        CUSTOM_TOOLS_WORKDIR: ${{ inputs.path }}
+      run: bash "$GITHUB_ACTION_PATH/check.sh"

@@ -1,43 +1,41 @@
+# SPDX-License-Identifier: MPL-2.0
 name: 'Contractile Validation Gate'
-description: 'Validates that contractiles (must, trust, adjust, dust, bust, intend) are readable by their runners and the self-validating folder has required k9s. Declarations are <Verb>file.deed - a2ml is retired (standards #837) and is no longer read by this gate.'
+description: >-
+  Validates contractile declarations (<Verb>file.deed; a2ml is retired,
+  standards #837) with the estate DEED validator — the same
+  deed-ecosystem validate-action manifest-check pins. With no
+  declarations it reports not_applicable; it never prints a pass for a
+  validation that did not run (there is no deed-lint CLI; an earlier
+  version required one invented from a placeholder comment). Not run
+  by main-estate-audit: manifest-check already runs this validator
+  estate-wide.
+inputs:
+  path:
+    description: 'Directory to scan for contractile declarations'
+    required: false
+    default: '.'
+outputs:
+  status:
+    description: 'passed | not_applicable | not_run'
+    value: ${{ steps.verdict.outputs.status || steps.detect.outputs.status }}
 runs:
   using: 'composite'
   steps:
-    - name: Run Contractile Validation
+    - name: Detect Contractile Declarations
+      id: detect
+      shell: bash
+      env:
+        CONTRACTILE_WORKDIR: ${{ inputs.path }}
+      run: bash "$GITHUB_ACTION_PATH/check.sh"
+    - name: Validate DEED Declarations
+      if: ${{ steps.detect.outputs.has_declarations == 'true' }}
+      uses: hyperpolymath/deed-ecosystem/validate-action@f9d999b60cb5f383679ea19912bcdc49c944973a # main @ 2026-09-17 — same pin as manifest-check
+      with:
+        path: ${{ inputs.path }}
+    - name: Contractile Verdict
+      id: verdict
+      if: ${{ steps.detect.outputs.has_declarations == 'true' }}
       shell: bash
       run: |
-        echo "Validating Contractiles via Runners..."
-        
-        # Check runners are working (mocked for now, assumes global runners or repo scripts)
-        runners=("must" "trust" "adjust" "dust" "bust" "intend")
-
-        for runner in "${runners[@]}"; do
-          # Capitalised verb + 'file' (e.g. Mustfile). Declarations are
-          # <Verb>file.deed; a2ml is retired (standards #837) and this gate
-          # no longer reads <Verb>file.a2ml.
-          stem="$(tr '[:lower:]' '[:upper:]' <<< ${runner:0:1})${runner:1}file"
-          verbfile="$stem.deed"
-
-          # We only validate if the verb file exists in the repo
-          if [ -f "$verbfile" ] || [ -f "contractiles/$runner/$verbfile" ]; then
-             echo "Invoking $runner runner on $verbfile..."
-             # Placeholder for actual runner command
-             # e.g., deed-lint "$verbfile" --runner="$runner"
-          fi
-        done
-        
-        # Just runner check
-        if [ -f "Justfile" ]; then
-          echo "Invoking just runner on Justfile..."
-          # just --dry-run
-        fi
-        
-        # Self-Validating folder k9 check
-        if [ -d ".machine_readable/k9" ] || [ -d "contractiles/k9" ]; then
-           echo "Verifying self-validating folder contains appropriate k9 automation..."
-           # Check for kennel, yard, hunt tiers
-        else
-           echo "::warning::No self-validating k9 folder found."
-        fi
-        
-        echo "Contractile Validation Passed."
+        echo "status=passed" >> "$GITHUB_OUTPUT"
+        echo "Contractile validation passed (the DEED validator ran on the declarations above and exited 0)."
