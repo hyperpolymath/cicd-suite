@@ -1,22 +1,32 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MPL-2.0
 #
-# contractile-validation-check — contractile declarations vs their runner.
+# contractile-validation-check — detection half of the gate.
 #
 # Same pass-on-absence defect as the old custom-tools-check: the inline
 # version echoed "Invoking $runner runner..." in front of a commented-out
 # command and printed "Contractile Validation Passed." unconditionally.
+# Its first fix then required a `deed-lint` executable — a name taken
+# from that same commented-out `# e.g.` placeholder. No such CLI exists
+# (Codex review, PR #58); the estate's real DEED validator is
+# hyperpolymath/deed-ecosystem/validate-action, the action
+# manifest-check already pins. So this script does only the honest
+# local half — find the declarations — and action.yml runs that
+# validator when, and only when, declarations are present.
 #
-# Contract:
-#   0  no contractile declarations in the tree (not applicable, said so
-#      with ::notice:: — never "Passed"), OR deed-lint was on PATH, ran
-#      on every declaration, and exited 0 for each
-#   1  deed-lint ran and rejected a declaration
-#   2  declarations are present but deed-lint is not on PATH —
-#      NO CHECK WAS PERFORMED (status=not_run). Never a pass.
+# Outputs (to $GITHUB_OUTPUT):
+#   has_declarations  true | false
+#   status            not_applicable (none found) | detected (found;
+#                     validation is the validator step's verdict, and
+#                     action.yml only prints "passed" after it runs)
+# Exit 2 if the scan root cannot be entered: NO CHECK WAS PERFORMED
+# (status=not_run). Never a pass from this script.
 #
 # Declarations are <Verb>file.deed (standards #837: a2ml is retired and
-# is not read here), at the root or under contractiles/<verb>/.
+# is not read here), at the root or under contractiles/<verb>/. Note
+# the irregular stem: the canonical name is Intentfile, not Intendfile
+# (hyperpolymath/contractiles), so stems are mapped explicitly rather
+# than derived by capitalisation.
 
 set -uo pipefail
 
@@ -28,11 +38,13 @@ emit_status() {
 dir="${CONTRACTILE_WORKDIR:-.}"
 cd "$dir" || { emit_status not_run; echo "::error::contractile-validation-check: cannot enter $dir — NO CHECK WAS PERFORMED (status=not_run)." >&2; exit 2; }
 
-declare -a decls=() verbs=()
+declare -A stems=( [must]=Mustfile [trust]=Trustfile [adjust]=Adjustfile
+                   [dust]=Dustfile [bust]=Bustfile [intend]=Intentfile )
+
+declare -a decls=()
 for runner in must trust adjust dust bust intend; do
-  stem="$(tr '[:lower:]' '[:upper:]' <<< "${runner:0:1}")${runner:1}file"
-  for f in "$stem.deed" "contractiles/$runner/$stem.deed"; do
-    [ -f "$f" ] && { decls+=("$f"); verbs+=("$runner"); }
+  for f in "${stems[$runner]}.deed" "contractiles/$runner/${stems[$runner]}.deed"; do
+    [ -f "$f" ] && decls+=("$f")
   done
 done
 
@@ -42,29 +54,16 @@ if [ -d ".machine_readable/k9" ] || [ -d "contractiles/k9" ]; then
   echo "::notice::contractile-validation-check: self-validating k9 folder present (presence noted; its contents are not validated by this gate)."
 fi
 
+if [ -n "${GITHUB_OUTPUT:-}" ]; then
+  if [ "${#decls[@]}" -eq 0 ]; then echo "has_declarations=false" >> "$GITHUB_OUTPUT";
+  else echo "has_declarations=true" >> "$GITHUB_OUTPUT"; fi
+fi
+
 if [ "${#decls[@]}" -eq 0 ]; then
   emit_status not_applicable
   echo "::notice::contractile-validation-check: no contractile declarations (<Verb>file.deed) found — not applicable, nothing was validated."
   exit 0
 fi
 
-if ! command -v deed-lint >/dev/null 2>&1; then
-  emit_status not_run
-  echo "::error::contractile-validation-check: ${#decls[@]} contractile declaration(s) present (${decls[*]}) but 'deed-lint' is not on PATH — NO CHECK WAS PERFORMED (status=not_run). Install deed-lint before this step, or do not call this gate." >&2
-  exit 2
-fi
-
-fail=0
-for i in "${!decls[@]}"; do
-  echo "Running: deed-lint ${decls[$i]} --runner=${verbs[$i]}"
-  deed-lint "${decls[$i]}" --runner="${verbs[$i]}" \
-    || { rc=$?; echo "::error::contractile-validation-check: deed-lint exited $rc on ${decls[$i]}."; fail=1; }
-done
-
-if [ "$fail" -eq 1 ]; then
-  emit_status failed
-  exit 1
-fi
-
-emit_status passed
-echo "Contractile validation passed (deed-lint ran on ${#decls[@]} declaration(s) and exited 0 for each)."
+emit_status detected
+echo "contractile-validation-check: ${#decls[@]} declaration(s) found: ${decls[*]} — the DEED validator step decides the verdict."

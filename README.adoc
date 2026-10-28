@@ -55,7 +55,7 @@ worse than not checking.
 
 |*Tool-dependent, not in the audit* (3) |contractile-validation ·
 custom-tools · proof-runner |Can fail — and can refuse: with a subject
-present but its tool (deed-lint, pons/panic-attack, idris2/lake) absent
+present but its tool (pons/panic-attack, idris2/lake) absent
 they report `status=not_run` and exit 2, _NO CHECK WAS PERFORMED_.
 `main-estate-audit` installs none of those tools, so it no longer runs
 them; callers that install the tools may call them directly. See (7).
@@ -167,9 +167,13 @@ The sibling audit of every `+*-check+` composite found the same shape
 twice more, both fixed the same way and both removed from the audit
 for the same reason: `+contractile-validation-check+` echoed
 "`Invoking … runner…`" in front of a commented-out command and
-printed "`Contractile Validation Passed.`" unconditionally (now:
-declarations present + `+deed-lint+` absent ⇒ `+not_run+`/exit 2; no
-declarations ⇒ explicit `+not_applicable+`, never a pass), and
+printed "`Contractile Validation Passed.`" unconditionally (now: a
+detection step finds the declarations — with the canonical
+`+Intentfile+` stem, not `+Intendfile+` — and the estate DEED
+validator, the `+deed-ecosystem/validate-action+` `+manifest-check+`
+already pins, runs only when they exist; no declarations ⇒ explicit
+`+not_applicable+`, never a pass; there is no `+deed-lint+` CLI and an
+earlier draft of this fix invented one from the placeholder comment), and
 `+proof-runner-check+` had its only invocation commented out and
 printed "`All detected proofs executed successfully.`" regardless
 (now: proof project present + `+idris2+`/`+lake+` absent ⇒

@@ -92,11 +92,20 @@ run_check "$ROOT/actions/custom-tools-check/check.sh" "$FIX" "$STAND:$NOBIN"
 [ "$RC" -eq 1 ] && [ "$STATUS" = "failed" ] && ok "exits 1, status=failed" || bad "exits $RC status=$STATUS, expected 1/failed"
 
 # --- contractile-validation-check ---------------------------------------------
-echo "== contractile-validation-check: declaration present, deed-lint absent =="
+# Detection half only: the verdict belongs to the DEED validator step in
+# action.yml (the estate's real validator; there is no deed-lint CLI).
+echo "== contractile-validation-check: declaration present is detected, not passed =="
 FIX="$WORK/cv"; mkdir -p "$FIX"
 printf 'contractile\n' > "$FIX/Mustfile.deed"
 run_check "$ROOT/actions/contractile-validation-check/check.sh" "$FIX" "$NOBIN"
-assert_not_run "contractile"
+[ "$RC" -eq 0 ] && [ "$STATUS" = "detected" ] && ok "exits 0, status=detected" || { bad "exits $RC status=$STATUS, expected 0/detected"; cat "$OUT"; }
+grep -q 'Passed' "$OUT" && bad "detection alone prints Passed" || ok "detection alone claims no pass"
+
+echo "== contractile-validation-check: Intentfile (not Intendfile) is the canonical stem =="
+FIX="$WORK/cv-intent"; mkdir -p "$FIX/contractiles/intend"
+printf 'contractile\n' > "$FIX/contractiles/intend/Intentfile.deed"
+run_check "$ROOT/actions/contractile-validation-check/check.sh" "$FIX" "$NOBIN"
+[ "$STATUS" = "detected" ] && ok "intent-only repo is detected" || { bad "intent-only repo status=$STATUS (Intendfile spelling bug?)"; cat "$OUT"; }
 
 echo "== contractile-validation-check: no declarations is not_applicable, not a pass =="
 FIX="$WORK/cv-empty"; mkdir -p "$FIX"
@@ -104,15 +113,9 @@ run_check "$ROOT/actions/contractile-validation-check/check.sh" "$FIX" "$NOBIN"
 [ "$RC" -eq 0 ] && [ "$STATUS" = "not_applicable" ] && ok "exits 0 as not_applicable" || bad "exits $RC status=$STATUS"
 grep -q 'Passed' "$OUT" && bad "prints Passed with nothing validated" || ok "no Passed line"
 
-echo "== contractile-validation-check: deed-lint stand-in runs =="
-mkstandin deed-lint 0
-FIX="$WORK/cv"; run_check "$ROOT/actions/contractile-validation-check/check.sh" "$FIX" "$STAND:$NOBIN"
-[ "$RC" -eq 0 ] && [ "$STATUS" = "passed" ] && ok "exits 0, status=passed" || { bad "exits $RC status=$STATUS"; cat "$OUT"; }
-
-echo "== contractile-validation-check: a failing deed-lint is exit 1 =="
-mkstandin deed-lint 4
-run_check "$ROOT/actions/contractile-validation-check/check.sh" "$WORK/cv" "$STAND:$NOBIN"
-[ "$RC" -eq 1 ] && [ "$STATUS" = "failed" ] && ok "exits 1, status=failed" || bad "exits $RC status=$STATUS, expected 1/failed"
+echo "== contractile-validation-check: an invalid workdir still emits not_run =="
+run_check "$ROOT/actions/contractile-validation-check/check.sh" "$WORK/cv-empty" "$NOBIN" CONTRACTILE_WORKDIR=/nonexistent
+[ "$RC" -eq 2 ] && [ "$STATUS" = "not_run" ] && ok "exits 2, status=not_run" || bad "exits $RC status=$STATUS, expected 2/not_run"
 
 # --- proof-runner-check ---------------------------------------------------------
 echo "== proof-runner-check: .ipkg present, idris2 absent =="
