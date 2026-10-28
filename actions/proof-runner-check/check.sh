@@ -40,10 +40,26 @@ cd "$dir" || { emit_status not_run; echo "::error::proof-runner-check: cannot en
 # not workspace projects, and building each as a project would multiply
 # the work and can fail on dependency default targets.
 declare -a projects=() tools=() rundirs=()
-while IFS= read -r f; do projects+=("$f"); tools+=(idris2); rundirs+=("."); done \
-  < <(find . -path ./.git -prune -o -name '*.ipkg' -print 2>/dev/null | sort)
-while IFS= read -r f; do projects+=("$f"); tools+=(lake); rundirs+=("${f%/*}"); done \
-  < <(find . -path ./.git -prune -o -path '*/.lake' -prune -o \( -name 'lakefile.lean' -o -name 'lakefile.toml' \) -print 2>/dev/null | sort)
+# Discovery must fail closed: a find that cannot traverse the tree
+# (unreadable directory, I/O error) yields a partial — or empty — set,
+# and reporting passed/not_applicable over it would certify projects
+# that were never seen. Capture each find's output AND exit status;
+# process substitution would discard both the stderr and the status.
+disc_ipkg="$(mktemp)" || { emit_status not_run; echo "::error::proof-runner-check: cannot create a temp file — NO CHECK WAS PERFORMED (status=not_run)." >&2; exit 2; }
+disc_lake="$(mktemp)" || { emit_status not_run; echo "::error::proof-runner-check: cannot create a temp file — NO CHECK WAS PERFORMED (status=not_run)." >&2; exit 2; }
+if ! find . -path ./.git -prune -o -name '*.ipkg' -print > "$disc_ipkg" 2>/dev/null; then
+  emit_status not_run
+  echo "::error::proof-runner-check: proof-project discovery (find *.ipkg) did not complete — NO CHECK WAS PERFORMED (status=not_run)." >&2
+  exit 2
+fi
+if ! find . -path ./.git -prune -o -path '*/.lake' -prune -o \( -name 'lakefile.lean' -o -name 'lakefile.toml' \) -print > "$disc_lake" 2>/dev/null; then
+  emit_status not_run
+  echo "::error::proof-runner-check: proof-project discovery (find lakefile.*) did not complete — NO CHECK WAS PERFORMED (status=not_run)." >&2
+  exit 2
+fi
+while IFS= read -r f; do projects+=("$f"); tools+=(idris2); rundirs+=("."); done < <(sort "$disc_ipkg")
+while IFS= read -r f; do projects+=("$f"); tools+=(lake); rundirs+=("${f%/*}"); done < <(sort "$disc_lake")
+rm -f "$disc_ipkg" "$disc_lake"
 
 if [ "${#projects[@]}" -eq 0 ]; then
   emit_status not_applicable

@@ -41,9 +41,18 @@ cd "$dir" || { emit_status not_run; echo "::error::contractile-validation-check:
 declare -A stems=( [must]=Mustfile [trust]=Trustfile [adjust]=Adjustfile
                    [dust]=Dustfile [bust]=Bustfile [intend]=Intentfile )
 
+# Search roots: the repository root, contractiles/<verb>/, and the
+# estate's canonical serialization layout
+# .machine_readable/contractiles/ (with or without a <verb>/ level) —
+# hyperpolymath/contractiles documents that hierarchy as canonical, and
+# missing it reported such a repository not_applicable without ever
+# invoking the validator.
 declare -a decls=()
 for runner in must trust adjust dust bust intend; do
-  for f in "${stems[$runner]}.deed" "contractiles/$runner/${stems[$runner]}.deed"; do
+  for f in "${stems[$runner]}.deed" \
+           "contractiles/$runner/${stems[$runner]}.deed" \
+           ".machine_readable/contractiles/${stems[$runner]}.deed" \
+           ".machine_readable/contractiles/$runner/${stems[$runner]}.deed"; do
     [ -f "$f" ] && decls+=("$f")
   done
 done
@@ -54,16 +63,41 @@ if [ -d ".machine_readable/k9" ] || [ -d "contractiles/k9" ]; then
   echo "::notice::contractile-validation-check: self-validating k9 folder present (presence noted; its contents are not validated by this gate)."
 fi
 
-if [ -n "${GITHUB_OUTPUT:-}" ]; then
-  if [ "${#decls[@]}" -eq 0 ]; then echo "has_declarations=false" >> "$GITHUB_OUTPUT";
-  else echo "has_declarations=true" >> "$GITHUB_OUTPUT"; fi
-fi
-
 if [ "${#decls[@]}" -eq 0 ]; then
+  [ -n "${GITHUB_OUTPUT:-}" ] && echo "has_declarations=false" >> "$GITHUB_OUTPUT"
   emit_status not_applicable
   echo "::notice::contractile-validation-check: no contractile declarations (<Verb>file.deed) found — not applicable, nothing was validated."
   exit 0
 fi
 
+# Stage ONLY the detected declarations for the validator. Handing it
+# the scan root would validate every unrelated .deed — and legacy
+# .a2ml, which this gate says is retired — below it, so an unrelated
+# broken manifest could fail an otherwise valid contractile gate.
+#
+# Fail closed, portably: no `cp --parents` (GNU-only; BSD cp on macOS
+# runners rejects it), and every step is checked — a partial stage
+# that still advertised has_declarations=true would let the validator
+# succeed over some or none of the declarations and the verdict would
+# report passed. has_declarations is therefore written only AFTER the
+# stage is complete.
+stage="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/contractile-validation-XXXXXXXX")" || {
+  emit_status not_run
+  echo "::error::contractile-validation-check: cannot create the staging directory — NO CHECK WAS PERFORMED (status=not_run)." >&2
+  exit 2
+}
+for f in "${decls[@]}"; do
+  dest="$stage/$f"
+  if ! mkdir -p "${dest%/*}" || ! cp "$f" "$dest"; then
+    emit_status not_run
+    echo "::error::contractile-validation-check: cannot stage $f — NO CHECK WAS PERFORMED (status=not_run)." >&2
+    exit 2
+  fi
+done
+if [ -n "${GITHUB_OUTPUT:-}" ]; then
+  echo "validate_path=$stage" >> "$GITHUB_OUTPUT"
+  echo "has_declarations=true" >> "$GITHUB_OUTPUT"
+fi
+
 emit_status detected
-echo "contractile-validation-check: ${#decls[@]} declaration(s) found: ${decls[*]} — the DEED validator step decides the verdict."
+echo "contractile-validation-check: ${#decls[@]} declaration(s) found: ${decls[*]} — staged at $stage; the DEED validator step decides the verdict."

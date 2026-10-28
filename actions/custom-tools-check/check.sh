@@ -46,7 +46,17 @@ fail=0
 # CLI defines — a caller with both tools installed would have failed
 # every repo on a usage error.
 echo "Running: pons scan ."
-pons scan . || { rc=$?; echo "::error::custom-tools-check: 'pons scan .' exited $rc."; fail=1; }
+rc=0; pons scan . || rc=$?
+if [ "$rc" -eq 2 ]; then
+  # Pons's coverage contract defines exit 2 as zero files analysed —
+  # absence of applicable analysis, not a detected defect. Propagate
+  # it as this gate's not_run rather than folding it into `failed`.
+  emit_status not_run
+  echo "::error::custom-tools-check: 'pons scan .' exited 2 (zero files analysed) — NO PONS ANALYSIS WAS PERFORMED (status=not_run)." >&2
+  exit 2
+elif [ "$rc" -ne 0 ]; then
+  echo "::error::custom-tools-check: 'pons scan .' exited $rc."; fail=1
+fi
 echo "Running: panic-attack assail ."
 panic-attack assail . || { rc=$?; echo "::error::custom-tools-check: 'panic-attack assail .' exited $rc."; fail=1; }
 
