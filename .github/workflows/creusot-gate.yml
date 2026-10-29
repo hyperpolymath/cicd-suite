@@ -239,7 +239,12 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends opam libzmq3-dev libgmp-dev pkg-config autoconf
+          # Creusot v0.14.0's ./INSTALL resolves Why3 IDE through opam; opam
+          # cannot install these apt dependencies noninteractively. Without
+          # them, switch creation exits before any proof is attempted.
+          sudo apt-get install -y --no-install-recommends \
+            opam libzmq3-dev libgmp-dev pkg-config autoconf \
+            libcairo2-dev libgtk-3-dev libgtksourceview-3.0-dev
       - name: Cache the Creusot opam switch, provers and cargo-creusot
         id: cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
