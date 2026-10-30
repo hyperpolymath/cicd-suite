@@ -17,6 +17,7 @@ cd "$subject"
 [[ $(git rev-parse --is-shallow-repository) == false ]] || { echo 'incomplete ancestry: refusing shallow history' >&2; exit 2; }
 head=$(git rev-parse HEAD)
 trusted_dir=
+# Remove the estate baseline on exit only when this scan staged it.
 cleanup() {
     if [[ ${staged:-0} == 1 ]]; then rm -f "$subject/.gitleaks-estate.toml"; fi
     if [[ -n $trusted_dir ]]; then rm -rf "$trusted_dir"; fi

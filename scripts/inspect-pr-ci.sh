@@ -11,12 +11,17 @@ for tool in gh jq; do
     command -v "$tool" >/dev/null || { echo "$tool is required" >&2; exit 2; }
 done
 repo=$1 number=$2
+# Fetch all pages for an API endpoint and write their JSON values as an array.
+# Fail if the API request or JSON parsing fails.
 # gh versions before --slurp still emit one JSON document per API page.
 paginated() { local endpoint=$1; gh api --paginate "$endpoint" | jq -s .; }
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 # Errors are data, never an empty healthy population. Do not collect logs or
 # artifacts: they can contain secrets and require additional network hosts.
+# Save a probe's stdout and stderr under the given name in $work. On failure,
+# replace stdout with a probe_error record; successful output rejected by jq -e
+# returns 2. Errors writing the record can also reach the caller.
 collect() {
     local name=$1
     shift
