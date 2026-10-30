@@ -105,6 +105,19 @@ ln -s "$SUBJECT/external.toml" "$SUBJECT/policy.toml"
 commit
 BASE_SHA=$(git -C "$SUBJECT" rev-parse HEAD)
 GITHUB_EVENT_NAME=pull_request SCAN_MODE=full expect 2 'config extension escaping trusted base refused'
+fixture rustliteral
+echo '[workspace]' >"$SUBJECT/Cargo.toml"
+mkdir -p "$SUBJECT/crates/core/src"
+printf 'const AUTH_SECRET: &str = "%s%s";\n' N7cR2mQ9aB4dE6fG 8hJ1kL3pS5tV0wX2 >"$SUBJECT/crates/core/src/lib.rs"
+commit
+SCAN_MODE=full expect 1 'Rust supplemental finding contributes to composite verdict'
+grep -q 'supplement=rust exit=1' "$tmp/output"
+fixture shellliteral
+printf 'export SERVICE_TOKEN="%s%s"\n' N7cR2mQ9aB4dE6fG 8hJ1kL3pS5tV0wX2 >"$SUBJECT/run.sh"
+echo '*.sh' >"$SUBJECT/.shell-secrets-ignore"
+commit
+GITHUB_EVENT_NAME=pull_request SCAN_MODE=pr-range expect 1 'PR shell finding cannot be waived by a head-added ignore'
+grep -q 'supplement=shell exit=1' "$tmp/output"
 fixture wrongbase
 BASE_SHA=0000000000000000000000000000000000000000 SCAN_MODE=pr-range expect 2 'missing base refuses a verdict'
 echo mismatch >"$SUBJECT/.gitleaks-estate.toml"
