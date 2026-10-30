@@ -1,0 +1,161 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Estate CI triage — 2026-10-30
+
+== Scope and limits
+
+Read-only sample of 60 open PRs returned by `gh search prs --owner
+hyperpolymath --state open --limit 60`, followed by PR state/check queries.
+This is not the notifications inbox or a complete estate census. The
+notifications endpoint returned 403. No cross-repository edits, merges,
+reruns, ruleset changes or permission changes were made.
+
+Sample: 45 BLOCKED, 5 UNSTABLE, 10 CLEAN. A failed check count is not the
+number of required merge blockers; requirements need separate rule and
+classic-protection evidence. Rollup absence is not evidence of a clean scan.
+Some rollups can also be truncated by GitHub.
+
+== Merge-ready candidates to recheck before approval
+
+https://github.com/hyperpolymath/boj-server/pulls[boj-server] PRs #369 through
+#378 all reported CLEAN and MERGEABLE, each with 45 rollup entries, consisting
+of SUCCESS and SKIPPED results. This is GitHub's observed readiness, not a
+claim that all 45 checks executed. No PR was merged. Revalidate head SHA,
+required checks and policy immediately before merging each; merging one may
+invalidate readiness of another.
+
+== Repeated failure families
+
+[cols="1,1,3",options="header"]
+|===
+|Rollup name |Occurrences in sample |Evidence / action
+|Validate K9 contracts |15 |idrisiser#93 annotations identify
+`container/deploy.k9.ncl`: missing K9! and pedigree name. Determine whether it
+is a K9 contract or an ordinary Nickel deployment module before adding fields.
+|Validate DEED manifests |13 |idrisiser#93: ordinary-looking
+`docs/governance/MAINTENANCE-CHECKLIST.a2ml` rejected for missing manifest
+identity. A filename suffix alone is not evidence that a document is a manifest.
+|Hypatia neurosymbolic scan |15 |idrisiser scanner setup and execution succeeded;
+the final critical-findings step failed. Six retired-location descriptile
+findings are accompanied by Zig cast, download/execute and optional-secret
+annotations. The aggregate calls six findings critical security issues; audit
+the actual severity/rule mapping before calling this either all noise or all
+exploitable vulnerabilities.
+|lint-workflows |10 |Includes duplicate push/PR runs. vocarium#47's inspected
+failure is the Check SPDX Headers step, not an Actions YAML parse error.
+|Dependency audit |3 |echidnabot PRs; dependency repair belongs to that repository.
+|Rust Dependency Audit |2 |hypatia#983 annotation reports one vulnerable advisory;
+exact advisory unavailable from annotations. Keep enforcement, obtain redacted
+findings and repair/justify dependencies.
+|Rust License & Ban Check |2 |hypatia#983 fails at Check licenses and bans after
+successful installation; exact policy finding requires log/artifact evidence.
+|governance / Allowlist Preflight |2 |hypatia tree-allowlist step fails; do not
+confuse this with GitHub's Actions admission policy.
+|===
+
+Additional inspected examples:
+
+* https://github.com/hyperpolymath/boinc-boinc/actions/runs/41036353652[boinc-boinc#85]
+  still uses a sequential estate-audit copy: code-hygiene fails, then the
+  manifest and subsequent gates are skipped. The suite already has separate
+  component jobs and continuation within components. Migrate to a reviewed,
+  SHA-pinned reusable rather than proliferating another copy. Triage actual
+  debt/circumventions before adding narrow trusted-base exemptions.
+* https://github.com/hyperpolymath/preference-injector/actions/runs/41128726229[preference-injector#109]
+  fails Deno lint. Its test/coverage failures need their own diagnosis; don't
+  replace language-specific CI with a generic governance audit.
+* `unified-dataset-vocab#80` has no red checks in the rollup but a required
+  `scan / gitleaks` context and an immediately failed zero-job scanner workflow.
+  See link:SECRET-SCAN-PERFORMANCE.adoc[secret-scan investigation].
+
+Raw log downloads were blocked by the environment's outbound host policy.
+REST job steps and check annotations supplied the findings above. No exact
+cargo-deny, Deno lint, or workflow-startup root cause is invented here.
+
+== What to reuse; what not to swap in blindly
+
+* Keep the suite's componentised audit, tool-absence exit-2 contract,
+  negative controls, planted prover controls, caller SHA verification and
+  transitive-lock guards. These address actual previously observed failures.
+* Prefer repo-specific compiler/test/prover commands over filename existence
+  checks. Governance, linting, security and functional correctness are
+  complementary, not substitutes.
+* The suite's manifest wrapper already supports distinct narrow DEED/K9
+  exclusions. First fix validator subject selection or document classification;
+  an estate-wide suffix exemption would hide real malformed manifests.
+* `semantic-audit` and PRAT remain out of the enforcing workflow. Squabbler
+  now exists but is not the imagined semantic audit command. Corrected the
+  obsolete README assertion; no stub was promoted to assurance.
+* The proposed fast secret-scan execution model must be implemented and
+  measured upstream before switching consumers. No replacement was deployed.
+
+== Guidance consulted (source snapshots)
+
+* `metadatastician/standards@1725bebd3773ea25627479f813283abf1c497a85`:
+  `.github/ISSUES/2026-06-05-cicd-optimization-roadmap.md`, issue 004,
+  shared secret-scanner source. Adopt deduplication and explicit scope, not
+  unsafe illustrative path filters: required workflow-level filters can
+  strand checks, and changed_files is a count, not a list of filenames.
+* `hyperpolymath/proven-tests-and-benches@d986d4cbdc6aae8f1585a9262b0b5ceeb8532183`:
+  evidence-bearing classifications, executed coverage and cost-aware routing.
+  Bash example fixtures added here are *Unproven* in that framework, not
+  Actually-Proven because a document mentions a proof. There is no live
+  Idris2 bridge implemented in this change.
+* `hyperpolymath/cicd-squabbler@193349090edb29f4ed1ef82142c207e22e1715c9`:
+  zero-job/chains/fight diagnosis, rulesets plus classic protection, refusal
+  to bypass, and explicit unattributed outcomes. The collector complements
+  this engine; it does not replace it.
+* `hyperpolymath/reposystem@46eac54730e1b0ec30ad14aef37baef6bc41645f`:
+  graph/scenario/plan-with-rollback approach. Assumed this was the user's
+  intended repository; `hyperpolymath/repos` returned 404. Confirm that name
+  before treating this as the complete requested repository guidance.
+
+== Handoff: Hypatia owner
+
+----
+Investigate idrisiser#93, job 124299507009, and the same repeated failure
+family in julianiser, oblibeniser, eclexiaiser, betlangiser, lustreiser,
+ponyiser, otpiser, phronesiser, nimiser, wokelangiser and iseriser.
+Separate governance migration findings from exploitable security findings and
+scanner non-execution. Inspect the actual severity mapping: six retired 6a2
+locations are reported alongside an aggregate "6 critical security issues".
+Do not simply downgrade everything or suppress Zig casts globally. Add
+positive/negative controls for valid FFI casts versus unsafe uses, document
+paths, download-integrity failures, and optional missing dispatch tokens.
+Emit rule ID, class, severity, confidence, applicability and redacted location.
+Keep genuine security defects blocking. Propose severity changes for review.
+----
+
+== Handoff: DEED/K9 validators and consumer repositories
+
+----
+Use idrisiser#93 jobs 124299507166 and 124299506965 as reproduction evidence.
+Classify docs/governance/MAINTENANCE-CHECKLIST.a2ml and container/deploy.k9.ncl
+by intended format. Implement explicit subject selection if ordinary documents
+or Nickel modules are mistaken for manifests. If they are actual manifests,
+fix their missing identity/K9!/pedigree fields instead. Add controls for valid
+non-manifest documents/modules, malformed real manifests, and path-scoped
+exclusions that do not hide neighbouring defects. Keep DEED/K9 exclusions
+separate; test through the cicd-suite composite and update pins only after a
+consumer canary passes. No blanket extension/path allowlist.
+----
+
+== Handoff: proven-tests-and-benches / reposystem / fleet
+
+----
+Define a versioned gate-evidence interchange with cicd-suite and squabbler:
+subject SHA, trusted base, detector/config digest, applicability, population,
+executed result, tool/infrastructure errors, negative-control result, evidence
+URL and elapsed/queue times. Derive coverage from execution, not declarations.
+Keep empirical fixtures Unproven until a real typed proof/bridge warrants a
+higher tier. Resolve the 16-category standard vs 17-category local extension
+explicitly rather than silently promising full taxonomy coverage.
+
+Use reposystem to record caller -> reusable -> composite -> config/lock
+edges, canonical coordinates and immutable pins. Simulate and canary changes
+upstream-first with rollback, deduplicate overlapping checks by demonstrated
+coverage, and retain repo-specific builds/tests. Fleet should propose consumer
+migration PRs, not directly rewrite policies or auto-admin-merge. Observe the
+current head's required checks before announcing readiness. Notification
+monitoring/webhook deployment is separate work; this session has not installed
+an ongoing watcher.
+----

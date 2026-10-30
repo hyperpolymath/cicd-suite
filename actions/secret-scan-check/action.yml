@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: MPL-2.0
+name: Bounded secret scan
+description: Redacted tree and history scan with pinned Gitleaks, live controls and explicit infrastructure failure
+inputs:
+  path:
+    description: Complete subject repository checkout (no shallow history)
+    default: '.'
+  mode:
+    description: full (default) or security-owner-approved pr-range
+    default: full
+  base-sha:
+    description: Verified ancestor commit for pr-range
+    default: ''
+  head-sha:
+    description: Expected checked-out head commit for pr-range
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Install and execute the bounded scanner
+      shell: bash
+      env:
+        ACTION_DIR: ${{ github.action_path }}
+        SUBJECT: ${{ inputs.path }}
+        SCAN_MODE: ${{ inputs.mode }}
+        BASE_SHA: ${{ inputs.base-sha }}
+        HEAD_SHA: ${{ inputs.head-sha }}
+        PR_BASE: ${{ github.event.pull_request.base.sha }}
+        PR_HEAD: ${{ github.event.pull_request.head.sha }}
+      run: |
+        set -euo pipefail
+        bash "$ACTION_DIR/install.sh" "$RUNNER_TEMP/suite-gitleaks"
+        export GITLEAKS_BIN="$RUNNER_TEMP/suite-gitleaks/gitleaks"
+        export ESTATE_BASELINE="$ACTION_DIR/../../config/gitleaks/estate-baseline.toml"
+        bash "$ACTION_DIR/check.sh"
