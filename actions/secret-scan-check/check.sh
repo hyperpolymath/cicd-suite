@@ -39,6 +39,7 @@ else
     cp "$baseline" .gitleaks-estate.toml
     staged=1
 fi
+# Remove the estate baseline on exit only when this scan staged it.
 cleanup() { if [[ $staged == 1 ]]; then rm -f .gitleaks-estate.toml; fi; }
 trap cleanup EXIT
 config=.gitleaks-estate.toml
