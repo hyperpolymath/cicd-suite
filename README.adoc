@@ -433,3 +433,21 @@ is not claimed to reproduce its specialised Rust/shell heuristic checks.
 Keep those protections until parity controls or an owner-approved migration
 exist. The real-binary CI controls and a caller canary must pass before
 production rollout; see link:docs/SECRET-SCANNER-ROLLOUT.adoc[rollout status].
+
+==== Post-merge startup repair and supplemental detector ports
+
+The follow-up described in
+link:docs/SCANNER-STARTUP-AND-PARITY.adoc[Startup and supplemental coverage]
+repins this repository to the published #62 merge commit. The initial
+pre-merge pin failed resolution after merge; the canonical legacy dependency
+was then explicitly refused by the caller's Actions admission policy.
+Rather than broadening permissions, the suite now carries Rust/shell ports
+and 26 differential fixtures against frozen legacy run bodies, plus five
+hardening controls. The former legacy comparison workflow runs these local
+checks; it no longer invokes standards or repeats full-history Gitleaks.
+
+The new scanner source includes both ports in its composite verdict. Publish
+that implementation before advancing consumer pins: the currently deployed
+suite pin still selects the previously published scanner, while separate
+local supplement jobs preserve this repository's supplementary checking.
+No estate-wide rollout or whole-corpus equivalence is claimed by the fixtures.
