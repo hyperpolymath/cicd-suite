@@ -29,14 +29,15 @@ else
 fi
 export ESTATE_BASELINE="$root/config/gitleaks/estate-baseline.toml" SCAN_TIMEOUT_SECONDS=15
 fixture() {
-    mkdir "$tmp/$1"
-    git -C "$tmp/$1" init -q
-    git -C "$tmp/$1" config user.name control
-    git -C "$tmp/$1" config user.email control@example.invalid
-    echo clean >"$tmp/$1/readme.txt"
-    git -C "$tmp/$1" add .
-    git -C "$tmp/$1" commit -qm clean
-    export SUBJECT="$tmp/$1" BASE_SHA
+    local name=$1
+    mkdir "$tmp/$name"
+    git -C "$tmp/$name" init -q
+    git -C "$tmp/$name" config user.name control
+    git -C "$tmp/$name" config user.email control@example.invalid
+    echo clean >"$tmp/$name/readme.txt"
+    git -C "$tmp/$name" add .
+    git -C "$tmp/$name" commit -qm clean
+    export SUBJECT="$tmp/$name" BASE_SHA
     BASE_SHA=$(git -C "$SUBJECT" rev-parse HEAD)
 }
 commit() { git -C "$SUBJECT" add .; git -C "$SUBJECT" commit -qm control; }

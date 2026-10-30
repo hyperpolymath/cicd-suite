@@ -12,7 +12,7 @@ for tool in gh jq; do
 done
 repo=$1 number=$2
 # gh versions before --slurp still emit one JSON document per API page.
-paginated() { gh api --paginate "$1" | jq -s .; }
+paginated() { local endpoint=$1; gh api --paginate "$endpoint" | jq -s .; }
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 # Errors are data, never an empty healthy population. Do not collect logs or

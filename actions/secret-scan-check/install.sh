@@ -9,7 +9,7 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 version=8.30.1
 checksum=551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
-curl --fail --silent --show-error --location --connect-timeout 10 --max-time 90 \
+curl --proto '=https' --proto-redir '=https' --fail --silent --show-error --location --connect-timeout 10 --max-time 90 \
     --retry 2 --retry-max-time 180 \
     "https://github.com/gitleaks/gitleaks/releases/download/v${version}/gitleaks_${version}_linux_x64.tar.gz" \
     -o "$tmp/gitleaks.tar.gz"
