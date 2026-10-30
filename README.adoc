@@ -129,9 +129,10 @@ them is a rename to `+*-advisory+`, not teeth.
 longer runs them.*
 
 * `+semantic-audit+` is pure `+echo+` with "`Placeholder for actual
-invocation`"; its real body is `+cicd-squabbler audit --semantic+`, and
-*`+cicd-squabbler+` does not exist yet*. It cannot be implemented, only
-parked.
+invocation`". `+cicd-squabbler+` now exists, but is a gate diagnosis
+and legitimate-remediation engine, not evidence of the imagined
+`+audit --semantic+` interface. Keep this stub out of enforcement; do not
+confuse pipeline diagnosis with semantic verification.
 * `+prat+` claims to validate "`PRAT testing`", but *PRAT is defined
 nowhere in the estate* — a search of every repository turns up only
 further copies of the workflow that calls it. Its current check passes
@@ -389,3 +390,42 @@ this repository's own CI can witness them; both are now guarded here.
 === Licence
 
 Code MPL-2.0, prose CC-BY-SA-4.0. See link:LICENSE[`+LICENSE+`].
+
+=== Merge-blocker diagnosis and secret-scan latency
+
+`+bash scripts/inspect-pr-ci.sh OWNER/REPO PR_NUMBER+` collects read-only
+JSON evidence: PR checks, effective branch rules, classic protection,
+head-SHA workflow runs and jobs, including failed workflows with zero jobs.
+Requires `+gh+` and `+jq+`; exit 2 means an incomplete inspection, including
+denied API probes. Exit 0 means collection succeeded, *not* that CI passed.
+The report is not merge authorisation, a full check-history export, or an
+implementation of cicd-squabbler. Use squabbler for attribution and repair.
+No logs, artifacts, secrets, policy edits, reruns or merges are requested.
+
+See link:docs/CI-TRIAGE-2026-10-30.adoc[the sampled estate diagnosis] and
+link:docs/SECRET-SCAN-PERFORMANCE.adoc[the secret-scan latency investigation
+and implementation handoff]. No replacement scanner has been deployed.
+
+=== Bounded secret scanner (canary, not estate-deployed)
+
+`+.github/workflows/secret-scanner-reusable.yml+` and
+`+actions/secret-scan-check/+` provide a checksum-pinned Gitleaks 8.30.1
+implementation with bounded download/scan deadlines, redacted logs,
+real detector controls using the effective configuration, and separate
+working-tree/history passes. The vendored estate baseline records its
+upstream SHA; no renamed standards reusable is needed at runtime.
+
+The direct caller template preserves `+scan / gitleaks+`. Full history
+remains the default. `+fast-pr: true+` explicitly opts PRs into scanning
+all introduced commits, not merely the final diff; non-PR runs remain full.
+A full ancestry checkout is still required: this version reduces scanning
+work, not checkout history size. No speed claim is established without
+runner measurements. The job deadline is 15 minutes; each main scan is
+bounded to 180 seconds plus termination grace. Oversized audits fail visibly
+rather than wait forever or silently pass.
+
+Do not bulk-replace the old three-job standards bundle yet: this scanner
+is not claimed to reproduce its specialised Rust/shell heuristic checks.
+Keep those protections until parity controls or an owner-approved migration
+exist. The real-binary CI controls and a caller canary must pass before
+production rollout; see link:docs/SECRET-SCANNER-ROLLOUT.adoc[rollout status].

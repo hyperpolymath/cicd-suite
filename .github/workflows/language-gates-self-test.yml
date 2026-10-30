@@ -26,6 +26,8 @@ on:
       - "scripts/verify-suite-checkout.sh"
       - "scripts/deonboard-workflow.sh"
       - "tests/gate-action-owners.sh"
+      - "tests/inspect-pr-ci.sh"
+      - "scripts/inspect-pr-ci.sh"
       - ".github/workflows/rust-ci.yml"
       - ".github/workflows/creusot-gate.yml"
       - ".github/workflows/spark-gate.yml"
@@ -41,6 +43,8 @@ on:
       - "scripts/verify-suite-checkout.sh"
       - "scripts/deonboard-workflow.sh"
       - "tests/gate-action-owners.sh"
+      - "tests/inspect-pr-ci.sh"
+      - "scripts/inspect-pr-ci.sh"
       - ".github/workflows/rust-ci.yml"
       - ".github/workflows/creusot-gate.yml"
       - ".github/workflows/spark-gate.yml"
@@ -92,6 +96,8 @@ jobs:
           rc=0; EXPECTED=0000000000000000000000000000000000000000 SUITE_DIR=. bash scripts/verify-suite-checkout.sh || rc=$?
           [ "$rc" -eq 2 ] || { echo "verifier accepted a wrong SHA (rc=$rc)"; exit 1; }
           EXPECTED="$(git rev-parse HEAD)" SUITE_DIR=. bash scripts/verify-suite-checkout.sh
+      - name: PR evidence collector refuses invisible-green and denied-probe assumptions
+        run: bash tests/inspect-pr-ci.sh
       - name: Rust gate
         run: bash actions/rust-ci-check/test.sh
       - name: Creusot gate
