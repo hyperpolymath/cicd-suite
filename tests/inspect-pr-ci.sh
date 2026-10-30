@@ -16,7 +16,18 @@ elif [[ $* == *'/rules/branches/'* ]]; then
     if [[ ${DENIED:-0} == 1 ]]; then echo '403 rules denied' >&2; exit 1; fi
     echo '[]'
 elif [[ $* == *'/protection/'* ]]; then
-    echo '{"contexts":["scan / gitleaks"]}'
+    if [[ ${PROTECTION_STATUS:-200} == 404 ]]; then
+        printf 'HTTP/2.0 404 Not Found\r\n\r\n{"message":"Not Found"}\n'
+        echo 'gh: Not Found (HTTP 404)' >&2; exit 1
+    fi
+    if [[ ${PROTECTION_STATUS:-200} == 403 ]]; then
+        printf 'HTTP/2.0 403 Forbidden\r\n\r\n'
+        echo 'gh: denied (HTTP 403)' >&2; exit 1
+    fi
+    if [[ ${PROTECTION_STATUS:-200} == error ]]; then
+        echo 'network failed while fetching /404' >&2; exit 1
+    fi
+    printf 'HTTP/2.0 200 OK\r\nContent-Type: application/json\r\n\r\n{"contexts":["scan / gitleaks"]}\n'
 elif [[ $* == *'/actions/runs?'* ]]; then
     # Run 1 is a historical failure superseded by run 2. Run 3 has no jobs.
     # The second API page contains run 4, which must not disappear.
@@ -33,7 +44,7 @@ MOCK
 chmod +x "$work/bin/gh"
 export PATH="$work/bin:$PATH" CALLS="$work/calls"
 bash "$root/scripts/inspect-pr-ci.sh" owner/repo 1 >"$work/report.json"
-jq -e '.zero_job_failures==[3] and (.latest_head_runs|length)==3 and (.non_success_run_jobs|length)==2 and .pr.mergeStateStatus=="BLOCKED" and (.limitations|length)>0' "$work/report.json" >/dev/null
+jq -e '.classic_required_checks.contexts==["scan / gitleaks"] and .zero_job_failures==[3] and (.latest_head_runs|length)==3 and (.non_success_run_jobs|length)==2 and .pr.mergeStateStatus=="BLOCKED" and (.limitations|length)>0' "$work/report.json" >/dev/null
 grep -q 'rules/branches/release%2Ftest' "$CALLS"
 grep -q -- '--paginate' "$CALLS"
 ! grep -q '/runs/1/jobs' "$CALLS"
@@ -44,6 +55,16 @@ DENIED=1 bash "$root/scripts/inspect-pr-ci.sh" owner/repo 1 >"$work/denied.json"
 [[ $rc == 2 ]]
 jq -e '.rules.probe_error|contains("403")' "$work/denied.json" >/dev/null
 echo 'ok: denied rules probe remains unknown, not healthy'
+PROTECTION_STATUS=404 bash "$root/scripts/inspect-pr-ci.sh" owner/repo 1 >"$work/absent.json"
+jq -e '.classic_required_checks == null' "$work/absent.json" >/dev/null
+echo 'ok: absent classic protection is not a failed probe'
+for status in 403 error; do
+    rc=0
+    PROTECTION_STATUS=$status bash "$root/scripts/inspect-pr-ci.sh" owner/repo 1 >"$work/protection-error.json" || rc=$?
+    [[ $rc == 2 ]]
+    jq -e '.classic_required_checks.probe_error | length > 0' "$work/protection-error.json" >/dev/null
+done
+echo 'ok: denied and other failed protection probes remain errors'
 rc=0
 JOBS_DENIED=1 bash "$root/scripts/inspect-pr-ci.sh" owner/repo 1 >"$work/jobs-denied.json" || rc=$?
 [[ $rc == 2 ]]

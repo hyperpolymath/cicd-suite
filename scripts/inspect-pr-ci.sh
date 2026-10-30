@@ -21,10 +21,23 @@ collect() {
     local name=$1
     shift
     if "$@" >"$work/$name.json" 2>"$work/$name.err"; then
-        jq -e . "$work/$name.json" >/dev/null || return 2
+        jq -e 'true' "$work/$name.json" >/dev/null || return 2
     else
         jq -n --rawfile error "$work/$name.err" '{probe_error:$error}' >"$work/$name.json"
     fi
+}
+# Inspect the HTTP status, not an error message that merely mentions 404.
+classic_protection() {
+    local response="$work/protection.http" rc=0
+    gh api --include "$1" >"$response" || rc=$?
+    if (( rc != 0 )); then
+        if head -n 1 "$response" | grep -Eq '^HTTP/[0-9.]+ 404([[:space:]]|$)'; then
+            echo null
+            return 0
+        fi
+        return "$rc"
+    fi
+    sed '1,/^\r\{0,1\}$/d' "$response"
 }
 collect pr gh pr view "$number" --repo "$repo" --json number,url,state,baseRefName,headRefOid,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup
 if jq -e 'has("probe_error")' "$work/pr.json" >/dev/null; then
@@ -35,7 +48,7 @@ head=$(jq -er '.headRefOid' "$work/pr.json")
 base=$(jq -er '.baseRefName' "$work/pr.json")
 encoded_base=$(jq -rn --arg value "$base" '$value|@uri')
 collect rules paginated "repos/$repo/rules/branches/$encoded_base"
-collect protection gh api "repos/$repo/branches/$encoded_base/protection/required_status_checks"
+collect protection classic_protection "repos/$repo/branches/$encoded_base/protection/required_status_checks"
 # Both PR and push workflows count; a zero-job run never appears in rollup.
 # Paginate rather than trusting gh run list's default limit of twenty.
 collect runs paginated "repos/$repo/actions/runs?head_sha=$head&per_page=100"

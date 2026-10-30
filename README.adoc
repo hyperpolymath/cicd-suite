@@ -396,8 +396,9 @@ Code MPL-2.0, prose CC-BY-SA-4.0. See link:LICENSE[`+LICENSE+`].
 `+bash scripts/inspect-pr-ci.sh OWNER/REPO PR_NUMBER+` collects read-only
 JSON evidence: PR checks, effective branch rules, classic protection,
 head-SHA workflow runs and jobs, including failed workflows with zero jobs.
-Requires `+gh+` and `+jq+`; exit 2 means an incomplete inspection, including
-denied API probes. Exit 0 means collection succeeded, *not* that CI passed.
+Requires `+gh+` and `+jq+`; exit 2 means collection did not complete, including
+invalid arguments, missing `+gh+` or `+jq+`, and denied API probes. Exit 0
+means collection succeeded, *not* that CI passed.
 The report is not merge authorisation, a full check-history export, or an
 implementation of cicd-squabbler. Use squabbler for attribution and repair.
 No logs, artifacts, secrets, policy edits, reruns or merges are requested.
@@ -418,6 +419,9 @@ upstream SHA; no renamed standards reusable is needed at runtime.
 The direct caller template preserves `+scan / gitleaks+`. Full history
 remains the default. `+fast-pr: true+` explicitly opts PRs into scanning
 all introduced commits, not merely the final diff; non-PR runs remain full.
+PR scans use the base commit's configuration and extensions; extensions must
+stay within that tree. A changed `+.gitleaksignore+` fails the scan. PR scans
+require Python 3.11 or newer to validate configuration paths.
 A full ancestry checkout is still required: this version reduces scanning
 work, not checkout history size. No speed claim is established without
 runner measurements. The job deadline is 15 minutes; each main scan is
