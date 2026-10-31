@@ -1,0 +1,50 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Workflow lock boundary and live proof canary
+
+== Scope finding disposition
+
+The previous four-keys/fourteen-workflows observation is not sufficient to
+justify onboarding every workflow. main-estate-audit.yml already documents its
+intentional de-onboarding and the historical startup failures from the locked
+cross-repository form. This change does not re-onboard it, remove a managed
+header, change required contexts or regenerate unrelated dependency pins.
+
+`config/workflow-lock-scope.json` records the reviewed boundary: managed files
+must have map keys and direct/local-composite/declared-remote-edge coverage;
+immutable files remain outside the map and must use full-SHA remote references.
+Remote job-level reusable sources must be full-SHA pinned, not represented by
+invented CLI lock entries. Every workflow file must be classified once.
+The newly added live canary is explicitly classified too.
+
+The guard reads YAML through mikefarah yq, then jq. It rejects an omitted managed
+key even when all other map entries are internally consistent. It follows
+same-repository composite steps and declared remote dependency edges, detecting
+missing workflow edges and dependency records. It does not download remote
+sources or establish that their declared closure is complete or that repositories,
+commits, ownership, provenance and runner admission are correct. Keep the existing
+transitive-closure and pin-representation tests; this complements them.
+
+Eight negative controls cover omitted managed key, dropped direct record,
+dropped composite edge, absent nested edge, duplicate/unknown scope,
+unreviewed workflow and floating immutable reusable reference. Scope mode changes
+are policy-sensitive review decisions, not an escape hatch for failing checks.
+The historical managed-header discrepancy remains documented; comments are not
+used as the authoritative scope parser.
+
+== Published-source Creusot canary
+
+`.github/workflows/creusot-live-canary.yml` calls the already-published source
+`d810f2a872393d2bf66ab09bfd24dca7c67d6d17` directly. A minimal tracked Rust
+identity obligation selects the actual proof lane. The published workflow must
+install Creusot and execute its own planted false/true controls before the fixture
+proof. Mock tests alone cannot satisfy this evidence requirement.
+
+The canary uses contents: read, no inherited secrets, and no consumer changes.
+It triggers only for PRs touching the canary or its fixture. No automatic broad
+rollout, configurable bypass or required-context change is introduced.
+A setup failure is NOT RUN, not a failed proof; success, if observed, proves only
+this fixture and the control/tool path, not arbitrary consumer programs.
+Record the resulting run, exact commit and step conclusions before declaring
+current-source validation complete. At creation of this change, live outcome is
+pending; local sandbox does not contain the prover or mikefarah yq, so neither
+live proving nor the yq scope tests are represented as locally passed.

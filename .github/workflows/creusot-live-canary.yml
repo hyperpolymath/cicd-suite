@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: MPL-2.0
+# Real-tool validation of an already-published source, not consumer deployment.
+name: Published Creusot live canary
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/creusot-live-canary.yml'
+      - 'tests/fixtures/creusot-live/**'
+permissions:
+  contents: read
+concurrency:
+  group: creusot-live-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  creusot:
+    # Source published by PR69. The direct caller resolver reads this exact pin.
+    uses: hyperpolymath/cicd-suite/.github/workflows/creusot-gate.yml@d810f2a872393d2bf66ab09bfd24dca7c67d6d17
+    with:
+      working_directory: tests/fixtures/creusot-live
+      enforce_hollow: true
