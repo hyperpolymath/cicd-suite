@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MPL-2.0
+[package]
+name = "cicd-suite-creusot-live"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+creusot-std = "=0.14.0"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(creusot)'] }

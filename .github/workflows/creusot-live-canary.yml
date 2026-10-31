@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: MPL-2.0
+name: Creusot live canary
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/creusot-live-canary.yml'
+      - 'tests/fixtures/creusot-live/**'
+      - 'tests/creusot-live-canary.sh'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: creusot-live-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  fixture:
+    name: Fixture lock bootstrap (not proof)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Resolve a genuine fixture lockfile with Cargo
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo --version
+          cargo generate-lockfile --manifest-path tests/fixtures/creusot-live/Cargo.toml
+          # Bootstrap transport only. This is public dependency metadata, not proof.
+          lock=$(base64 -w0 tests/fixtures/creusot-live/Cargo.lock)
+          echo "::notice title=fixture-lock-bootstrap::$lock"
