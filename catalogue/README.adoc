@@ -38,12 +38,12 @@ Workflow wrappers and caller templates are entry points, not additional actions.
 
 [source,shell]
 ----
-python3 scripts/build-capability-catalogue.py
-python3 scripts/build-capability-catalogue.py --check
-python3 tests/capability-catalogue.py
+bash scripts/build-capability-catalogue.sh
+bash scripts/build-capability-catalogue.sh --check
+bash tests/capability-catalogue.sh
 ----
 
-The tools use Python's standard library only. The existing hosted controls run
+The tools use Bash, jq and standard Unix utilities, following repository language policy. The existing hosted controls run
 the read-only drift check and tests. Inventory omissions, duplicate/unknown
 classifications, missing targets, path escapes, stale pages and stale README
 counts fail the checks. Negative controls exercise these boundaries.

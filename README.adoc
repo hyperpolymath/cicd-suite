@@ -114,8 +114,8 @@ Verify inventory coverage and generated pages at any time:
 
 [source,sh]
 ----
-python3 scripts/build-capability-catalogue.py --check
-python3 tests/capability-catalogue.py
+bash scripts/build-capability-catalogue.sh --check
+bash tests/capability-catalogue.sh
 ----
 
 Classifications are reviewed metadata, not inferred by grepping for `exit 1`.
