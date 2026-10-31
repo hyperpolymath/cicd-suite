@@ -86,13 +86,11 @@ revision, not the PR branch. The scope inventory now has fifteen workflows:
 four managed and eleven immutable; no actions.lock onboarding or pin rewrites.
 
 The identity fixture includes project-root Why3find configuration, selects the
-installed Z3 prover and contains no trusted axioms. Its genuine Cargo.lock was
-resolved by Cargo in
-https://github.com/hyperpolymath/cicd-suite/actions/runs/41243475630[bootstrap run 41243475630]
-at `6842fc8aa6b3f28c2abfa06a03a0d317e5a56f3f`, then retrieved byte-for-byte from
-the job's public lockfile annotation (not hand-written or reconstructed).
-SHA-256: `6afcbbb02f4213f7a9cb1b7f23e65d536706351ef84eea2e38494004d36c88ac`.
-The bootstrap transport is removed from the final workflow.
+installed Z3 prover and contains no trusted axioms. The first bootstrap run generated a lockfile, but its single annotation was
+truncated in transit. Full locked metadata parsing rejected that incomplete
+file, so no proof was attempted. The replacement transport uses bounded chunks
+and checks both length and SHA-256 before committing Cargo's complete output.
+The bootstrap transport must be removed from the final workflow.
 
 Preflight verifies publication ancestry, the exact call inputs, configuration,
 absence of trusted axioms and Cargo's `--locked` resolution. Five mutants remove
