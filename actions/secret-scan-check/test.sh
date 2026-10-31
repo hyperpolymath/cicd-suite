@@ -47,13 +47,17 @@ fixture() {
 commit() { git -C "$SUBJECT" add .; git -C "$SUBJECT" commit -qm control; }
 expect() {
     local expected=$1 label=$2 rc=0
-    HEAD_SHA=$(git -C "$SUBJECT" rev-parse HEAD) PR_HEAD=$(git -C "$SUBJECT" rev-parse HEAD) \
+    : > "$tmp/receipt"
+    GITHUB_OUTPUT="$tmp/receipt" HEAD_SHA=$(git -C "$SUBJECT" rev-parse HEAD) PR_HEAD=$(git -C "$SUBJECT" rev-parse HEAD) \
         PR_BASE=${PR_BASE:-$BASE_SHA} bash "$root/actions/secret-scan-check/check.sh" >"$tmp/output" 2>&1 || rc=$?
     if [[ $rc != "$expected" ]]; then cat "$tmp/output"; echo "FAIL $label: wanted $expected got $rc"; exit 1; fi
     echo "ok: $label"
 }
 fixture clean
 SCAN_MODE=full expect 0 'clean full history and tree'
+grep -q '^rust_status=0$' "$tmp/receipt"
+grep -q '^shell_status=0$' "$tmp/receipt"
+grep -q "^subject_sha=$(git -C "$SUBJECT" rev-parse HEAD)$" "$tmp/receipt"
 SCAN_MODE=pr-range expect 0 'empty introduced range still scans the tree'
 # Build three PR commits. Final tree and BASE..HEAD file diff are clean.
 printf '%s_%s\n' ghp Q7mN2aR9vB4cD6eF8gH1jK3pL5sT0uV2wX4z >"$SUBJECT/key.txt"
@@ -112,12 +116,14 @@ printf 'const AUTH_SECRET: &str = "%s%s";\n' N7cR2mQ9aB4dE6fG 8hJ1kL3pS5tV0wX2 >
 commit
 SCAN_MODE=full expect 1 'Rust supplemental finding contributes to composite verdict'
 grep -q 'supplement=rust exit=1' "$tmp/output"
+grep -q '^rust_status=1$' "$tmp/receipt"
 fixture shellliteral
 printf 'export SERVICE_TOKEN="%s%s"\n' N7cR2mQ9aB4dE6fG 8hJ1kL3pS5tV0wX2 >"$SUBJECT/run.sh"
 echo '*.sh' >"$SUBJECT/.shell-secrets-ignore"
 commit
 GITHUB_EVENT_NAME=pull_request SCAN_MODE=pr-range expect 1 'PR shell finding cannot be waived by a head-added ignore'
 grep -q 'supplement=shell exit=1' "$tmp/output"
+grep -q '^shell_status=1$' "$tmp/receipt"
 fixture wrongbase
 BASE_SHA=0000000000000000000000000000000000000000 SCAN_MODE=pr-range expect 2 'missing base refuses a verdict'
 echo mismatch >"$SUBJECT/.gitleaks-estate.toml"

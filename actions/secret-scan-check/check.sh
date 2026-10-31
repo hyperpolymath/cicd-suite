@@ -114,6 +114,9 @@ fi
 (cd "$scan_dir" && GITLEAKS_BIN="$scanner" bash "$script_dir/control.sh" "$config") || exit 2
 version=$("$scanner" version) || exit 2
 printf 'scanner=%s mode=%s head=%s history_commits=%s\n' "$version" "$mode" "$head" "$population"
+if [[ -n ${GITHUB_OUTPUT:-} ]]; then
+    printf 'subject_sha=%s\n' "$head" >> "$GITHUB_OUTPUT" || exit 2
+fi
 verdict=0
 for pass in tree history; do
     started=$SECONDS
@@ -139,6 +142,9 @@ for language in rust shell; do
     (cd "$subject" && SHELL_IGNORE_FILE="$scan_dir/.shell-secrets-ignore" \
         timeout --signal=TERM --kill-after=10s 90s bash "$script_dir/$language-supplement.sh") || rc=$?
     printf 'supplement=%s exit=%s\n' "$language" "$rc"
+    if [[ -n ${GITHUB_OUTPUT:-} ]]; then
+        printf '%s_status=%s\n' "$language" "$rc" >> "$GITHUB_OUTPUT" || exit 2
+    fi
     case $rc in
         0) ;;
         1) [[ $verdict == 2 ]] || verdict=1 ;;
