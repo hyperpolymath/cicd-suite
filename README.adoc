@@ -29,6 +29,11 @@ gate formally verifies code. Existing action paths and execution semantics are
 unchanged. The catalogue is generated from link:catalogue/capabilities.json[a
 validated inventory]; CI rejects uncatalogued actions and stale pages.
 
+See the link:docs/CAPABILITY-ASSURANCE.adoc[capability assurance matrix] for
+linked regression controls, explicit evidence gaps and consumer receipts, and
+the link:docs/assurance/SUITE-CLOSEOUT.adoc[suite-first completion ledger] for
+remaining shared work. These records do not certify every capability.
+
 == Estate-wide audit
 
 A subset of the suite is orchestrated by the reusable workflow
