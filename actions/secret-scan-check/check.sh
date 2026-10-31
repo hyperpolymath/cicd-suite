@@ -132,5 +132,18 @@ for pass in tree history; do
         *) verdict=2 ;;
     esac
 done
+# Preserve the old bundle's unique Rust/shell heuristics. PR shell ignore
+# policy comes from the trusted base, just like the Gitleaks configuration.
+for language in rust shell; do
+    rc=0
+    (cd "$subject" && SHELL_IGNORE_FILE="$scan_dir/.shell-secrets-ignore" \
+        timeout --signal=TERM --kill-after=10s 90s bash "$script_dir/$language-supplement.sh") || rc=$?
+    printf 'supplement=%s exit=%s\n' "$language" "$rc"
+    case $rc in
+        0) ;;
+        1) [[ $verdict == 2 ]] || verdict=1 ;;
+        *) verdict=2 ;;
+    esac
+done
 printf 'verdict=%s (0=passed, 1=findings, 2=infrastructure/configuration/timeout)\n' "$verdict"
 exit "$verdict"

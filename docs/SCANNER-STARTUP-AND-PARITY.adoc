@@ -1,0 +1,100 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Post-merge scanner startup and supplemental coverage
+
+== Confirmed errors, not inferred causes
+
+On main at d285b0a6f9bd85c7d678619dd6269437127dddb5:
+
+* https://github.com/hyperpolymath/cicd-suite/actions/runs/41146506473[Suite scanner]
+  has zero jobs. Its public run page states `error parsing called workflow`
+  and `workflow was not found` for cicd-suite at
+  50dc27f47e39f7ac046596c071ed4ea80b4989e0, the pre-merge PR pin.
+* https://github.com/hyperpolymath/cicd-suite/actions/runs/41146506506[Legacy scanner]
+  also reports `workflow was not found`, for the old hyperpolymath/standards
+  coordinate at 74d2f66f575246cf6e313ae7775f44df6e097ff2.
+* After repinning the suite caller to the published d285b0a main commit,
+  https://github.com/hyperpolymath/cicd-suite/actions/runs/41146768428[the actual scanner]
+  passed in a 13-second job. This pin also selects the trusted-base config
+  improvements merged in #62, which the previous pin did not include.
+* Repointing only the legacy repository name, keeping its exact SHA, produced
+  https://github.com/hyperpolymath/cicd-suite/actions/runs/41146769214[an explicit admission rejection]:
+  the reusable is not allowed because workflows must be owned by hyperpolymath
+  or match the caller's allowed patterns. The canonical standards owner is
+  metadatastician. This is now observed policy evidence, not speculation.
+
+The remedy here does not widen policy. The suite ports the relevant legacy
+Rust/shell detectors under its existing owner. The file formerly named
+secret-scanner-legacy.yml now runs these two maintained local checks rather
+than another Gitleaks pass or a moved-owner reusable. Its filename remains for
+continuity; its displayed name is Supplemental secret checks.
+
+== Empirical coverage evidence
+
+`bash tests/secret-scanner-supplements.sh` compares production ports against
+frozen run bodies extracted from the exact standards commit above. Oracles
+are test-only: they are run against generated synthetic fixtures, and their
+unredacted output is kept in a temporary directory and deleted on exit.
+Production outputs never include matched source values.
+
+26 differential fixtures cover:
+
+* Rust workspace const/static SECRET/KEY/TOKEN, api_key/password/HMAC literals;
+* Rust environment lookups, URL values, comments, pragmas and short literals;
+* shell TOKEN/API_KEY/SECRET/PASSWORD assignments;
+* shell environment lookups, comments, same-line/preceding-line pragmas,
+  Hypatia pragmas, repository ignore globs and short literals.
+
+Five additional hardening controls cover subject-added ignore policy,
+ambiguous shell locations, Rust redaction with colons in filenames, and
+Rust/shell population-tool failures. These are intentional improvements over
+the oracle, not identical legacy behaviour.
+
+Findings outside root src/ are always enforcing: the legacy grace cutoff was
+2026-08-21 and is no longer an environment-controlled way to return success.
+Rust source enumeration is NUL-delimited; tool/read errors report exit 2.
+Shell locations must parse as positive decimal line numbers before arithmetic.
+
+This is empirical regression evidence, not a formal proof of equivalence,
+coverage of every language syntax, or a full consumer-corpus benchmark. The
+old heuristic suppressions are retained for compatibility, not endorsed as
+universal security policy. Comment/pragma suppressions still need review;
+Gitleaks remains an independent detector alongside these heuristics.
+
+== Composite verdict and policy trust
+
+The scanner check script now executes both supplementary detectors, bounded
+at 90 seconds each. Gitleaks tree/history passes and both supplements are
+attempted independently after detector controls succeed. A finding in any
+pass fails; infrastructure/configuration/timeout failure takes precedence as
+exit 2. An absent Cargo manifest is explicitly not applicable to Rust only,
+not an excuse to skip the other scanners.
+
+For PRs, shell ignore globs are read from the trusted base materialised by
+the scanner, not a newly added head ignore file. New supplementary code is
+covered by both differential fixtures and the real-detector integration
+fixtures in the self-test workflow. The currently published reusable pin
+continues selecting d285b0a until this implementation is published on main.
+The suite's separate local supplement jobs exercise the new ports meanwhile.
+
+== Safe publishing and next rollout
+
+Publish implementation to main first, then pin callers to that reachable,
+reviewed commit. Do not pin production callers to an intermediate PR commit
+and assume a squash merge keeps the reusable resolvable. #64 initially fixes
+the existing caller using an already-published main SHA; it does not repin it
+to its own unmerged implementation. Consumer migration is a separate step.
+
+After #64's current-head checks pass and review is complete:
+
+. Merge the suite implementation; observe its push-to-main scanner checks.
+. Use the resulting main commit (not an intermediate PR SHA) for a new caller
+  canary containing the integrated supplementary verdict.
+. Exercise Rust, shell-heavy and documentation-heavy consumers first,
+  preserving their local configuration, triggers, default branch and locks.
+. Expand only after startup, required-context identity, planted defects and
+  genuine clean runs have been observed on those consumers.
+
+No consumer repository has been changed in this follow-up. The earlier
+360-repository inventory is a planning snapshot, not a deployment ledger.
+No admin merge, dropped required check, secret inheritance, broad permission
+change or permanent duplicated full-history scanner is part of this fix.
