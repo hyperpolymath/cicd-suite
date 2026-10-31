@@ -1,0 +1,53 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Maintaining the Capability Atlas
+
+For visitors, start at link:../CATALOGUE.adoc[the CI/CD Capability Atlas].
+This directory holds its inventory and generated clade cards, not executable
+packages, a repo-chora file or a new required governance document for consumers.
+
+== Two axes, one primary home
+
+* *Clade:* the capability's primary purpose. Sentinel, Covenant, Forge, Schema,
+  Proof, Bridge, Observatory and Frontier are discoverable families.
+* *Nature:* what the capability actually does: scanner, receipt verifier,
+  policy gate, validator, build/test executor, proof executor, integration,
+  advisory signal or placeholder.
+* *Status:* its enforcement boundary, independent of the two discovery axes.
+  An enforcing source-pattern check is still not a compiler or formal proof.
+
+BoJ's separation of capability domain and interface/type inspired this layout;
+these entries are GitHub Actions, not certified BoJ cartridges. Existing public
+paths remain stable. One capability gets one primary clade; related behaviours
+are described in its summary and limitations rather than counted as extra products.
+Workflow wrappers and caller templates are entry points, not additional actions.
+
+== Add or revise a capability
+
+. Implement/review the actual action and its tests first.
+. Add its single entry to link:capabilities.json[capabilities.json]. Use a stable
+  ID matching `actions/<id>-check/action.yml` and an existing primary clade.
+. Describe actual behaviour, not aspirational marketing. Record prerequisites,
+  skipped/not-applicable behaviour and important assurance limitations. Put
+  unfinished integrations in Frontier with stub/placeholder classification.
+. Link the reusable workflow and caller template when these exist. Do not copy
+  runtime code into clade directories or change public action paths to match names.
+. Run the renderer, update the README's headline counts when the inventory grows,
+  and run the regression checks below.
+. Review rendered links and labels. Generated coverage checks do not establish
+  the semantic correctness of an action or replace its positive/negative controls.
+
+[source,shell]
+----
+bash scripts/build-capability-catalogue.sh
+bash scripts/build-capability-catalogue.sh --check
+bash tests/capability-catalogue.sh
+----
+
+The tools use Bash, jq and standard Unix utilities, following repository language policy. The existing hosted controls run
+the read-only drift check and tests. Inventory omissions, duplicate/unknown
+classifications, missing targets, path escapes, stale pages and stale README
+counts fail the checks. Negative controls exercise these boundaries.
+
+Do not hand-edit generated `clades/*.adoc` or `../CATALOGUE.adoc`; change the
+inventory or renderer. A taxonomy change must not silently alter runtime policy,
+required contexts, toolchain installation, lock closure or rollout approval.

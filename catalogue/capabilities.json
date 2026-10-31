@@ -1,0 +1,377 @@
+{
+  "schema_version": 1,
+  "clades": [
+    {
+      "id": "sentinel",
+      "title": "Sentinel — security & trusted results",
+      "summary": "Find exposed credentials and verify authoritative analysis without manufacturing a green result."
+    },
+    {
+      "id": "covenant",
+      "title": "Covenant — governance & provenance",
+      "summary": "Establish repository identity, policy documents, attribution and licensing."
+    },
+    {
+      "id": "forge",
+      "title": "Forge — source & build hygiene",
+      "summary": "Control source debt, document formats, language policy and task-runner syntax."
+    },
+    {
+      "id": "schema",
+      "title": "Schema — manifests & contracts",
+      "summary": "Validate structured manifests and executable contract declarations."
+    },
+    {
+      "id": "proof",
+      "title": "Proof — languages & verification",
+      "summary": "Compile, test, inspect interfaces and execute proof tools where applicable."
+    },
+    {
+      "id": "bridge",
+      "title": "Bridge — ecosystem integration",
+      "summary": "Connect BoJ capabilities and external analysis tools to repository checks."
+    },
+    {
+      "id": "observatory",
+      "title": "Observatory — advisory signals",
+      "summary": "Discover useful signals without presenting warnings or heuristics as certification."
+    },
+    {
+      "id": "frontier",
+      "title": "Frontier — unfinished capabilities",
+      "summary": "Visible roadmap boundaries: not implemented assurance and not recommended gates."
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "secret-scan",
+      "clade": "sentinel",
+      "status": "enforcing",
+      "nature": "scanner",
+      "title": "Bounded secret scanning",
+      "summary": "Redacted working-tree and history scans with checksum-pinned Gitleaks, real detector controls and Rust/shell supplements.",
+      "limitations": "Full-history default; complete ancestry required. Fast PR mode requires security-owner approval.",
+      "path": "actions/secret-scan-check/action.yml",
+      "workflow": ".github/workflows/secret-scanner-reusable.yml",
+      "template": "templates/secret-scanner-caller.yml"
+    },
+    {
+      "id": "secrets",
+      "clade": "sentinel",
+      "status": "enforcing",
+      "nature": "policy-gate",
+      "title": "Private-key material",
+      "summary": "Detect PEM/OpenSSH private-key material in the working tree.",
+      "limitations": "Narrow detector, not a replacement for full-history secret scanning.",
+      "path": "actions/secrets-check/action.yml"
+    },
+    {
+      "id": "vaulted-tokens",
+      "clade": "sentinel",
+      "status": "enforcing",
+      "nature": "policy-gate",
+      "title": "Vaulted token format",
+      "summary": "Enforce the estate token-wrapper representation policy.",
+      "limitations": "A format check is not proof that credentials are valid, secret or rotated.",
+      "path": "actions/vaulted-tokens-check/action.yml"
+    },
+    {
+      "id": "sonarcloud-result",
+      "clade": "sentinel",
+      "status": "enforcing",
+      "nature": "receipt-verifier",
+      "title": "Authoritative SonarCloud receipt",
+      "summary": "Verify the newest official-app result for an exact repository and commit.",
+      "limitations": "Does not run analysis; missing/pending/skipped/API failures cannot pass. Requires checks: read and existing app coverage.",
+      "path": "actions/sonarcloud-result-check/action.yml"
+    },
+    {
+      "id": "required-files",
+      "clade": "covenant",
+      "status": "enforcing",
+      "nature": "policy-gate",
+      "title": "Repository foundations",
+      "summary": "Check required structural documents, substance and repository-specific ownership.",
+      "limitations": "Applicability and repository policy still require review.",
+      "path": "actions/required-files-check/action.yml"
+    },
+    {
+      "id": "spdx-license",
+      "clade": "covenant",
+      "status": "enforcing",
+      "nature": "policy-gate",
+      "title": "Licensing & SPDX",
+      "summary": "Inspect licence files and estate SPDX conventions.",
+      "limitations": "Not a legal opinion or full dependency licence audit.",
+      "path": "actions/spdx-license-check/action.yml"
+    },
+    {
+      "id": "affirmation",
+      "clade": "covenant",
+      "status": "enforcing",
+      "nature": "policy-gate",
+      "title": "Affirmation snapshots",
+      "summary": "Validate applicable AFFIRMATION snapshots and configured signature trust.",
+      "limitations": "Optional unless declared required; a document is not self-proving.",
+      "path": "actions/affirmation-check/action.yml"
+    },
+    {
+      "id": "referencing",
+      "clade": "covenant",
+      "status": "enforcing",
+      "nature": "validator",
+      "title": "Citation metadata",
+      "summary": "Validate core Citation File Format fields when applicable.",
+      "limitations": "Not a scholarly accuracy or citation-completeness review.",
+      "path": "actions/referencing-check/action.yml"
+    },
+    {
+      "id": "code-hygiene",
+      "clade": "forge",
+      "status": "enforcing",
+      "nature": "policy-gate",
+      "title": "Source debt & proof escapes",
+      "summary": "Find untracked debt markers and undeclared proof circumventions with source-aware rules.",
+      "limitations": "Declared trusted bases and reviewed exemptions matter; not a semantic proof.",
+      "path": "actions/code-hygiene-check/action.yml"
+    },
+    {
+      "id": "formatting",
+      "clade": "forge",
+      "status": "enforcing",
+      "nature": "policy-gate",
+      "title": "Document format policy",
+      "summary": "Enforce estate file-format conventions with named exceptions.",
+      "limitations": "Opinionated estate policy, not a general-purpose formatter.",
+      "path": "actions/formatting-check/action.yml"
+    },
+    {
+      "id": "linguist",
+      "clade": "forge",
+      "status": "enforcing",
+      "nature": "policy-gate",
+      "title": "Language inventory policy",
+      "summary": "Inspect language policy and Linguist configuration.",
+      "limitations": "Static repository policy, not compiler validation.",
+      "path": "actions/linguist-check/action.yml"
+    },
+    {
+      "id": "recipes-set",
+      "clade": "forge",
+      "status": "enforcing",
+      "nature": "validator",
+      "title": "Task-runner syntax",
+      "summary": "Parse-check Justfile or Makefile recipes.",
+      "limitations": "Syntax validation does not execute or prove every recipe.",
+      "path": "actions/recipes-set-check/action.yml"
+    },
+    {
+      "id": "manifest",
+      "clade": "schema",
+      "status": "enforcing",
+      "nature": "validator",
+      "title": "DEED & K9 manifests",
+      "summary": "Use maintained format validators for manifest structure.",
+      "limitations": "Validator/source prerequisites apply; structure is not runtime correctness.",
+      "path": "actions/manifest-check/action.yml"
+    },
+    {
+      "id": "contractile-validation",
+      "clade": "schema",
+      "status": "tool-dependent",
+      "nature": "validator",
+      "title": "Contractile declarations",
+      "summary": "Validate applicable DEED contract declarations with maintained tooling.",
+      "limitations": "Not in the default estate audit; applicability and validator prerequisites apply.",
+      "path": "actions/contractile-validation-check/action.yml"
+    },
+    {
+      "id": "rust-ci",
+      "clade": "proof",
+      "status": "enforcing",
+      "nature": "build-test",
+      "title": "Strict Rust CI",
+      "summary": "Locked check, formatting, clippy, tests, doctests, documentation and MSRV phases.",
+      "limitations": "Use the reusable workflow for toolchain setup; only applicable Rust subjects are checked.",
+      "path": "actions/rust-ci-check/action.yml",
+      "workflow": ".github/workflows/rust-ci.yml",
+      "template": "templates/rust-ci-caller.yml"
+    },
+    {
+      "id": "creusot",
+      "clade": "proof",
+      "status": "enforcing",
+      "nature": "proof-executor",
+      "title": "Rust deductive verification",
+      "summary": "Inspect verification claims, run planted controls and execute Creusot obligations.",
+      "limitations": "Pinned proof tooling and actual obligations required; inspect detect/theatre/prove phases.",
+      "path": "actions/creusot-check/action.yml",
+      "workflow": ".github/workflows/creusot-gate.yml",
+      "template": "templates/creusot-gate-caller.yml"
+    },
+    {
+      "id": "spark",
+      "clade": "proof",
+      "status": "enforcing",
+      "nature": "proof-executor",
+      "title": "Ada/SPARK proof",
+      "summary": "Inspect SPARK projects, run planted controls and execute GNATprove.",
+      "limitations": "Requires the proof toolchain; absence is not proof success.",
+      "path": "actions/spark-check/action.yml",
+      "workflow": ".github/workflows/spark-gate.yml",
+      "template": "templates/spark-gate-caller.yml"
+    },
+    {
+      "id": "kanren",
+      "clade": "proof",
+      "status": "enforcing",
+      "nature": "build-test",
+      "title": "Relational-code checks",
+      "summary": "Detect relations, require goal-level tests and run applicable relational tests.",
+      "limitations": "Interpreter prerequisites apply; impure-operator policy is configurable.",
+      "path": "actions/kanren-check/action.yml",
+      "workflow": ".github/workflows/kanren-gate.yml",
+      "template": "templates/kanren-gate-caller.yml"
+    },
+    {
+      "id": "proof-runner",
+      "clade": "proof",
+      "status": "tool-dependent",
+      "nature": "proof-executor",
+      "title": "Idris2 & Lean proof runner",
+      "summary": "Run applicable Idris2 project typechecks and Lean lake builds.",
+      "limitations": "Not in default audit; a present project without its tool reports not_run, not success.",
+      "path": "actions/proof-runner-check/action.yml"
+    },
+    {
+      "id": "idris2-abi",
+      "clade": "proof",
+      "status": "enforcing",
+      "nature": "policy-gate",
+      "title": "Idris2 ABI source policy",
+      "summary": "When abi.ipkg exists, scan selected ABI source paths for prohibited IO/unsafe patterns.",
+      "limitations": "Source-pattern check only: this action does not run the Idris2 compiler or establish formal purity.",
+      "path": "actions/idris2-abi-check/action.yml"
+    },
+    {
+      "id": "zig-unified-api-adapter",
+      "clade": "proof",
+      "status": "enforcing",
+      "nature": "policy-gate",
+      "title": "Zig adapter source policy",
+      "summary": "Scan Zig files for direct std.fs/std.io usage prohibited by estate adapter policy.",
+      "limitations": "Pattern check, not a Zig compiler invocation or proof of adapter correctness.",
+      "path": "actions/zig-unified-api-adapter-check/action.yml"
+    },
+    {
+      "id": "boj-cartridge",
+      "clade": "bridge",
+      "status": "enforcing",
+      "nature": "integration",
+      "title": "BoJ cartridge applicability",
+      "summary": "Check cartridge presence when BoJ integration applies or is declared required.",
+      "limitations": "Does not prove a cartridge conforms to the full BoJ specification.",
+      "path": "actions/boj-cartridge-check/action.yml"
+    },
+    {
+      "id": "custom-tools",
+      "clade": "bridge",
+      "status": "tool-dependent",
+      "nature": "integration",
+      "title": "Pons & Panic Attack",
+      "summary": "Execute pons scan and panic-attack assail with explicit unavailable-tool outcomes.",
+      "limitations": "Install both tools first; not in default audit. Missing tools are not a passing scan.",
+      "path": "actions/custom-tools-check/action.yml"
+    },
+    {
+      "id": "badges",
+      "clade": "observatory",
+      "status": "advisory",
+      "nature": "advisory",
+      "title": "Accreditations & badges",
+      "summary": "Inspect badge/accreditation conventions and report advisory signals.",
+      "limitations": "Not independent certification of the advertised accreditation.",
+      "path": "actions/badges-check/action.yml"
+    },
+    {
+      "id": "gitsea",
+      "clade": "observatory",
+      "status": "advisory",
+      "nature": "advisory",
+      "title": "Analytics declarations",
+      "summary": "Inspect Git-Sea analytics configuration and disclaimer conventions.",
+      "limitations": "Configuration signals, not a privacy or analytics-service audit.",
+      "path": "actions/gitsea-check/action.yml"
+    },
+    {
+      "id": "hosting",
+      "clade": "observatory",
+      "status": "advisory",
+      "nature": "advisory",
+      "title": "Hosting configuration",
+      "summary": "Identify hosting targets from repository configuration.",
+      "limitations": "Live service-health reporting is simulated in the current action; no verified deployment health.",
+      "path": "actions/hosting-check/action.yml"
+    },
+    {
+      "id": "metrics",
+      "clade": "observatory",
+      "status": "advisory",
+      "nature": "advisory",
+      "title": "Metrics & proof indicators",
+      "summary": "Extract log/source heuristics for an advisory metrics view.",
+      "limitations": "Contains simulated defaults and brittle source-count heuristics; never use its PROVEN label as proof evidence.",
+      "path": "actions/metrics-check/action.yml"
+    },
+    {
+      "id": "tests-benches",
+      "clade": "observatory",
+      "status": "advisory",
+      "nature": "advisory",
+      "title": "Test & benchmark discoverability",
+      "summary": "Look for benchmark mentions and test/benchmark dashboards.",
+      "limitations": "Does not execute tests/benchmarks; metric extraction is mocked/N/A.",
+      "path": "actions/tests-benches-check/action.yml"
+    },
+    {
+      "id": "trust-humans",
+      "clade": "observatory",
+      "status": "advisory",
+      "nature": "advisory",
+      "title": "Human trust declarations",
+      "summary": "Inspect trust.txt/humans.txt and association conventions.",
+      "limitations": "Presence is not verification of identity or trustworthiness.",
+      "path": "actions/trust-humans-check/action.yml"
+    },
+    {
+      "id": "www-compliance",
+      "clade": "observatory",
+      "status": "advisory",
+      "nature": "advisory",
+      "title": "Web & well-known conventions",
+      "summary": "Inspect website and well-known/resource conventions.",
+      "limitations": "Advisory repository inspection, not a complete standards-conformance audit.",
+      "path": "actions/www-compliance-check/action.yml"
+    },
+    {
+      "id": "prat",
+      "clade": "frontier",
+      "status": "stub",
+      "nature": "placeholder",
+      "title": "PRAT testing placeholder",
+      "summary": "Heuristic presence/mention detection for prospective property-testing integration.",
+      "limitations": "Does not execute property tests or prove PRAT coverage; excluded from default audit.",
+      "path": "actions/prat-check/action.yml"
+    },
+    {
+      "id": "semantic-audit",
+      "clade": "frontier",
+      "status": "stub",
+      "nature": "placeholder",
+      "title": "Semantic audit placeholder",
+      "summary": "Reserved integration point for future semantic analysis.",
+      "limitations": "Current action prints a success message without invoking the proposed analyser. Not assurance; excluded from default audit.",
+      "path": "actions/semantic-audit-check/action.yml"
+    }
+  ]
+}

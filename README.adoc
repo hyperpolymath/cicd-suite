@@ -1,9 +1,41 @@
-== cicd-suite
+= CI/CD Suite
 
-Composite GitHub Actions for estate-wide CI/CD auditing. They are run by
-the reusable workflow `+.github/workflows/main-estate-audit.yml+`. Each
-repository *calls* that workflow from a ten-line caller; it does not copy
-it (see _Consuming it_).
+*An atlas of composable repository assurance: security, governance, build hygiene,
+contracts, language verification and ecosystem integration.*
+
+== Discover the suite
+
+Start with the link:CATALOGUE.adoc[*CI/CD Capability Atlas*]: *32 composite actions
+in 8 clades*, organised by both purpose and nature. Each capability has a source
+link, an assurance boundary and a status: enforcing, tool-dependent, advisory or
+unfinished. Reusable workflows and caller templates are linked where provided.
+This is the visitor catalogue, not repository-chora metadata.
+
+[cols="1,3",options="header"]
+|===
+|Clade |Explore
+|link:catalogue/clades/sentinel.adoc[Sentinel] |Security scanning & trusted result receipts
+|link:catalogue/clades/covenant.adoc[Covenant] |Governance, attribution & licensing
+|link:catalogue/clades/forge.adoc[Forge] |Source debt, formats & build hygiene
+|link:catalogue/clades/schema.adoc[Schema] |Manifest & contract validation
+|link:catalogue/clades/proof.adoc[Proof] |Language CI, proof execution & interface policy
+|link:catalogue/clades/bridge.adoc[Bridge] |BoJ applicability & external analysis tools
+|link:catalogue/clades/observatory.adoc[Observatory] |Advisory signals, with limitations made explicit
+|link:catalogue/clades/frontier.adoc[Frontier] |Unfinished capabilities, not deployable assurance
+|===
+
+Clades are a discovery taxonomy, not new runtime packages or a claim that every
+gate formally verifies code. Existing action paths and execution semantics are
+unchanged. The catalogue is generated from link:catalogue/capabilities.json[a
+validated inventory]; CI rejects uncatalogued actions and stale pages.
+
+== Estate-wide audit
+
+A subset of the suite is orchestrated by the reusable workflow
+`+.github/workflows/main-estate-audit.yml+`. Each repository *calls* that workflow
+from a small caller; it does not copy it (see _Consuming it_). Dedicated language
+and scanner workflows are separate entry points, not automatically part of the
+estate audit.
 
 The audit reports five component checks, one check run each:
 
@@ -32,9 +64,13 @@ absent tool a `not_run`/exit 2 instead of a pass.
 Before wiring this into a repository, read _Known defects_ and _Consuming
 it_.
 
-=== What actually enforces
+=== What actually enforces in the original audit inventory
 
-Of 26 actions, *17 can fail a build and 9 cannot* — and neither group
+The following 26-action baseline is not the total suite inventory. The current
+link:CATALOGUE.adoc[catalogue] includes the four later language gates, bounded
+secret scanner and official SonarCloud receipt verifier as well.
+
+Of the original 26 actions, *17 can fail a build and 9 cannot* — and neither group
 is one kind of thing: the 17 split into 14 always-in-the-audit enforcing
 gates and 3 tool-dependent gates that also refuse (`not_run`, exit 2)
 when their tool is absent, while the 9 split into 7 advisory gates and
@@ -49,9 +85,9 @@ when their tool is absent, while the 9 split into 7 advisory gates and
 vaulted-tokens · zig-unified-api-adapter |Can fail. A green tick means something.
 
 |*Advisory* (7) |badges · gitsea · hosting · metrics · tests-benches ·
-trust-humans · www-compliance |Do real work, warn on genuinely soft
-findings. Failing the estate over a missing Keybase link would be
-worse than not checking.
+trust-humans · www-compliance |Signal-only checks; some outputs are simulated or heuristic.
+Warnings are not certification or a successful live-service check.
+See the catalogue cards for each capability’s actual boundary.
 
 |*Tool-dependent, not in the audit* (3) |contractile-validation ·
 custom-tools · proof-runner |Can fail — and can refuse: with a subject
@@ -74,14 +110,18 @@ the remaining advisory seven are advisory _by design_, which is
 defensible — provided nobody reads their green tick as a guarantee.
 Renaming them `+*-advisory+` would settle that permanently.
 
-Verify at any time:
+Verify inventory coverage and generated pages at any time:
 
 [source,sh]
 ----
-for a in actions/*/; do
-  grep -rq 'exit 1' "$a" && echo "ENFORCE $(basename $a)" || echo "advise  $(basename $a)"
-done
+bash scripts/build-capability-catalogue.sh --check
+bash tests/capability-catalogue.sh
 ----
+
+Classifications are reviewed metadata, not inferred by grepping for `exit 1`.
+That string alone cannot establish applicability, enforcement or real execution.
+The advisory cards explicitly flag simulated hosting output and heuristic/mock
+metrics; they must not be read as live health checks or proof certification.
 
 A gate that cannot fail is worse than no gate, because it is credited as
 assurance. The advisory seven should either grow teeth or be renamed so
