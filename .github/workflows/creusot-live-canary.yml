@@ -28,20 +28,6 @@ jobs:
         run: |
           set -euo pipefail
           git merge-base --is-ancestor 6c6d772ebe82605ba22254db528faf54faec9f49 origin/main
-      - name: Recover the complete Cargo lock (bootstrap only, not proof)
-        shell: bash
-        run: |
-          set -euo pipefail
-          lock=tests/fixtures/creusot-live/Cargo.lock
-          rm "$lock"
-          cargo generate-lockfile --manifest-path tests/fixtures/creusot-live/Cargo.toml
-          # Bounded chunks avoid annotation truncation. Identity checks detect loss.
-          i=0
-          while IFS= read -r chunk; do
-            printf '::notice title=fixture-lock-%03d::%s\n' "$i" "$chunk"
-            i=$((i + 1))
-          done < <(base64 -w1800 "$lock")
-          printf '::notice title=fixture-lock-identity::%s %s\n' "$(wc -c < "$lock")" "$(sha256sum "$lock" | cut -d' ' -f1)"
       - name: Fixture prerequisites and missing-prerequisite mutants (not proof)
         shell: bash
         run: |

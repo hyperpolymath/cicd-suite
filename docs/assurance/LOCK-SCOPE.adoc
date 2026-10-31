@@ -90,7 +90,11 @@ installed Z3 prover and contains no trusted axioms. The first bootstrap run gene
 truncated in transit. Full locked metadata parsing rejected that incomplete
 file, so no proof was attempted. The replacement transport uses bounded chunks
 and checks both length and SHA-256 before committing Cargo's complete output.
-The bootstrap transport must be removed from the final workflow.
+The complete 6,016-byte, 26-package Cargo output was retrieved from
+https://github.com/hyperpolymath/cicd-suite/actions/runs/41243785211[bootstrap recovery run 41243785211]
+and verified before commit against its emitted byte count and SHA-256:
+`014ea0d22099b2ba30d487549187f647620e3a08807960018f55846b04161de6`.
+The bootstrap transport is removed from the final workflow.
 
 Preflight verifies publication ancestry, the exact call inputs, configuration,
 absence of trusted axioms and Cargo's `--locked` resolution. Five mutants remove
