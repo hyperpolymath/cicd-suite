@@ -76,3 +76,81 @@ proof oracle still initialises normally so it reaches the false-contract check.
 These regressions validate orchestration only, not SMT proof. A real pinned
 canary, including configured Why3find and a cargo-generated lockfile, remains
 outstanding. Removal of the exploratory fixture does not discharge that task.
+
+== Stage two: published-source live canary
+
+PR70 published the repaired gate at
+`6c6d772ebe82605ba22254db528faf54faec9f49`; its seven reported main workflows
+completed successfully. The narrow `creusot-live-canary.yml` calls exactly that
+revision, not the PR branch. The scope inventory now has fifteen workflows:
+four managed and eleven immutable; no actions.lock onboarding or pin rewrites.
+
+The identity fixture includes project-root Why3find configuration, selects the
+installed Z3 prover and contains no trusted axioms. The first bootstrap run generated a lockfile, but its single annotation was
+truncated in transit. Full locked metadata parsing rejected that incomplete
+file, so no proof was attempted. The replacement transport uses bounded chunks
+and checks both length and SHA-256 before committing Cargo's complete output.
+The complete 6,016-byte, 26-package Cargo output was retrieved from
+https://github.com/hyperpolymath/cicd-suite/actions/runs/41243785211[bootstrap recovery run 41243785211]
+and verified before commit against its emitted byte count and SHA-256:
+`014ea0d22099b2ba30d487549187f647620e3a08807960018f55846b04161de6`.
+The bootstrap transport is removed from the final workflow.
+
+Preflight verifies publication ancestry, the exact call inputs, configuration,
+absence of trusted axioms and Cargo's `--locked` resolution. Nine mutants remove configuration/lockfile, float the pin, mismatch the
+release, trust the fixture, comment out its contract (line/block), or add a
+trusted module or use a whitespace-formatted trusted attribute. The guard permits exactly the reviewed single-file specimen
+and manifest, checking their hashes rather than pretending grep parses Rust.
+New source files, build scripts or custom targets require a reviewed boundary
+change; this is not a generic Rust-source admission scanner.
+These are input controls, not proof. The live reusable separately installs or
+restores Creusot, checks the false/true controls and then proves the fixture.
+Its public proof check retains the historical name for compatibility, although
+the executed v0.14 command is `cargo creusot` without a `prove` subcommand.
+
+Do not mark the live stage complete until the actual proof step and verdict
+succeed. Installation, preflight, mocks and skipped jobs are insufficient. The
+published gate does not forward `--locked` specially to its temporary control
+crates (which initialise their own manifests); this canary checks the committed
+fixture lock in preflight, without claiming fully offline/hermetic execution.
+Broad consumer rollout remains deferred.
+
+
+=== Completed bounded live receipt
+
+https://github.com/hyperpolymath/cicd-suite/actions/runs/41243971086[Run 41243971086]
+completed successfully at canary head
+`8f572cbb3ad7d31bc076647021043dbef260f243`, using the published PR70 gate above.
+The locked-fixture prerequisite step (including all five mutants), detect,
+theatre, actual proof and final adjudication all passed. The proof job took
+9m57s; its `cargo creusot is on PATH` and `Planted controls, then every crate
+with obligations` steps both succeeded. Thus the configured real prover refused
+the planted false contract, proved the true control, and proved the committed
+identity fixture. This is no longer only a stand-in-oracle result.
+
+All 21 reported technical checks passed at that head; CodeRabbit was skipped,
+not an approval. This receipt is scoped to the recorded fixture and gate SHA.
+It does not establish arbitrary consumer readiness, fully hermetic execution,
+or a new consumer deployment. Documentation-only receipt updates do not change
+the tested fixture, workflow or gate source.
+
+
+The same fixture also passed after cache restoration in
+https://github.com/hyperpolymath/cicd-suite/actions/runs/41244874389[run 41244874389]
+at `c48ddf2c773611bef1484066c17f5fa5d252f4de`; installation was skipped on the
+cache hit, and the actual planted-controls/fixture proof step still succeeded.
+Subsequent review strengthened admission against commented-out contracts and
+additional trusted modules. Those were guard weaknesses, not properties of the
+identity fixture used for these successful cold/warm receipts.
+
+
+The published general-purpose detect/theatre source still uses textual Rust
+attribute counting. Commented contracts and whitespace-formatted trusted
+attributes therefore remain broader-source limitations, not fixes claimed by
+this canary. Its exact-source/manifest admission rejects those spellings before
+calling that gate. Before broader Rust rollout, a separately reviewed source
+repair needs active-attribute/function binding, comment rejection and correct
+trusted recognition across source modules, with regression controls under the
+composite shell. Publish that repair and repeat a pinned canary before asking
+consumers to rely on those general detection counts. Do not mutate this
+canary's historical published gate SHA or imply that its source was repaired.
