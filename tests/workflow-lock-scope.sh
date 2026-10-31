@@ -18,9 +18,10 @@ reject() {
 }
 stage() { rm -rf "$tmp/tree"; cp -a "$tmp/base" "$tmp/tree"; }
 lock_mutant() {
+    local label=$1 filter=$2
     stage
-    jq "$2" "$tmp/lock.json" > "$tmp/tree/.github/workflows/actions.lock"
-    reject "$1"
+    jq "$filter" "$tmp/lock.json" > "$tmp/tree/.github/workflows/actions.lock"
+    reject "$label"
 }
 lock_mutant 'omitted managed workflow key' 'del(.workflows[".github/workflows/code-hygiene-self-test.yml"])'
 lock_mutant 'dropped direct dependency record' 'del(.dependencies["actions/checkout@v7.0.1"])'

@@ -12,11 +12,6 @@
       "reason": "Full-SHA source references outside the existing lock map; remote closure is not certified by this scope guard."
     },
     {
-      "path": ".github/workflows/creusot-live-canary.yml",
-      "mode": "immutable",
-      "reason": "Full-SHA source references outside the existing lock map; remote closure is not certified by this scope guard."
-    },
-    {
       "path": ".github/workflows/kanren-gate.yml",
       "mode": "immutable",
       "reason": "Full-SHA source references outside the existing lock map; remote closure is not certified by this scope guard."

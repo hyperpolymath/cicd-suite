@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
-= Workflow lock boundary and live proof canary
+= Workflow lock boundary and Creusot CLI repair
 
 == Scope finding disposition
 
@@ -14,7 +14,7 @@ must have map keys and direct/local-composite/declared-remote-edge coverage;
 immutable files remain outside the map and must use full-SHA remote references.
 Remote job-level reusable sources must be full-SHA pinned, not represented by
 invented CLI lock entries. Every workflow file must be classified once.
-The newly added live canary is explicitly classified too.
+The scope covers the fourteen current workflow files; new files require an explicit decision.
 
 The guard reads YAML through mikefarah yq, then jq. It rejects an omitted managed
 key even when all other map entries are internally consistent. It follows
@@ -31,20 +31,27 @@ are policy-sensitive review decisions, not an escape hatch for failing checks.
 The historical managed-header discrepancy remains documented; comments are not
 used as the authoritative scope parser.
 
-== Published-source Creusot canary
+== Confirmed CLI incompatibility and release order
 
-`.github/workflows/creusot-live-canary.yml` calls the already-published source
-`d810f2a872393d2bf66ab09bfd24dca7c67d6d17` directly. A minimal tracked Rust
-identity obligation selects the actual proof lane. The published workflow must
-install Creusot and execute its own planted false/true controls before the fixture
-proof. Mock tests alone cannot satisfy this evidence requirement.
+The exploratory direct canary ran at PR head `a009e48`:
+https://github.com/hyperpolymath/cicd-suite/actions/runs/41233259742[41233259742].
+Detect/theatre and system prerequisites ran successfully; installation was still
+in progress when inspected. This does NOT establish proof or full installation
+success. The token could not cancel the run (actions write not granted).
 
-The canary uses contents: read, no inherited secrets, and no consumer changes.
-It triggers only for PRs touching the canary or its fixture. No automatic broad
-rollout, configurable bypass or required-context change is introduced.
-A setup failure is NOT RUN, not a failed proof; success, if observed, proves only
-this fixture and the control/tool path, not arbitrary consumer programs.
-Record the resulting run, exact commit and step conclusions before declaring
-current-source validation complete. At creation of this change, live outcome is
-pending; local sandbox does not contain the prover or mikefarah yq, so neither
-live proving nor the yq scope tests are represented as locally passed.
+Review and independent inspection of official Creusot v0.14.0 source at commit
+`65349025c67e69fcd7479f1f420fa5904f69bc27` established another blocker:
+`cargo-creusot/src/main.rs` dispatches compilation/proving when no subcommand is
+supplied; its enum has no `Prove` subcommand. The old gate called
+`cargo creusot prove`, and the stand-in accepted that obsolete syntax.
+This change calls `cargo creusot` and tightens the stand-in to reject `prove`;
+a planted obsolete-invocation mutant must return NOT RUN, not a proof verdict.
+Public required check names are not renamed.
+
+The exploratory workflow and Rust fixture are removed from this publication
+change rather than leaving a known-invalid old-source canary or suppressing it.
+They are not deployed consumers and are not claimed as a completed check.
+After the corrected gate is published and its fixture tests pass, add the narrow
+real-tool canary pinned to that published SHA, including a genuine Cargo.lock
+resolved by cargo. That second stage remains necessary to validate installation,
+false/true controls and an actual fixture obligation. No broad rollout is needed.

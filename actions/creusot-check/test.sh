@@ -101,8 +101,13 @@ echo "== prove: stub oracle that CAN say no =="
 STAND_IN="$WORK/bin"; mkdir -p "$STAND_IN"
 cat > "$STAND_IN/cargo-creusot" <<'SH'
 #!/usr/bin/env bash
-# stub: 'cargo creusot prove' → exit 1 when the crate is marked unproved
-[ "${2:-}" = "prove" ] || exit 0  # cargo passes the subcommand name as $1
+# v0.14 compiles/proves without a subcommand. A CLI parse error must not
+# be mistaken for a rejected proof: reject the obsolete invocation here.
+[ "${1:-}" = "creusot" ] || exit 64  # cargo supplies the plugin name
+[ "${2:-}" != "--help" ] || exit 0
+if [ "${2:-}" = "prove" ]; then
+  echo "obsolete prove subcommand" >&2; exit 64
+fi
 if grep -qE 'planted_must_fail|// UNPROVED' src/lib.rs 2>/dev/null; then
   echo "stub: 1 goal unproved"; exit 1
 fi
@@ -113,6 +118,14 @@ run_phase prove PATH="$STAND_IN:$PATH"
 [ "$RC" -eq 0 ] && ok "prove exits 0 when every crate proves" || { bad "prove exits $RC"; cat "$OUT"; }
 grep -q 'false contract refused' "$OUT" && ok "planted failing control was exercised" || bad "failing control not run"
 grep -q 'true contract proved' "$OUT" && ok "planted passing control was exercised" || bad "passing control not run"
+echo "== obsolete CLI mutation must not produce a proof verdict =="
+original_checker="$checker"
+sed 's/cargo creusot \$prove_args/cargo creusot prove $prove_args/g' "$checker" > "$WORK/obsolete-check.sh"
+checker="$WORK/obsolete-check.sh"
+run_phase prove PATH="$STAND_IN:$PATH"
+[ "$RC" -eq 2 ] && ok "obsolete subcommand is NOT RUN, never proof success" || bad "obsolete CLI exited $RC"
+grep -q 'obsolete prove subcommand' "$OUT" && ok "strict v0.14 oracle rejected the obsolete CLI" || bad "CLI mutant was not exercised"
+checker="$original_checker"
 printf '// UNPROVED\n' >> "$FIX/src/lib.rs"; commit
 run_phase prove PATH="$STAND_IN:$PATH"
 [ "$RC" -eq 1 ] && ok "an unproved crate fails the gate" || bad "unproved crate exits $RC, expected 1"
