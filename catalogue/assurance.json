@@ -145,7 +145,7 @@
         "actions/creusot-check/test.sh"
       ],
       "coverage": "controls-linked",
-      "evidence_note": "Fixture suites use stand-in proof oracles; real prover execution must be evidenced separately.",
+      "evidence_note": "Fixture suites use stand-in proof oracles. A consumer installation failure used older suite bf7dd95c; current source already adds system prerequisites. Current-source real prover validation remains unproven here; do not duplicate the published fix.",
       "consumer_receipts": []
     },
     {

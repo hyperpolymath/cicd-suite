@@ -60,11 +60,18 @@ opam prerequisites and cache steps, then failure at
 `Install Creusot v0.14.0 (clone at the tag, ./INSTALL)`.
 The planted controls and actual proof step were SKIPPED.
 
+The consumer pins suite `bf7dd95cf49733019343ff485c2f45c6b261839c`, not the
+current suite revision. A GitHub source comparison confirms the published suite
+at `cd313201...` already adds the cairo/GTK/gtksourceview system prerequisites
+absent from that older pin. Do not implement that same fix again or claim that
+the observed old-pin failure proves the current installer is broken. A narrow
+current-source canary is needed to establish the repair actually works.
+
 This is *tool installation / not-run evidence*, not a failed proof obligation.
 The final installation error has not been established from the available
-annotation (`exit code 1` only). Next action is inspect the exact pinned caller
-source and installer diagnostics, reproduce narrowly, and add a regression for
-the established cause before changing shared tooling. Do not weaken proof checks
+annotation (`exit code 1` only). Next action is inspect installer diagnostics and test the already-published prerequisite fix
+on a narrowly reviewed current-source canary; add a regression for any remaining
+established cause before changing shared tooling. Do not weaken proof checks
 or reinterpret the skipped proof step as success.
 
 == Suite lock-map finding — investigation, not a completed fix
@@ -98,8 +105,9 @@ reported as run.
 
 . Publish the assurance matrix and its coverage/drift controls, without claiming
   linked test files were freshly run or have complete semantic coverage.
-. Diagnose the confirmed Creusot installation failure and repair the shared
-  source only once its cause and a regression are established.
+. Validate the existing published Creusot prerequisite repair against the
+  old-pin installation failure; change source only for an established remaining
+  cause with regression coverage.
 . Resolve the lock management/coverage finding with tested scope and complete
   dependency accounting, in a separately reviewable runtime change.
 . Classify each remaining suite-facing failure from the external audit before
