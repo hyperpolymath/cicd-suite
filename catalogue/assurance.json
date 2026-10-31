@@ -142,10 +142,11 @@
     {
       "id": "creusot",
       "test_paths": [
-        "actions/creusot-check/test.sh"
+        "actions/creusot-check/test.sh",
+        "tests/creusot-live-canary.sh"
       ],
       "coverage": "controls-linked",
-      "evidence_note": "Fixture suites use stand-in proof oracles. A consumer installation failure used older suite bf7dd95c; current source already adds system prerequisites. Current-source real prover validation remains unproven here; do not duplicate the published fix.",
+      "evidence_note": "Stand-in oracle regressions are supplemented by real Creusot v0.14.0 run 41243971086 at canary head 8f572cbb3ad7d31bc076647021043dbef260f243, using published gate 6c6d772ebe82605ba22254db528faf54faec9f49: false contract refused, true control and identity fixture proved. Bounded canary evidence, not arbitrary consumer validation or hermetic proof.",
       "consumer_receipts": []
     },
     {

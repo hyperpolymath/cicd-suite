@@ -244,9 +244,9 @@ Test source linked, not a claim that it was freshly executed or provides complet
 
 *Prerequisites / boundary:* Pinned proof tooling and actual obligations required; inspect detect/theatre/prove phases.
 
-*Control evidence:* link:../actions/creusot-check/test.sh[actions/creusot-check/test.sh]
+*Control evidence:* link:../actions/creusot-check/test.sh[actions/creusot-check/test.sh]; link:../tests/creusot-live-canary.sh[tests/creusot-live-canary.sh]
 
-Fixture suites use stand-in proof oracles. A consumer installation failure used older suite bf7dd95c; current source already adds system prerequisites. Current-source real prover validation remains unproven here; do not duplicate the published fix.
+Stand-in oracle regressions are supplemented by real Creusot v0.14.0 run 41243971086 at canary head 8f572cbb3ad7d31bc076647021043dbef260f243, using published gate 6c6d772ebe82605ba22254db528faf54faec9f49: false contract refused, true control and identity fixture proved. Bounded canary evidence, not arbitrary consumer validation or hermetic proof.
 
 *Consumer proof:* no receipt indexed here.
 

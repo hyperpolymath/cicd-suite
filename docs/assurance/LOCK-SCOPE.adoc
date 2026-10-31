@@ -110,3 +110,22 @@ published gate does not forward `--locked` specially to its temporary control
 crates (which initialise their own manifests); this canary checks the committed
 fixture lock in preflight, without claiming fully offline/hermetic execution.
 Broad consumer rollout remains deferred.
+
+
+=== Completed bounded live receipt
+
+https://github.com/hyperpolymath/cicd-suite/actions/runs/41243971086[Run 41243971086]
+completed successfully at canary head
+`8f572cbb3ad7d31bc076647021043dbef260f243`, using the published PR70 gate above.
+The locked-fixture prerequisite step (including all five mutants), detect,
+theatre, actual proof and final adjudication all passed. The proof job took
+9m57s; its `cargo creusot is on PATH` and `Planted controls, then every crate
+with obligations` steps both succeeded. Thus the configured real prover refused
+the planted false contract, proved the true control, and proved the committed
+identity fixture. This is no longer only a stand-in-oracle result.
+
+All 21 reported technical checks passed at that head; CodeRabbit was skipped,
+not an approval. This receipt is scoped to the recorded fixture and gate SHA.
+It does not establish arbitrary consumer readiness, fully hermetic execution,
+or a new consumer deployment. Documentation-only receipt updates do not change
+the tested fixture, workflow or gate source.
