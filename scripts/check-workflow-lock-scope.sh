@@ -24,7 +24,8 @@ jq -e '.version=="v0.0.2" or .version=="v0.0.3"' "$tmp/lock.json" >/dev/null || 
 jq -r '.workflows | keys[]' "$tmp/lock.json" | LC_ALL=C sort > "$tmp/locked"
 jq -r '.workflows[]|select(.mode=="managed")|.path' "$scope" | LC_ALL=C sort > "$tmp/managed"
 cmp -s "$tmp/locked" "$tmp/managed" || { echo 'managed workflow missing from lock map, or undeclared lock onboarding' >&2; exit 1; }
-# Convert a validated action reference to the repository/ref lock-key shape.
+# Write the lock key for a validated owner/repo[/path]@ref to stdout, dropping
+# the optional path and retaining the ref. sed failures propagate.
 key_of() { local reference=$1; sed -E 's#^([^/]+/[^/@]+)(/[^@]*)?@(.*)$#\1@\3#' <<< "$reference"; }
 while IFS= read -r row; do
     wf=$(jq -r .path <<< "$row"); mode=$(jq -r .mode <<< "$row")

@@ -181,6 +181,9 @@ case "$phase" in
 
     # ---- planted controls: the prover must be able to say NO -------------
     ctl="$(mktemp -d)"
+    # Create a named control crate under $ctl from the supplied Rust source.
+    # If initialisation fails or why3find.json is missing or empty, remove $ctl
+    # and exit 2 (no proof performed).
     plant() { # <name> <body>
       mkdir -p "$ctl/$1/src"
       cat > "$ctl/$1/Cargo.toml" <<TOML
