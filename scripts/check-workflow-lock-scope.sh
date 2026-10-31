@@ -24,6 +24,7 @@ jq -e '.version=="v0.0.2" or .version=="v0.0.3"' "$tmp/lock.json" >/dev/null || 
 jq -r '.workflows | keys[]' "$tmp/lock.json" | LC_ALL=C sort > "$tmp/locked"
 jq -r '.workflows[]|select(.mode=="managed")|.path' "$scope" | LC_ALL=C sort > "$tmp/managed"
 cmp -s "$tmp/locked" "$tmp/managed" || { echo 'managed workflow missing from lock map, or undeclared lock onboarding' >&2; exit 1; }
+# Convert a validated action reference to the repository/ref lock-key shape.
 key_of() { local reference=$1; sed -E 's#^([^/]+/[^/@]+)(/[^@]*)?@(.*)$#\1@\3#' <<< "$reference"; }
 while IFS= read -r row; do
     wf=$(jq -r .path <<< "$row"); mode=$(jq -r .mode <<< "$row")
@@ -40,7 +41,10 @@ while IFS= read -r row; do
         case $ref in
             '$/'*|./*)
                 [[ $mode == managed && $ref == '$/'* ]] || { echo "$wf: unsupported unpinned local reference $ref" >&2; exit 1; }
-                action=$(realpath -e "$ROOT/${ref#\$/}/action.yml") || exit 2
+                # GitHub accepts both metadata names; prefer action.yml when both exist.
+                metadata="$ROOT/${ref#\$/}/action.yml"
+                [[ -f $metadata ]] || metadata="$ROOT/${ref#\$/}/action.yaml"
+                action=$(realpath -e "$metadata") || exit 2
                 [[ $action == "$ROOT/"* ]] || exit 1
                 yq -o=json '.' "$action" > "$tmp/action.json" || exit 2
                 jq -r '.runs.steps[]?.uses // empty' "$tmp/action.json" >> "$tmp/queue"

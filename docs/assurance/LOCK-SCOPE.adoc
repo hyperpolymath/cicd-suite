@@ -19,7 +19,9 @@ The scope covers the fourteen current workflow files; new files require an expli
 The guard reads YAML through mikefarah yq, then jq. It rejects an omitted managed
 key even when all other map entries are internally consistent. It follows
 same-repository composite steps and declared remote dependency edges, detecting
-missing workflow edges and dependency records. It does not download remote
+missing workflow edges and dependency records. Local composite metadata accepts
+both `action.yml` and `action.yaml`, with root containment checked after
+resolution; missing metadata remains unavailable (exit 2), not a pass. It does not download remote
 sources or establish that their declared closure is complete or that repositories,
 commits, ownership, provenance and runner admission are correct. Keep the existing
 transitive-closure and pin-representation tests; this complements them.
@@ -28,6 +30,9 @@ Eight negative controls cover omitted managed key, dropped direct record,
 dropped composite edge, absent nested edge, duplicate/unknown scope,
 unreviewed workflow and floating immutable reusable reference. Scope mode changes
 are policy-sensitive review decisions, not an escape hatch for failing checks.
+The nested-edge mutant supplies a valid dependency record and asserts the
+specific missing-workflow-edge diagnostic, so a missing record cannot satisfy it.
+Two additional controls exercise `.yaml` metadata and absence of both names.
 The historical managed-header discrepancy remains documented; comments are not
 used as the authoritative scope parser.
 
@@ -53,5 +58,21 @@ change rather than leaving a known-invalid old-source canary or suppressing it.
 They are not deployed consumers and are not claimed as a completed check.
 After the corrected gate is published and its fixture tests pass, add the narrow
 real-tool canary pinned to that published SHA, including a genuine Cargo.lock
-resolved by cargo. That second stage remains necessary to validate installation,
+resolved by cargo and an installed-tool Why3find configuration. That second stage remains necessary to validate installation,
 false/true controls and an actual fixture obligation. No broad rollout is needed.
+
+== Review follow-up: configuration is a prerequisite, not a proof
+
+Planted false/true control crates now run `cargo creusot init <name>` in their
+private temporary directories before proof, and require a nonempty
+`why3find.json`. Official v0.14 `cargo-creusot/src/new.rs` copies the installed
+configuration there and patches the private manifest. The caller's manifest and
+configuration are never initialised or overwritten by this gate. A failing init
+or missing configuration returns NOT RUN (2), not a rejected proof (1).
+
+The strict stand-in enforces control configuration. An initializer that exits
+zero but creates no configuration must produce NOT RUN; an always-successful
+proof oracle still initialises normally so it reaches the false-contract check.
+These regressions validate orchestration only, not SMT proof. A real pinned
+canary, including configured Why3find and a cargo-generated lockfile, remains
+outstanding. Removal of the exploratory fixture does not discharge that task.

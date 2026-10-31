@@ -192,6 +192,12 @@ edition = "2021"
 creusot-std = "${creusot_version:-*}"
 TOML
       printf '%s\n' "$2" > "$ctl/$1/src/lib.rs"
+      # v0.14 init copies the installed Why3find configuration into this
+      # private control crate. Never initialise or rewrite the caller's tree.
+      if ! (cd "$ctl/$1" && cargo creusot init "$1") || [ ! -s "$ctl/$1/why3find.json" ]; then
+        echo "::error::creusot-check[prove]: control initialisation did not supply why3find.json. NO PROOF WAS PERFORMED." >&2
+        rm -rf "$ctl"; exit 2
+      fi
     }
     plant creusot-control-failing 'use creusot_std::prelude::*;
 #[ensures(result == 0u32)]

@@ -108,6 +108,14 @@ cat > "$STAND_IN/cargo-creusot" <<'SH'
 if [ "${2:-}" = "prove" ]; then
   echo "obsolete prove subcommand" >&2; exit 64
 fi
+if [ "${2:-}" = "init" ]; then
+  # Stand-in only: real init copies the installed tool's configured template.
+  printf '{"stand_in":true}\n' > why3find.json
+  exit 0
+fi
+if [ -f Cargo.toml ] && grep -q 'name = "creusot-control-' Cargo.toml && [ ! -s why3find.json ]; then
+  echo "missing control Why3find configuration" >&2; exit 65
+fi
 if grep -qE 'planted_must_fail|// UNPROVED' src/lib.rs 2>/dev/null; then
   echo "stub: 1 goal unproved"; exit 1
 fi
@@ -126,13 +134,28 @@ run_phase prove PATH="$STAND_IN:$PATH"
 [ "$RC" -eq 2 ] && ok "obsolete subcommand is NOT RUN, never proof success" || bad "obsolete CLI exited $RC"
 grep -q 'obsolete prove subcommand' "$OUT" && ok "strict v0.14 oracle rejected the obsolete CLI" || bad "CLI mutant was not exercised"
 checker="$original_checker"
+echo "== control initialisation must supply configuration =="
+sed '/printf.*stand_in.*why3find.json/d' "$STAND_IN/cargo-creusot" > "$WORK/no-config-oracle"
+cp "$STAND_IN/cargo-creusot" "$WORK/good-oracle"
+cp "$WORK/no-config-oracle" "$STAND_IN/cargo-creusot"
+run_phase prove PATH="$STAND_IN:$PATH"
+[ "$RC" -eq 2 ] && ok "missing control configuration is NOT RUN" || bad "missing configuration exited $RC"
+grep -q 'control initialisation did not supply why3find.json' "$OUT" && ok "names the actual setup failure" || bad "configuration failure not explained"
+cp "$WORK/good-oracle" "$STAND_IN/cargo-creusot"
 printf '// UNPROVED\n' >> "$FIX/src/lib.rs"; commit
 run_phase prove PATH="$STAND_IN:$PATH"
 [ "$RC" -eq 1 ] && ok "an unproved crate fails the gate" || bad "unproved crate exits $RC, expected 1"
 grep -q "::error file=./Cargo.toml::creusot-check\[prove\]" "$OUT" && ok "the failing crate is annotated" || bad "crate not annotated: $(cat "$OUT")"
 
 echo "== prove: an oracle that can only say yes makes the verdict VOID =="
-printf '#!/usr/bin/env bash\necho yes; exit 0\n' > "$STAND_IN/cargo-creusot"
+cat > "$STAND_IN/cargo-creusot" <<'SH'
+#!/usr/bin/env bash
+# Initialise normally, but lie about every proof, including the false control.
+if [ "${2:-}" = "init" ]; then
+  printf '{"stand_in":true}\n' > why3find.json
+fi
+echo yes; exit 0
+SH
 run_phase prove PATH="$STAND_IN:$PATH"
 [ "$RC" -eq 2 ] && ok "exits 2 (NO PROOF WAS PERFORMED)" || bad "exits $RC, expected 2"
 grep -q 'cannot fail' "$OUT" && ok "says the prover cannot fail" || bad "no explanation"
