@@ -97,8 +97,12 @@ and verified before commit against its emitted byte count and SHA-256:
 The bootstrap transport is removed from the final workflow.
 
 Preflight verifies publication ancestry, the exact call inputs, configuration,
-absence of trusted axioms and Cargo's `--locked` resolution. Five mutants remove
-configuration/lockfile, float the pin, mismatch the release, or trust the fixture.
+absence of trusted axioms and Cargo's `--locked` resolution. Eight mutants remove configuration/lockfile, float the pin, mismatch the
+release, trust the fixture, comment out its contract (line/block), or add a
+trusted module. The guard permits exactly the reviewed single-file specimen
+and manifest, checking their hashes rather than pretending grep parses Rust.
+New source files, build scripts or custom targets require a reviewed boundary
+change; this is not a generic Rust-source admission scanner.
 These are input controls, not proof. The live reusable separately installs or
 restores Creusot, checks the false/true controls and then proves the fixture.
 Its public proof check retains the historical name for compatibility, although
@@ -129,3 +133,12 @@ not an approval. This receipt is scoped to the recorded fixture and gate SHA.
 It does not establish arbitrary consumer readiness, fully hermetic execution,
 or a new consumer deployment. Documentation-only receipt updates do not change
 the tested fixture, workflow or gate source.
+
+
+The same fixture also passed after cache restoration in
+https://github.com/hyperpolymath/cicd-suite/actions/runs/41244874389[run 41244874389]
+at `c48ddf2c773611bef1484066c17f5fa5d252f4de`; installation was skipped on the
+cache hit, and the actual planted-controls/fixture proof step still succeeded.
+Subsequent review strengthened admission against commented-out contracts and
+additional trusted modules. Those were guard weaknesses, not properties of the
+identity fixture used for these successful cold/warm receipts.

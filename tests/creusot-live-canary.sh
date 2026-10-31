@@ -25,6 +25,15 @@ validate() {
     [[ -s $fixture/Cargo.lock ]] || return 1
     jq -e '.packages==["creusot"] and .provers==["z3"] and
       .tactics==["compute_specified","split_vc"]' "$fixture/why3find.json" >/dev/null || return 1
+    # This is deliberately ONE fixed specimen, not a Rust syntax parser.
+    # Refuse extra compilation inputs and exact-source changes, including
+    # line/block-commented attributes. Growing it needs a reviewed boundary update.
+    local sources
+    sources=$(find "$fixture" -type d \( -name target -o -name _creusot_erasure -o -name verif -o -name .why3find \) -prune -o -type f -name '*.rs' -print) || return 1
+    [[ $sources == "$fixture/src/lib.rs" && ! -L $fixture/src/lib.rs ]] || return 1
+    [[ $(sha256sum "$fixture/src/lib.rs" | cut -d' ' -f1) == 4792ac10f2cfc09020d8bb5c7164d6368ab42a47db44214db031c911dd9d877a ]] || return 1
+    # Fix the manifest too: it cannot silently acquire external targets or build scripts.
+    [[ $(sha256sum "$fixture/Cargo.toml" | cut -d' ' -f1) == ab9522c2a92e0e2f41d56f4db12caf05f7a2fad33b4c625a191ebdca03c240bd ]] || return 1
     grep -Fq '#[ensures(result == x)]' "$fixture/src/lib.rs" || return 1
     if grep -Eq '#\[trusted([[:space:]]|\])' "$fixture/src/lib.rs"; then return 1; fi
     echo "checking Cargo manifest metadata"
@@ -44,7 +53,7 @@ stage() {
 reject() {
     local label=$1
     if validate "$tmp/tree" > "$tmp/log" 2>&1; then
-        echo "FAIL: accepted $label" >&2; exit 1
+        echo "::error::accepted $label" >&2; exit 1
     fi
     echo "ok: rejected $label"
 }
@@ -74,4 +83,15 @@ reject 'manifest/lock or release mismatch'
 stage
 sed -i '/#\[ensures/i #[trusted]' "$tmp/tree/tests/fixtures/creusot-live/src/lib.rs"
 reject 'trusted fixture instead of an actual obligation'
-echo 'ok: five live-canary prerequisite mutants; no proof claimed'
+stage
+sed -i 's/^#\[ensures/\/\/ #[ensures/' "$tmp/tree/tests/fixtures/creusot-live/src/lib.rs"
+reject 'line-commented postcondition'
+stage
+sed -i '/^#\[ensures/i /*' "$tmp/tree/tests/fixtures/creusot-live/src/lib.rs"
+sed -i '/^#\[ensures/a */' "$tmp/tree/tests/fixtures/creusot-live/src/lib.rs"
+reject 'block-commented postcondition'
+stage
+printf '#[trusted]\npub fn hidden_axiom() -> u32 { 0 }\n' > "$tmp/tree/tests/fixtures/creusot-live/src/extra.rs"
+printf '\nmod extra;\n' >> "$tmp/tree/tests/fixtures/creusot-live/src/lib.rs"
+reject 'additional module containing a trusted axiom'
+echo 'ok: eight live-canary prerequisite mutants; no proof claimed'
