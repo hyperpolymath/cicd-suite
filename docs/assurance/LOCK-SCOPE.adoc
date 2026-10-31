@@ -1,0 +1,78 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Workflow lock boundary and Creusot CLI repair
+
+== Scope finding disposition
+
+The previous four-keys/fourteen-workflows observation is not sufficient to
+justify onboarding every workflow. main-estate-audit.yml already documents its
+intentional de-onboarding and the historical startup failures from the locked
+cross-repository form. This change does not re-onboard it, remove a managed
+header, change required contexts or regenerate unrelated dependency pins.
+
+`config/workflow-lock-scope.json` records the reviewed boundary: managed files
+must have map keys and direct/local-composite/declared-remote-edge coverage;
+immutable files remain outside the map and must use full-SHA remote references.
+Remote job-level reusable sources must be full-SHA pinned, not represented by
+invented CLI lock entries. Every workflow file must be classified once.
+The scope covers the fourteen current workflow files; new files require an explicit decision.
+
+The guard reads YAML through mikefarah yq, then jq. It rejects an omitted managed
+key even when all other map entries are internally consistent. It follows
+same-repository composite steps and declared remote dependency edges, detecting
+missing workflow edges and dependency records. Local composite metadata accepts
+both `action.yml` and `action.yaml`, with root containment checked after
+resolution; missing metadata remains unavailable (exit 2), not a pass. It does not download remote
+sources or establish that their declared closure is complete or that repositories,
+commits, ownership, provenance and runner admission are correct. Keep the existing
+transitive-closure and pin-representation tests; this complements them.
+
+Eight negative controls cover omitted managed key, dropped direct record,
+dropped composite edge, absent nested edge, duplicate/unknown scope,
+unreviewed workflow and floating immutable reusable reference. Scope mode changes
+are policy-sensitive review decisions, not an escape hatch for failing checks.
+The nested-edge mutant supplies a valid dependency record and asserts the
+specific missing-workflow-edge diagnostic, so a missing record cannot satisfy it.
+Two additional controls exercise `.yaml` metadata and absence of both names.
+The historical managed-header discrepancy remains documented; comments are not
+used as the authoritative scope parser.
+
+== Confirmed CLI incompatibility and release order
+
+The exploratory direct canary ran at PR head `a009e48`:
+https://github.com/hyperpolymath/cicd-suite/actions/runs/41233259742[41233259742].
+Detect/theatre and system prerequisites ran successfully; installation was still
+in progress when inspected. This does NOT establish proof or full installation
+success. The token could not cancel the run (actions write not granted).
+
+Review and independent inspection of official Creusot v0.14.0 source at commit
+`65349025c67e69fcd7479f1f420fa5904f69bc27` established another blocker:
+`cargo-creusot/src/main.rs` dispatches compilation/proving when no subcommand is
+supplied; its enum has no `Prove` subcommand. The old gate called
+`cargo creusot prove`, and the stand-in accepted that obsolete syntax.
+This change calls `cargo creusot` and tightens the stand-in to reject `prove`;
+a planted obsolete-invocation mutant must return NOT RUN, not a proof verdict.
+Public required check names are not renamed.
+
+The exploratory workflow and Rust fixture are removed from this publication
+change rather than leaving a known-invalid old-source canary or suppressing it.
+They are not deployed consumers and are not claimed as a completed check.
+After the corrected gate is published and its fixture tests pass, add the narrow
+real-tool canary pinned to that published SHA, including a genuine Cargo.lock
+resolved by cargo and an installed-tool Why3find configuration. That second stage remains necessary to validate installation,
+false/true controls and an actual fixture obligation. No broad rollout is needed.
+
+== Review follow-up: configuration is a prerequisite, not a proof
+
+Planted false/true control crates now run `cargo creusot init <name>` in their
+private temporary directories before proof, and require a nonempty
+`why3find.json`. Official v0.14 `cargo-creusot/src/new.rs` copies the installed
+configuration there and patches the private manifest. The caller's manifest and
+configuration are never initialised or overwritten by this gate. A failing init
+or missing configuration returns NOT RUN (2), not a rejected proof (1).
+
+The strict stand-in enforces control configuration. An initializer that exits
+zero but creates no configuration must produce NOT RUN; an always-successful
+proof oracle still initialises normally so it reaches the false-contract check.
+These regressions validate orchestration only, not SMT proof. A real pinned
+canary, including configured Why3find and a cargo-generated lockfile, remains
+outstanding. Removal of the exploratory fixture does not discharge that task.

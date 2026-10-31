@@ -4,7 +4,7 @@ description: >-
   Rust deductive-verification gate (Creusot). detect: facts; theatre: a
   "verified with Creusot" claim must be backed by contracts (T1 hard fail),
   a hollow dependency is named (T2); prove: planted controls, then
-  `cargo creusot prove` in every crate carrying obligations. The reusable
+  `cargo creusot` in every crate carrying obligations. The reusable
   workflow .github/workflows/creusot-gate.yml installs Creusot (pinned) and
   runs all three.
 inputs:
@@ -20,7 +20,7 @@ inputs:
     required: false
     default: 'false'
   prove_args:
-    description: 'Args appended to cargo creusot prove'
+    description: 'Args appended to cargo creusot'
     required: false
     default: ''
 runs:

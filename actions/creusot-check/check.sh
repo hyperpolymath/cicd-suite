@@ -7,7 +7,7 @@
 # Creusot (https://github.com/creusot-rs/creusot) is a deductive verifier for
 # Rust: a crate depends on `creusot-std` (named `creusot-contracts` before
 # v0.9.0), annotates functions with `#[requires(..)]` / `#[ensures(..)]`, and
-# `cargo creusot prove` discharges the obligations through Why3 and SMT
+# `cargo creusot` discharges the obligations through Why3 and SMT
 # solvers. "Verified with Creusot" is therefore a claim with an oracle, and
 # this gate makes the claim and the oracle agree. Three phases:
 #
@@ -34,14 +34,14 @@
 #       exit; then a planted known-good one and requires zero. A prover that
 #       cannot say no is not a prover, and the verdict over the caller's
 #       crate would be VOID — so the gate refuses (exit 2) rather than report
-#       green. Only then does it run `cargo creusot prove` in every crate
+#       green. Only then does it run `cargo creusot` in every crate
 #       directory that carries obligations, failing on any non-zero exit.
 #
 # Exit codes: 0 silent, 1 defect found, 2 NO CHECK WAS PERFORMED (tool
 # missing, planted control misbehaved, unreadable tree). 2 is never a pass.
 #
 # Env: WORKING_DIRECTORY (default "."), ENFORCE_HOLLOW (default false),
-#      PROVE_ARGS (appended to `cargo creusot prove`), CREUSOT_FACTS (path
+#      PROVE_ARGS (appended to `cargo creusot`), CREUSOT_FACTS (path
 #      the detect phase writes its crate list to; default $RUNNER_TEMP or
 #      /tmp).
 set -uo pipefail
@@ -150,7 +150,7 @@ case "$phase" in
       fail=1
     fi
     if [ "$obligations" = true ] && [ "$contract_count" -eq 0 ]; then
-      msg="T2 hollow Creusot dependency: creusot-std/creusot-contracts is a dependency but no #[requires]/#[ensures] appears in any tracked .rs file, so 'cargo creusot prove' would discharge nothing. Write a contract on at least one function, or drop the dependency."
+      msg="T2 hollow Creusot dependency: creusot-std/creusot-contracts is a dependency but no #[requires]/#[ensures] appears in any tracked .rs file, so 'cargo creusot' would discharge nothing. Write a contract on at least one function, or drop the dependency."
       if [ "$enforce_hollow" = true ]; then
         echo "::error::$msg"; fail=1
       else
@@ -181,6 +181,9 @@ case "$phase" in
 
     # ---- planted controls: the prover must be able to say NO -------------
     ctl="$(mktemp -d)"
+    # Create a named control crate under $ctl from the supplied Rust source.
+    # If initialisation fails or why3find.json is missing or empty, remove $ctl
+    # and exit 2 (no proof performed).
     plant() { # <name> <body>
       mkdir -p "$ctl/$1/src"
       cat > "$ctl/$1/Cargo.toml" <<TOML
@@ -192,6 +195,12 @@ edition = "2021"
 creusot-std = "${creusot_version:-*}"
 TOML
       printf '%s\n' "$2" > "$ctl/$1/src/lib.rs"
+      # v0.14 init copies the installed Why3find configuration into this
+      # private control crate. Never initialise or rewrite the caller's tree.
+      if ! (cd "$ctl/$1" && cargo creusot init "$1") || [ ! -s "$ctl/$1/why3find.json" ]; then
+        echo "::error::creusot-check[prove]: control initialisation did not supply why3find.json. NO PROOF WAS PERFORMED." >&2
+        rm -rf "$ctl"; exit 2
+      fi
     }
     plant creusot-control-failing 'use creusot_std::prelude::*;
 #[ensures(result == 0u32)]
@@ -201,7 +210,7 @@ pub fn planted_must_fail() -> u32 { 1 }'
 pub fn planted_must_pass() -> u32 { 2 }'
     echo "::group::planted control: a false postcondition must NOT prove"
     # shellcheck disable=SC2086
-    if (cd "$ctl/creusot-control-failing" && cargo creusot prove $prove_args); then
+    if (cd "$ctl/creusot-control-failing" && cargo creusot $prove_args); then
       echo "::endgroup::"
       echo "::error::creusot-check[prove]: the planted FALSE contract was reported proved (exit 0). This prover cannot fail, so any verdict it gives over the caller's crate is VOID. NO PROOF WAS PERFORMED." >&2
       rm -rf "$ctl"; exit 2
@@ -210,7 +219,7 @@ pub fn planted_must_pass() -> u32 { 2 }'
     echo "planted control: false contract refused — the oracle can say no."
     echo "::group::planted control: a true postcondition must prove"
     # shellcheck disable=SC2086
-    if ! (cd "$ctl/creusot-control-passing" && cargo creusot prove $prove_args); then
+    if ! (cd "$ctl/creusot-control-passing" && cargo creusot $prove_args); then
       echo "::endgroup::"
       echo "::error::creusot-check[prove]: the planted TRUE contract did not prove. The toolchain is broken (solver or prelude), so a red on the caller's crate would be misattributed. NO PROOF WAS PERFORMED." >&2
       rm -rf "$ctl"; exit 2
@@ -223,15 +232,15 @@ pub fn planted_must_pass() -> u32 { 2 }'
     fail=0
     while IFS= read -r crate; do
       [ -n "$crate" ] || continue
-      echo "::group::cargo creusot prove — $crate"
+      echo "::group::cargo creusot — $crate"
       # shellcheck disable=SC2086
-      if (cd "$crate" && cargo creusot prove $prove_args); then
+      if (cd "$crate" && cargo creusot $prove_args); then
         echo "::endgroup::"
         echo "ok: $crate — every obligation discharged"
       else
         rc=$?
         echo "::endgroup::"
-        echo "::error file=$crate/Cargo.toml::creusot-check[prove]: 'cargo creusot prove' exited $rc in $crate — at least one obligation is unproved. Fix the contract or the code; never mark it #[trusted] to get green."
+        echo "::error file=$crate/Cargo.toml::creusot-check[prove]: 'cargo creusot' exited $rc in $crate — at least one obligation is unproved. Fix the contract or the code; never mark it #[trusted] to get green."
         fail=1
       fi
     done < "$facts_dir/crates"

@@ -101,8 +101,21 @@ echo "== prove: stub oracle that CAN say no =="
 STAND_IN="$WORK/bin"; mkdir -p "$STAND_IN"
 cat > "$STAND_IN/cargo-creusot" <<'SH'
 #!/usr/bin/env bash
-# stub: 'cargo creusot prove' → exit 1 when the crate is marked unproved
-[ "${2:-}" = "prove" ] || exit 0  # cargo passes the subcommand name as $1
+# v0.14 compiles/proves without a subcommand. A CLI parse error must not
+# be mistaken for a rejected proof: reject the obsolete invocation here.
+[ "${1:-}" = "creusot" ] || exit 64  # cargo supplies the plugin name
+[ "${2:-}" != "--help" ] || exit 0
+if [ "${2:-}" = "prove" ]; then
+  echo "obsolete prove subcommand" >&2; exit 64
+fi
+if [ "${2:-}" = "init" ]; then
+  # Stand-in only: real init copies the installed tool's configured template.
+  printf '{"stand_in":true}\n' > why3find.json
+  exit 0
+fi
+if [ -f Cargo.toml ] && grep -q 'name = "creusot-control-' Cargo.toml && [ ! -s why3find.json ]; then
+  echo "missing control Why3find configuration" >&2; exit 65
+fi
 if grep -qE 'planted_must_fail|// UNPROVED' src/lib.rs 2>/dev/null; then
   echo "stub: 1 goal unproved"; exit 1
 fi
@@ -113,13 +126,36 @@ run_phase prove PATH="$STAND_IN:$PATH"
 [ "$RC" -eq 0 ] && ok "prove exits 0 when every crate proves" || { bad "prove exits $RC"; cat "$OUT"; }
 grep -q 'false contract refused' "$OUT" && ok "planted failing control was exercised" || bad "failing control not run"
 grep -q 'true contract proved' "$OUT" && ok "planted passing control was exercised" || bad "passing control not run"
+echo "== obsolete CLI mutation must not produce a proof verdict =="
+original_checker="$checker"
+sed 's/cargo creusot \$prove_args/cargo creusot prove $prove_args/g' "$checker" > "$WORK/obsolete-check.sh"
+checker="$WORK/obsolete-check.sh"
+run_phase prove PATH="$STAND_IN:$PATH"
+[ "$RC" -eq 2 ] && ok "obsolete subcommand is NOT RUN, never proof success" || bad "obsolete CLI exited $RC"
+grep -q 'obsolete prove subcommand' "$OUT" && ok "strict v0.14 oracle rejected the obsolete CLI" || bad "CLI mutant was not exercised"
+checker="$original_checker"
+echo "== control initialisation must supply configuration =="
+sed '/printf.*stand_in.*why3find.json/d' "$STAND_IN/cargo-creusot" > "$WORK/no-config-oracle"
+cp "$STAND_IN/cargo-creusot" "$WORK/good-oracle"
+cp "$WORK/no-config-oracle" "$STAND_IN/cargo-creusot"
+run_phase prove PATH="$STAND_IN:$PATH"
+[ "$RC" -eq 2 ] && ok "missing control configuration is NOT RUN" || bad "missing configuration exited $RC"
+grep -q 'control initialisation did not supply why3find.json' "$OUT" && ok "names the actual setup failure" || bad "configuration failure not explained"
+cp "$WORK/good-oracle" "$STAND_IN/cargo-creusot"
 printf '// UNPROVED\n' >> "$FIX/src/lib.rs"; commit
 run_phase prove PATH="$STAND_IN:$PATH"
 [ "$RC" -eq 1 ] && ok "an unproved crate fails the gate" || bad "unproved crate exits $RC, expected 1"
 grep -q "::error file=./Cargo.toml::creusot-check\[prove\]" "$OUT" && ok "the failing crate is annotated" || bad "crate not annotated: $(cat "$OUT")"
 
 echo "== prove: an oracle that can only say yes makes the verdict VOID =="
-printf '#!/usr/bin/env bash\necho yes; exit 0\n' > "$STAND_IN/cargo-creusot"
+cat > "$STAND_IN/cargo-creusot" <<'SH'
+#!/usr/bin/env bash
+# Initialise normally, but lie about every proof, including the false control.
+if [ "${2:-}" = "init" ]; then
+  printf '{"stand_in":true}\n' > why3find.json
+fi
+echo yes; exit 0
+SH
 run_phase prove PATH="$STAND_IN:$PATH"
 [ "$RC" -eq 2 ] && ok "exits 2 (NO PROOF WAS PERFORMED)" || bad "exits $RC, expected 2"
 grep -q 'cannot fail' "$OUT" && ok "says the prover cannot fail" || bad "no explanation"
