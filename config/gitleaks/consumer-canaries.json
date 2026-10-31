@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "suite_sha": "41f8a325cf5ceae0f8ce213f991c86b95c987f9b",
+  "subjects": [
+    {
+      "repository": "hyperpolymath/unified-dataset-vocab",
+      "sha": "12acc7881e12ffb52c9146dea7f6d43fce0c13e3",
+      "profile": "documentation and vocabulary",
+      "default_branch": "main"
+    },
+    {
+      "repository": "hyperpolymath/idrisiser",
+      "sha": "c630c024c9be7852a42a6699f2394d10af0ee71b",
+      "profile": "Rust and shell scaffolding",
+      "default_branch": "main"
+    },
+    {
+      "repository": "hyperpolymath/gitbot-fleet",
+      "sha": "83e35bcfd04d43960d635fec5397da8dfa344268",
+      "profile": "larger Rust estate tooling with local Gitleaks exceptions",
+      "default_branch": "main"
+    }
+  ]
+}
