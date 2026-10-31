@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
+# Stage two after PR70: real tool, narrowly scoped fixture, published gate source.
 name: Creusot live canary
 on:
   pull_request:
@@ -14,19 +15,32 @@ concurrency:
   cancel-in-progress: true
 jobs:
   fixture:
-    name: Fixture lock bootstrap (not proof)
+    name: Locked fixture and published source
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
-      - name: Resolve a genuine fixture lockfile with Cargo
+      - name: Refuse an unpublished gate pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor 6c6d772ebe82605ba22254db528faf54faec9f49 origin/main
+      - name: Fixture prerequisites and missing-prerequisite mutants (not proof)
         shell: bash
         run: |
           set -euo pipefail
           cargo --version
-          cargo generate-lockfile --manifest-path tests/fixtures/creusot-live/Cargo.toml
-          # Bootstrap transport only. This is public dependency metadata, not proof.
-          lock=$(base64 -w0 tests/fixtures/creusot-live/Cargo.lock)
-          echo "::notice title=fixture-lock-bootstrap::$lock"
+          bash tests/creusot-live-canary.sh
+          sha256sum tests/fixtures/creusot-live/Cargo.lock
+          git diff --exit-code -- tests/fixtures/creusot-live
+  creusot:
+    needs: fixture
+    uses: hyperpolymath/cicd-suite/.github/workflows/creusot-gate.yml@6c6d772ebe82605ba22254db528faf54faec9f49 # published PR70 repair
+    with:
+      working_directory: tests/fixtures/creusot-live
+      creusot_version: '0.14.0'
+      rust_nightly: nightly-2026-08-03
+      enforce_hollow: true

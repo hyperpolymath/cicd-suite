@@ -76,3 +76,35 @@ proof oracle still initialises normally so it reaches the false-contract check.
 These regressions validate orchestration only, not SMT proof. A real pinned
 canary, including configured Why3find and a cargo-generated lockfile, remains
 outstanding. Removal of the exploratory fixture does not discharge that task.
+
+== Stage two: published-source live canary
+
+PR70 published the repaired gate at
+`6c6d772ebe82605ba22254db528faf54faec9f49`; its seven reported main workflows
+completed successfully. The narrow `creusot-live-canary.yml` calls exactly that
+revision, not the PR branch. The scope inventory now has fifteen workflows:
+four managed and eleven immutable; no actions.lock onboarding or pin rewrites.
+
+The identity fixture includes project-root Why3find configuration, selects the
+installed Z3 prover and contains no trusted axioms. Its genuine Cargo.lock was
+resolved by Cargo in
+https://github.com/hyperpolymath/cicd-suite/actions/runs/41243475630[bootstrap run 41243475630]
+at `6842fc8aa6b3f28c2abfa06a03a0d317e5a56f3f`, then retrieved byte-for-byte from
+the job's public lockfile annotation (not hand-written or reconstructed).
+SHA-256: `6afcbbb02f4213f7a9cb1b7f23e65d536706351ef84eea2e38494004d36c88ac`.
+The bootstrap transport is removed from the final workflow.
+
+Preflight verifies publication ancestry, the exact call inputs, configuration,
+absence of trusted axioms and Cargo's `--locked` resolution. Five mutants remove
+configuration/lockfile, float the pin, mismatch the release, or trust the fixture.
+These are input controls, not proof. The live reusable separately installs or
+restores Creusot, checks the false/true controls and then proves the fixture.
+Its public proof check retains the historical name for compatibility, although
+the executed v0.14 command is `cargo creusot` without a `prove` subcommand.
+
+Do not mark the live stage complete until the actual proof step and verdict
+succeed. Installation, preflight, mocks and skipped jobs are insufficient. The
+published gate does not forward `--locked` specially to its temporary control
+crates (which initialise their own manifests); this canary checks the committed
+fixture lock in preflight, without claiming fully offline/hermetic execution.
+Broad consumer rollout remains deferred.
