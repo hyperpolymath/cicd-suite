@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "workflows": [
+    {
+      "path": ".github/workflows/code-hygiene-self-test.yml",
+      "mode": "managed",
+      "reason": "Existing actions.lock onboarding; preserve direct and declared composite closure."
+    },
+    {
+      "path": ".github/workflows/creusot-gate.yml",
+      "mode": "immutable",
+      "reason": "Full-SHA source references outside the existing lock map; remote closure is not certified by this scope guard."
+    },
+    {
+      "path": ".github/workflows/kanren-gate.yml",
+      "mode": "immutable",
+      "reason": "Full-SHA source references outside the existing lock map; remote closure is not certified by this scope guard."
+    },
+    {
+      "path": ".github/workflows/label-triage.yml",
+      "mode": "managed",
+      "reason": "Existing actions.lock onboarding; preserve direct and declared composite closure."
+    },
+    {
+      "path": ".github/workflows/labels.yml",
+      "mode": "managed",
+      "reason": "Existing actions.lock onboarding; preserve direct and declared composite closure."
+    },
+    {
+      "path": ".github/workflows/language-gates-self-test.yml",
+      "mode": "managed",
+      "reason": "Existing actions.lock onboarding; preserve direct and declared composite closure."
+    },
+    {
+      "path": ".github/workflows/main-estate-audit.yml",
+      "mode": "immutable",
+      "reason": "Full-SHA source references outside the existing lock map; remote closure is not certified by this scope guard."
+    },
+    {
+      "path": ".github/workflows/rust-ci.yml",
+      "mode": "immutable",
+      "reason": "Full-SHA source references outside the existing lock map; remote closure is not certified by this scope guard."
+    },
+    {
+      "path": ".github/workflows/secret-scanner-consumer-canaries.yml",
+      "mode": "immutable",
+      "reason": "Full-SHA source references outside the existing lock map; remote closure is not certified by this scope guard."
+    },
+    {
+      "path": ".github/workflows/secret-scanner-legacy.yml",
+      "mode": "immutable",
+      "reason": "Full-SHA source references outside the existing lock map; remote closure is not certified by this scope guard."
+    },
+    {
+      "path": ".github/workflows/secret-scanner-reusable.yml",
+      "mode": "immutable",
+      "reason": "Full-SHA source references outside the existing lock map; remote closure is not certified by this scope guard."
+    },
+    {
+      "path": ".github/workflows/secret-scanner-self-test.yml",
+      "mode": "immutable",
+      "reason": "Full-SHA source references outside the existing lock map; remote closure is not certified by this scope guard."
+    },
+    {
+      "path": ".github/workflows/secret-scanner.yml",
+      "mode": "immutable",
+      "reason": "Full-SHA source references outside the existing lock map; remote closure is not certified by this scope guard."
+    },
+    {
+      "path": ".github/workflows/spark-gate.yml",
+      "mode": "immutable",
+      "reason": "Full-SHA source references outside the existing lock map; remote closure is not certified by this scope guard."
+    }
+  ]
+}
