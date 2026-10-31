@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: MPL-2.0
 set -euo pipefail
+trap 'rc=$?; echo "::error::lock scope regression failed at line $LINENO (exit $rc)"; exit "$rc"' ERR
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 builder=$ROOT/scripts/check-workflow-lock-scope.sh
 bash "$builder"
@@ -24,7 +25,7 @@ lock_mutant() {
 lock_mutant 'omitted managed workflow key' 'del(.workflows[".github/workflows/code-hygiene-self-test.yml"])'
 lock_mutant 'dropped direct dependency record' 'del(.dependencies["actions/checkout@v7.0.1"])'
 lock_mutant 'dropped composite closure edge' '.workflows[".github/workflows/code-hygiene-self-test.yml"] |= map(select(startswith("hyperpolymath/deed-ecosystem@")|not))'
-lock_mutant 'missing declared remote edge' '(.dependencies|to_entries[]|select(.key|startswith("hyperpolymath/deed-ecosystem@"))|.value.uses)=["owner/missing@v1"]'
+lock_mutant 'missing declared remote edge' '.dependencies |= with_entries(if (.key|startswith("hyperpolymath/deed-ecosystem@")) then .value.uses=["owner/missing@v1"] else . end)'
 stage
 jq '.workflows += [.workflows[0]]' "$tmp/base/config/workflow-lock-scope.json" > "$tmp/tree/config/workflow-lock-scope.json"
 reject 'duplicate scope row'
