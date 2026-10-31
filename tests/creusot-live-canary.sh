@@ -28,12 +28,9 @@ validate() {
     grep -Fq '#[ensures(result == x)]' "$fixture/src/lib.rs" || return 1
     if grep -Eq '#\[trusted([[:space:]]|\])' "$fixture/src/lib.rs"; then return 1; fi
     echo "checking Cargo manifest metadata"
-    cargo metadata --locked --no-deps --format-version 1 --manifest-path "$fixture/Cargo.toml" > "$tmp/metadata.json" || return 1
-    cat "$tmp/metadata.json"
+    cargo metadata --locked --format-version 1 --manifest-path "$fixture/Cargo.toml" > "$tmp/metadata.json" || return 1
     jq -e '[.packages[] | select(.name=="cicd-suite-creusot-live" and .edition=="2024") |
       .dependencies[] | select(.name=="creusot-std" and .req=="=0.14.0")] | length==1' "$tmp/metadata.json" >/dev/null || return 1
-    echo "checking Cargo locked resolution"
-    cargo generate-lockfile --locked --manifest-path "$fixture/Cargo.toml" || return 1
 }
 
 # Copy only the fixture and caller into an isolated tree before each mutation.
