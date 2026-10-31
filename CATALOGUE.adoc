@@ -194,6 +194,7 @@ Start with a reusable workflow/caller template where supplied: it handles orches
 * link:.github/workflows/main-estate-audit.yml[Estate-audit orchestration]
 * link:docs/SECRET-SCANNER-ROLLOUT.adoc[Secret-scanner rollout and security boundaries]
 * link:docs/GOVERNANCE-AND-SONAR-REPAIR.adoc[Governance and Sonar verification guidance]
+* link:docs/CAPABILITY-ASSURANCE.adoc[Capability assurance matrix: controls, evidence and limits]
 * link:README.adoc[Operational README, known defects and test guidance]
 
 == Keep the atlas honest

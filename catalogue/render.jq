@@ -62,6 +62,7 @@ def card($e; $page): [
       "* " + link(".github/workflows/main-estate-audit.yml"; "Estate-audit orchestration"; "CATALOGUE.adoc"),
       "* " + link("docs/SECRET-SCANNER-ROLLOUT.adoc"; "Secret-scanner rollout and security boundaries"; "CATALOGUE.adoc"),
       "* " + link("docs/GOVERNANCE-AND-SONAR-REPAIR.adoc"; "Governance and Sonar verification guidance"; "CATALOGUE.adoc"),
+      "* " + link("docs/CAPABILITY-ASSURANCE.adoc"; "Capability assurance matrix: controls, evidence and limits"; "CATALOGUE.adoc"),
       "* " + link("README.adoc"; "Operational README, known defects and test guidance"; "CATALOGUE.adoc"), "",
       "== Keep the atlas honest", "",
       "The single inventory is " + link("catalogue/capabilities.json"; "catalogue/capabilities.json"; "CATALOGUE.adoc") + ". Every action must appear exactly once in one primary clade; status and nature remain independent. Adding an action without cataloguing it, breaking a target link, duplicating an entry or leaving generated pages stale fails the catalogue checks.", "",

@@ -1,0 +1,122 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Suite-first completion ledger
+:toc:
+
+== Scope and sequencing
+
+The priority is cicd-suite itself. This thread owns the shared catalogue,
+assurance evidence, runtime gates and their regression controls. Other repository
+PRs are evidence sources and independently owned repairs, not a reason to ask
+the owner to keep moving between threads. Broad deployment is deferred. A narrow
+consumer canary is appropriate when needed to exercise shared machinery that
+fixtures cannot prove. Full-history scanning remains the default.
+
+No new clades are necessary to express the current 32 actions. Additional clades
+may be proposed where useful; empty categories and invented capabilities are not
+completion criteria. Observing a gap does not silently approve a new product.
+
+== Completed and previously verified
+
+* Suite PR66: shared lock representation guard and official-app Sonar receipt
+  verifier published at `4404c3c0474e17753fe7689f3485c02890aac113`.
+* Suite PR67: visitor atlas of 32 actions / eight clades merged at
+  `cd313201ee1e3a73ce9c32d155690c082a94eda6`; six post-merge workflows passed.
+* First scanner consumer: unified-dataset-vocab PR81 merged at
+  `4921ac0d161d5619c3186b2e916ed3f6e2c8c89f`; PR run 41198606402 and main
+  run 41199623322 passed all three scanner contexts.
+
+Verified scanner consumer deployments remain *one*. Passing open consumer PR
+checks do not count as merged/main-verified deployments.
+
+== Fresh external audit — 2026-10-31
+
+The checked PRs below were all OPEN and reported BLOCKED or UNSTABLE by GitHub.
+None was reported merge-ready at this observation. These are snapshots, not
+continuous monitoring. Exact head SHAs, check counts, non-success checks and
+scanner contexts are preserved in link:external-progress-2026-10-31.json[the API snapshot].
+A failure name is not a root-cause diagnosis. Skipped checks are not assurance.
+No external repositories were changed, merged, closed or dismissed in this audit.
+
+[cols="2,1,5",options="header"]
+|===
+|Repository |PR |Observed remaining work
+|metadatastician/standards |https://github.com/metadatastician/standards/pull/1381[1381] |Repo self-tests fail; shared governance startup repair is not yet published by this PR.
+|hypatia |https://github.com/hyperpolymath/hypatia/pull/992[992] |Governance allowlist preflight fails.
+|cicd-squabbler |https://github.com/hyperpolymath/cicd-squabbler/pull/143[143], https://github.com/hyperpolymath/cicd-squabbler/pull/144[144], https://github.com/hyperpolymath/cicd-squabbler/pull/145[145] |Rust, Creusot and governance failures. See the specific Creusot setup evidence below; not all failures have been diagnosed.
+|cyo |https://github.com/hyperpolymath/cyo/pull/54[54] |Handoff PR, BLOCKED; no failed check in the visible rollup is not proof of successful required checks.
+|vocarium |https://github.com/hyperpolymath/vocarium/pull/48[48] |Workflow lint and Hypatia checks fail.
+|grim-repo |https://github.com/hyperpolymath/grim-repo/pull/96[96] |DEED manifest validation fails.
+|polyglot-formalisms-gleam |https://github.com/hyperpolymath/polyglot-formalisms-gleam/pull/64[64] |BLOCKED despite no failed check in the visible rollup; required/context admission still needs inspection.
+|idrisiser |https://github.com/hyperpolymath/idrisiser/pull/94[94] |All three scanner contexts succeed; DEED, K9 and Hypatia checks fail. Not yet deployed.
+|gitbot-fleet |https://github.com/hyperpolymath/gitbot-fleet/pull/631[631], https://github.com/hyperpolymath/gitbot-fleet/pull/632[632] |Scanner contexts succeed on 632. Both have an idris-dependents build/test/clippy failure; 632 also has a Sonar failure. Neither is a completed deployment.
+|===
+
+=== Confirmed suite-relevant runtime evidence
+
+Squabbler PR145 check `creusot / Creusot proofs (cargo creusot prove)`:
+https://github.com/hyperpolymath/cicd-squabbler/actions/runs/41220124068/job/124592955217[job 124592955217].
+GitHub reports successful checkout/source verification, nightly installation,
+opam prerequisites and cache steps, then failure at
+`Install Creusot v0.14.0 (clone at the tag, ./INSTALL)`.
+The planted controls and actual proof step were SKIPPED.
+
+The consumer pins suite `bf7dd95cf49733019343ff485c2f45c6b261839c`, not the
+current suite revision. A GitHub source comparison confirms the published suite
+at `cd313201...` already adds the cairo/GTK/gtksourceview system prerequisites
+absent from that older pin. Do not implement that same fix again or claim that
+the observed old-pin failure proves the current installer is broken. A narrow
+current-source canary is needed to establish the repair actually works.
+
+This is *tool installation / not-run evidence*, not a failed proof obligation.
+The final installation error has not been established from the available
+annotation (`exit code 1` only). Next action is inspect installer diagnostics and test the already-published prerequisite fix
+on a narrowly reviewed current-source canary; add a regression for any remaining
+established cause before changing shared tooling. Do not weaken proof checks
+or reinterpret the skipped proof step as success.
+
+== Suite lock-map finding — investigation, not a completed fix
+
+At the inspected suite source:
+
+* Four workflow keys exist in schema v0.0.2 actions.lock, for 14 workflow files.
+  The ratio alone is not a defect: not every file is managed by the lock tool.
+* The main-estate-audit workflow carries a managed header but has no lock-map key.
+  The language self-test has a map key without that header. These are concrete
+  consistency observations, not proof that every omitted workflow is broken.
+* Checkout is represented under its tag key, while several workflows use the
+  literal SHA. The existing representation guard accepts either valid form;
+  that is not a complete workflow-to-lock coverage proof.
+* The current transitive-closure test iterates workflows already in the map.
+  It cannot, by that loop alone, detect an omitted workflow key.
+* The estate audit invokes action sources at historical published `c519c452...`,
+  not the current working action tree. Its green run is not blanket evidence
+  for every action implementation currently being edited.
+
+Required next disposition: inspect intended management scope and actual direct,
+composite and reusable edges with a real YAML parser; distinguish intentional
+unmanaged full-SHA references from missing managed coverage; design omitted-key
+and dropped-edge mutants. Preserve provenance and runner semantics. Do not add
+invented reusable lock entries, remove headers to bypass enforcement, or blindly
+regenerate unrelated pins. This PR does not modify actions.lock or claim closure
+repaired. The local sandbox lacks mikefarah yq, so yq-based inspection is not
+reported as run.
+
+== Bounded remaining suite work
+
+. Publish the assurance matrix and its coverage/drift controls, without claiming
+  linked test files were freshly run or have complete semantic coverage.
+. Validate the existing published Creusot prerequisite repair against the
+  old-pin installation failure; change source only for an established remaining
+  cause with regression coverage.
+. Resolve the lock management/coverage finding with tested scope and complete
+  dependency accounting, in a separately reviewable runtime change.
+. Classify each remaining suite-facing failure from the external audit before
+  assigning it to the suite, a shared validator, consumer configuration or code.
+. Keep an explicit closeout ledger. Central work can finish with identified
+  external owners and residual risks; whole-estate deployment and implementing
+  all advisory/stub capabilities are not prerequisites.
+
+No owner credential or settings change is requested at this stage. Any later
+approval request must name the exact repository, operation, evidence, risk and
+rollback. Polling occurs only during active work; there is no promise of an
+unattended monitor after the turn ends.

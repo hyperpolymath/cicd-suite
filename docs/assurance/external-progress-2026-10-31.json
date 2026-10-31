@@ -1,0 +1,736 @@
+[
+  {
+    "url": "https://github.com/hyperpolymath/cicd-squabbler/pull/143",
+    "state": "OPEN",
+    "isDraft": false,
+    "mergeStateStatus": "UNSTABLE",
+    "headRefOid": "d397aa79ab63143a9a488967ee2774f57bcb6d06",
+    "counts": [
+      {
+        "conclusion": "FAILURE",
+        "count": 4
+      },
+      {
+        "conclusion": "SKIPPED",
+        "count": 4
+      },
+      {
+        "conclusion": "SUCCESS",
+        "count": 54
+      }
+    ],
+    "non_success": [
+      {
+        "name": "automerge",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "creusot / Creusot proofs (cargo creusot prove)",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "rust-ci / Cargo audit (security)",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "creusot / Creusot verdict",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "governance / Allowlist Preflight",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "rust-ci / llvm-cov line coverage",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "rust-ci / Cargo test",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "CodeRabbit",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      }
+    ],
+    "scanner_contexts": [
+      {
+        "name": "scan / gitleaks",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "name": "scan / rust-secrets",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "name": "scan / shell-secrets",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      }
+    ]
+  },
+  {
+    "url": "https://github.com/hyperpolymath/cicd-squabbler/pull/144",
+    "state": "OPEN",
+    "isDraft": false,
+    "mergeStateStatus": "UNSTABLE",
+    "headRefOid": "5702549ad3e0322ba3a30219ff2ffcb84db5ab56",
+    "counts": [
+      {
+        "conclusion": "FAILURE",
+        "count": 4
+      },
+      {
+        "conclusion": "NEUTRAL",
+        "count": 1
+      },
+      {
+        "conclusion": "SKIPPED",
+        "count": 3
+      },
+      {
+        "conclusion": "SUCCESS",
+        "count": 53
+      }
+    ],
+    "non_success": [
+      {
+        "name": "automerge",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "creusot / Creusot proofs (cargo creusot prove)",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "rust-ci / Cargo audit (security)",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "creusot / Creusot verdict",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "governance / Allowlist Preflight",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "rust-ci / llvm-cov line coverage",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "rust-ci / Cargo test",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      }
+    ],
+    "scanner_contexts": [
+      {
+        "name": "scan / gitleaks",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "name": "scan / rust-secrets",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "name": "scan / shell-secrets",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      }
+    ]
+  },
+  {
+    "url": "https://github.com/hyperpolymath/cicd-squabbler/pull/145",
+    "state": "OPEN",
+    "isDraft": false,
+    "mergeStateStatus": "UNSTABLE",
+    "headRefOid": "ca306ba12eb70ba59ed8b1db00e6440b9b5f3497",
+    "counts": [
+      {
+        "conclusion": "FAILURE",
+        "count": 4
+      },
+      {
+        "conclusion": "NEUTRAL",
+        "count": 1
+      },
+      {
+        "conclusion": "SKIPPED",
+        "count": 4
+      },
+      {
+        "conclusion": "SUCCESS",
+        "count": 53
+      }
+    ],
+    "non_success": [
+      {
+        "name": "automerge",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "rust-ci / Cargo check + clippy + fmt",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "creusot / Creusot proofs (cargo creusot prove)",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "rust-ci / Cargo audit (security)",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "creusot / Creusot verdict",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "governance / Allowlist Preflight",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "rust-ci / llvm-cov line coverage",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "rust-ci / Cargo test",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      }
+    ],
+    "scanner_contexts": [
+      {
+        "name": "scan / gitleaks",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "name": "scan / rust-secrets",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "name": "scan / shell-secrets",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      }
+    ]
+  },
+  {
+    "url": "https://github.com/hyperpolymath/cyo/pull/54",
+    "state": "OPEN",
+    "isDraft": false,
+    "mergeStateStatus": "BLOCKED",
+    "headRefOid": "853ba7c0a8b2a3c100277fc11830bca8bdcaec74",
+    "counts": [
+      {
+        "conclusion": "",
+        "count": 1
+      },
+      {
+        "conclusion": "SUCCESS",
+        "count": 3
+      }
+    ],
+    "non_success": [
+      {
+        "name": "CodeRabbit",
+        "status": "IN_PROGRESS",
+        "conclusion": ""
+      }
+    ],
+    "scanner_contexts": []
+  },
+  {
+    "url": "https://github.com/hyperpolymath/gitbot-fleet/pull/631",
+    "state": "OPEN",
+    "isDraft": false,
+    "mergeStateStatus": "BLOCKED",
+    "headRefOid": "6a4b1d9ea39178452f36b03b276751328c696ca4",
+    "counts": [
+      {
+        "conclusion": "FAILURE",
+        "count": 1
+      },
+      {
+        "conclusion": "SKIPPED",
+        "count": 5
+      },
+      {
+        "conclusion": "SUCCESS",
+        "count": 32
+      }
+    ],
+    "non_success": [
+      {
+        "name": "build · test · clippy (idris-dependents)",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "Validate PRs against criteria",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Validate PRs against criteria",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Deploy production Pages site",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Auto-merge qualifying PRs",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Auto-merge qualifying PRs",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      }
+    ],
+    "scanner_contexts": []
+  },
+  {
+    "url": "https://github.com/hyperpolymath/gitbot-fleet/pull/632",
+    "state": "OPEN",
+    "isDraft": false,
+    "mergeStateStatus": "BLOCKED",
+    "headRefOid": "5ccf18a49a812e69235699b3a29072a9c2dadc35",
+    "counts": [
+      {
+        "conclusion": "FAILURE",
+        "count": 2
+      },
+      {
+        "conclusion": "SKIPPED",
+        "count": 5
+      },
+      {
+        "conclusion": "SUCCESS",
+        "count": 34
+      }
+    ],
+    "non_success": [
+      {
+        "name": "build · test · clippy (idris-dependents)",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "Validate PRs against criteria",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Validate PRs against criteria",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Deploy production Pages site",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Auto-merge qualifying PRs",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Auto-merge qualifying PRs",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "SonarCloud Code Analysis",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      }
+    ],
+    "scanner_contexts": [
+      {
+        "name": "scan / gitleaks",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "name": "scan / rust-secrets",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "name": "scan / shell-secrets",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      }
+    ]
+  },
+  {
+    "url": "https://github.com/hyperpolymath/grim-repo/pull/96",
+    "state": "OPEN",
+    "isDraft": false,
+    "mergeStateStatus": "BLOCKED",
+    "headRefOid": "b136471636f42404d533ed999c0128e6cc883727",
+    "counts": [
+      {
+        "conclusion": "FAILURE",
+        "count": 1
+      },
+      {
+        "conclusion": "SUCCESS",
+        "count": 10
+      }
+    ],
+    "non_success": [
+      {
+        "name": "Validate DEED manifests",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      }
+    ],
+    "scanner_contexts": []
+  },
+  {
+    "url": "https://github.com/hyperpolymath/hypatia/pull/992",
+    "state": "OPEN",
+    "isDraft": false,
+    "mergeStateStatus": "UNSTABLE",
+    "headRefOid": "a93e7acb01dda102207fadcc945de4a603ae289d",
+    "counts": [
+      {
+        "conclusion": "FAILURE",
+        "count": 1
+      },
+      {
+        "conclusion": "NEUTRAL",
+        "count": 2
+      },
+      {
+        "conclusion": "SKIPPED",
+        "count": 6
+      },
+      {
+        "conclusion": "SUCCESS",
+        "count": 87
+      }
+    ],
+    "non_success": [
+      {
+        "name": "automerge",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "bridge-gate",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "governance / Allowlist Preflight",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "Deploy to GitHub Pages",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Deploy to GitHub Pages",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Haskell Build & Test",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "HLint",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      }
+    ],
+    "scanner_contexts": [
+      {
+        "name": "scan / gitleaks",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "name": "scan / rust-secrets",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "name": "scan / shell-secrets",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      }
+    ]
+  },
+  {
+    "url": "https://github.com/hyperpolymath/idrisiser/pull/94",
+    "state": "OPEN",
+    "isDraft": false,
+    "mergeStateStatus": "BLOCKED",
+    "headRefOid": "ed6b0102780a2fec80a09f7718339c5612d653fe",
+    "counts": [
+      {
+        "conclusion": "FAILURE",
+        "count": 3
+      },
+      {
+        "conclusion": "SUCCESS",
+        "count": 17
+      }
+    ],
+    "non_success": [
+      {
+        "name": "Validate DEED manifests",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "Validate K9 contracts",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "Hypatia neurosymbolic scan",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      }
+    ],
+    "scanner_contexts": [
+      {
+        "name": "scan / gitleaks",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "name": "scan / rust-secrets",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "name": "scan / shell-secrets",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      }
+    ]
+  },
+  {
+    "url": "https://github.com/hyperpolymath/polyglot-formalisms-gleam/pull/64",
+    "state": "OPEN",
+    "isDraft": false,
+    "mergeStateStatus": "BLOCKED",
+    "headRefOid": "3298084b0d89689bef90d777fc33bd11715a42c0",
+    "counts": [
+      {
+        "conclusion": "SKIPPED",
+        "count": 1
+      },
+      {
+        "conclusion": "SUCCESS",
+        "count": 16
+      }
+    ],
+    "non_success": [
+      {
+        "name": "CodeRabbit",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      }
+    ],
+    "scanner_contexts": []
+  },
+  {
+    "url": "https://github.com/metadatastician/standards/pull/1381",
+    "state": "OPEN",
+    "isDraft": false,
+    "mergeStateStatus": "BLOCKED",
+    "headRefOid": "cce202ab8988651c602e6b12052ae834fe9b26f8",
+    "counts": [
+      {
+        "conclusion": "FAILURE",
+        "count": 1
+      },
+      {
+        "conclusion": "NEUTRAL",
+        "count": 1
+      },
+      {
+        "conclusion": "SKIPPED",
+        "count": 12
+      },
+      {
+        "conclusion": "SUCCESS",
+        "count": 70
+      }
+    ],
+    "non_success": [
+      {
+        "name": "Repo self-tests",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "scorecard / Run Scorecard",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Agda — lol/proofs",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "ci / Compile + test",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Idris2 — AVOW consent proofs",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Call CI Pipeline / Rust / Cargo check + clippy + fmt",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Call CI Pipeline / Rust / Cargo audit (security)",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Call CI Pipeline / Rust / llvm-cov line coverage",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Call CI Pipeline / Rust / Cargo test",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Call CI Pipeline / Deno (tier 2)",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Call CI Pipeline / ReScript",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Call CI Pipeline / V",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Call CI Pipeline / Haskell",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      }
+    ],
+    "scanner_contexts": [
+      {
+        "name": "scan / gitleaks",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "name": "scan / rust-secrets",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "name": "scan / shell-secrets",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      }
+    ]
+  },
+  {
+    "url": "https://github.com/hyperpolymath/vocarium/pull/48",
+    "state": "OPEN",
+    "isDraft": false,
+    "mergeStateStatus": "BLOCKED",
+    "headRefOid": "b21dd51f7b979903ec398eaafd782526be475123",
+    "counts": [
+      {
+        "conclusion": "FAILURE",
+        "count": 3
+      },
+      {
+        "conclusion": "NEUTRAL",
+        "count": 1
+      },
+      {
+        "conclusion": "SKIPPED",
+        "count": 1
+      },
+      {
+        "conclusion": "SUCCESS",
+        "count": 25
+      }
+    ],
+    "non_success": [
+      {
+        "name": "lint-workflows",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "lint-workflows",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      },
+      {
+        "name": "automerge",
+        "status": "COMPLETED",
+        "conclusion": "SKIPPED"
+      },
+      {
+        "name": "Hypatia neurosymbolic scan",
+        "status": "COMPLETED",
+        "conclusion": "FAILURE"
+      }
+    ],
+    "scanner_contexts": []
+  }
+]

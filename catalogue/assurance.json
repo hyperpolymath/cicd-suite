@@ -1,0 +1,274 @@
+{
+  "schema_version": 1,
+  "inspected_source": "cd313201ee1e3a73ce9c32d155690c082a94eda6",
+  "capabilities": [
+    {
+      "id": "secret-scan",
+      "test_paths": [
+        "actions/secret-scan-check/test.sh",
+        "tests/secret-scanner-receipts.sh",
+        "tests/secret-scanner-supplements.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": [
+        {
+          "url": "https://github.com/hyperpolymath/unified-dataset-vocab/actions/runs/41199623322",
+          "subject_sha": "4921ac0d161d5619c3186b2e916ed3f6e2c8c89f",
+          "scope": "Previously verified full-history main scan and SHA-bound supplemental receipts; not universal estate readiness."
+        }
+      ]
+    },
+    {
+      "id": "secrets",
+      "test_paths": [
+        "actions/secrets-check/test.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "vaulted-tokens",
+      "test_paths": [],
+      "coverage": "not-assessed",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "sonarcloud-result",
+      "test_paths": [
+        "actions/sonarcloud-result-check/test.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "required-files",
+      "test_paths": [
+        "tests/composite-shell-contract.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "spdx-license",
+      "test_paths": [
+        "tests/composite-shell-contract.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "affirmation",
+      "test_paths": [
+        "actions/affirmation-check/test.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "referencing",
+      "test_paths": [
+        "actions/referencing-check/test.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "code-hygiene",
+      "test_paths": [
+        "actions/code-hygiene-check/test.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "formatting",
+      "test_paths": [
+        "tests/composite-shell-contract.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "linguist",
+      "test_paths": [],
+      "coverage": "not-assessed",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "recipes-set",
+      "test_paths": [],
+      "coverage": "not-assessed",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "manifest",
+      "test_paths": [
+        ".github/workflows/code-hygiene-self-test.yml"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "contractile-validation",
+      "test_paths": [
+        "tests/pass-on-absence.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Linked suite exercises detection/absence paths, not the complete remote validator verdict.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "rust-ci",
+      "test_paths": [
+        "actions/rust-ci-check/test.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "creusot",
+      "test_paths": [
+        "actions/creusot-check/test.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Fixture suites use stand-in proof oracles. A consumer installation failure used older suite bf7dd95c; current source already adds system prerequisites. Current-source real prover validation remains unproven here; do not duplicate the published fix.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "spark",
+      "test_paths": [
+        "actions/spark-check/test.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Fixture suites use stand-in proof oracles; real prover execution must be evidenced separately.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "kanren",
+      "test_paths": [
+        "actions/kanren-check/test.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "proof-runner",
+      "test_paths": [
+        "tests/pass-on-absence.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "idris2-abi",
+      "test_paths": [],
+      "coverage": "not-assessed",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "zig-unified-api-adapter",
+      "test_paths": [],
+      "coverage": "not-assessed",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "boj-cartridge",
+      "test_paths": [
+        "actions/boj-cartridge-check/test.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "custom-tools",
+      "test_paths": [
+        "tests/pass-on-absence.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Test source linked, not a claim that it was freshly executed or provides complete coverage.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "badges",
+      "test_paths": [],
+      "coverage": "advisory-only",
+      "evidence_note": "No independent assurance verdict; retain the catalogue limitation.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "gitsea",
+      "test_paths": [],
+      "coverage": "advisory-only",
+      "evidence_note": "No independent assurance verdict; retain the catalogue limitation.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "hosting",
+      "test_paths": [],
+      "coverage": "advisory-only",
+      "evidence_note": "No independent assurance verdict; retain the catalogue limitation.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "metrics",
+      "test_paths": [],
+      "coverage": "advisory-only",
+      "evidence_note": "No independent assurance verdict; retain the catalogue limitation.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "tests-benches",
+      "test_paths": [],
+      "coverage": "advisory-only",
+      "evidence_note": "No independent assurance verdict; retain the catalogue limitation.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "trust-humans",
+      "test_paths": [],
+      "coverage": "advisory-only",
+      "evidence_note": "No independent assurance verdict; retain the catalogue limitation.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "www-compliance",
+      "test_paths": [],
+      "coverage": "advisory-only",
+      "evidence_note": "No independent assurance verdict; retain the catalogue limitation.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "prat",
+      "test_paths": [],
+      "coverage": "placeholder",
+      "evidence_note": "Not implemented assurance; no adoption recommendation.",
+      "consumer_receipts": []
+    },
+    {
+      "id": "semantic-audit",
+      "test_paths": [],
+      "coverage": "placeholder",
+      "evidence_note": "Not implemented assurance; no adoption recommendation.",
+      "consumer_receipts": []
+    }
+  ]
+}
