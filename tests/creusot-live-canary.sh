@@ -13,6 +13,7 @@ pin=hyperpolymath/cicd-suite/.github/workflows/creusot-gate.yml@6c6d772ebe82605b
 # when this function is called in an `if` (where Bash suppresses errexit).
 validate() {
     local tree=$1 fixture=$1/tests/fixtures/creusot-live
+    echo "checking caller contract"
     yq -o=json '.' "$tree/.github/workflows/creusot-live-canary.yml" > "$tmp/workflow.json" || return 1
     jq -e --arg pin "$pin" '
       .permissions == {contents:"read"} and
@@ -20,14 +21,18 @@ validate() {
       .jobs.creusot.with == {working_directory:"tests/fixtures/creusot-live",
         creusot_version:"0.14.0",rust_nightly:"nightly-2026-08-03",enforce_hollow:true}
     ' "$tmp/workflow.json" >/dev/null || return 1
+    echo "checking lock, Why3find configuration and untrusted obligation"
     [[ -s $fixture/Cargo.lock ]] || return 1
     jq -e '.packages==["creusot"] and .provers==["z3"] and
       .tactics==["compute_specified","split_vc"]' "$fixture/why3find.json" >/dev/null || return 1
     grep -Fq '#[ensures(result == x)]' "$fixture/src/lib.rs" || return 1
     if grep -Eq '#\[trusted([[:space:]]|\])' "$fixture/src/lib.rs"; then return 1; fi
+    echo "checking Cargo manifest metadata"
     cargo metadata --locked --no-deps --format-version 1 --manifest-path "$fixture/Cargo.toml" > "$tmp/metadata.json" || return 1
+    cat "$tmp/metadata.json"
     jq -e '[.packages[] | select(.name=="cicd-suite-creusot-live" and .edition=="2024") |
       .dependencies[] | select(.name=="creusot-std" and .req=="=0.14.0")] | length==1' "$tmp/metadata.json" >/dev/null || return 1
+    echo "checking Cargo locked resolution"
     cargo generate-lockfile --locked --manifest-path "$fixture/Cargo.toml" || return 1
 }
 
@@ -46,7 +51,16 @@ reject() {
     fi
     echo "ok: rejected $label"
 }
-validate "$ROOT"
+if ! validate "$ROOT" > "$tmp/baseline.log" 2>&1; then
+    # Surface public prerequisite diagnostics through the Checks API as well
+    # as runner logs; denied log-download access must not hide the failure.
+    while IFS= read -r line; do
+        line=${line//%/%25}
+        echo "::error::live-canary prerequisite: $line" >&2
+    done < "$tmp/baseline.log"
+    exit 1
+fi
+cat "$tmp/baseline.log"
 echo 'ok: configured, Cargo-locked fixture and published caller pin (not proof)'
 stage
 rm "$tmp/tree/tests/fixtures/creusot-live/why3find.json"
