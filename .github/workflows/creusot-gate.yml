@@ -13,7 +13,7 @@
 #   prove    installs Creusot at a PINNED release (opam switch cached), proves
 #            a planted FALSE contract and REQUIRES the prover to refuse it,
 #            proves a planted TRUE one and requires success, and only then
-#            runs `cargo creusot prove` in every crate with obligations
+#            runs `cargo creusot` in every crate with obligations
 #   verdict  one context to require; a skipped prove with obligations present
 #            is VOID, not green
 #
@@ -54,7 +54,7 @@ on:
         required: false
         default: false
       prove_args:
-        description: Extra arguments for `cargo creusot prove`
+        description: Extra arguments for `cargo creusot`
         type: string
         required: false
         default: ""
@@ -269,7 +269,7 @@ jobs:
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
           export PATH="$HOME/.cargo/bin:$PATH"
           cargo creusot --help >/dev/null
-          cargo creusot setup status || true
+          cargo creusot version
       - name: Planted controls, then every crate with obligations
         env:
           CREUSOT_GATE_PHASE: prove
