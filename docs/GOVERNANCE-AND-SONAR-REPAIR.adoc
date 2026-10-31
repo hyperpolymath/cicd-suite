@@ -1,0 +1,112 @@
+= Governance startup and authoritative SonarCloud results
+:toc:
+
+== Scope and honest outcomes
+
+The new controls are suite-side regression coverage, not deployed consumer repairs.
+`check-lock-pin-contract.sh` checks lock *representation* only; it does not
+verify remote existence, workflow closure, allowlist admission, or policy validity.
+Keep the existing lock verification and `tests/lock-transitive-closure.sh`.
+A passing fixture or public-corpus probe is not proof of a working consumer job.
+
+Both helpers distinguish `0` (accepted/verified success), `1` (invalid lock
+representation or official failed analysis), and `2` (inspection unavailable or
+no trustworthy verdict). GitHub Actions treats either nonzero code as a failed
+step; the log preserves why. Do not use `continue-on-error` to hide either class.
+
+== Governance evidence and next repair
+
+The standards lock at `fad242d35291de1898242d6737ba02b74a59a2f2`
+recorded checkout's `.ref` as a raw SHA. The runner rejected the pin during setup,
+before policy steps executed. The canonical standards main inspected at
+`1725bebd3773ea25627479f813283abf1c497a85` already records `.ref: v7.0.1`
+and the corresponding `sha1-` commit. No duplicate upstream lock fix is needed.
+
+Do not call a repin policy-neutral: the previously identified corrected
+`75bd5994470661a099df562d6d5ad2fe744dbd66` is 454 commits beyond the broken
+source. Its governance workflow contains substantial additional policy changes.
+The shared workflow also needs an audit of `${{ job.workflow_sha }}` and floating
+helper checkouts. Copying the entire newer file is not a startup-only repair.
+
+Copyable handoff to the standards / Hypatia / gitbot-fleet maintainers:
+
+----
+Create a narrowly scoped governance startup repair against the actual consumer
+source baseline, or explicitly review and approve the policy changes in an
+upgrade to a current version. Preserve required governance checks. Verify all
+shared helper source references and supported expression contexts, regenerate
+the shared lock and complete caller/composite closure in the same change, and
+run setup plus actual policy steps on an immutable consumer canary. Do not
+interpret setup-only failures as policy findings. Publish and test the source
+before repinning callers. Ensure the lock-sync bot preserves composite closure
+and reviewed tag refs rather than silently replacing refs with raw SHAs.
+----
+
+Selected-actions permissions inspection returned HTTP 403 for both cyo and this
+suite with the session integration. This is not evidence that the allowlist is
+empty. If a canonical-owner workflow is denied, the owner must inspect
+Settings -> Actions -> General -> Actions permissions in the affected repository
+(or its organisation policy). Review the exact denied action/reusable reference
+and admit only the approved source; do not choose unrestricted access as a workaround.
+An exact consumer/source approval request must precede migration.
+
+== Official app verification without a second scanner
+
+`actions/sonarcloud-result-check` queries the check-runs API with `checks: read`
+for an explicit repository and exact commit. It accepts only:
+
+* Check name `SonarCloud Code Analysis`.
+* Official app ID `12526`, slug `sonarqubecloud`.
+* The requested `head_sha`.
+* The newest matching check-run ID, not an older success or a late start time.
+* Completed `success` (pass) or `failure` (genuine official failure).
+
+Missing, queued, pending, skipped, neutral, cancelled, timed-out, unknown, wrong
+publisher, wrong commit, malformed responses and API failures cannot pass.
+The poll budget is 0..300 seconds (default 180), with each paginated API request
+separately bounded to 20 seconds plus a two-second forced-kill grace period.
+A final request may extend wall time past the poll budget; bound the caller job
+as well. This verifies a check receipt, not the analysis configuration, coverage,
+project selection, or adequacy of the quality gate. Never substitute it for
+analysis unless the official app is enabled for the exact repository and event.
+
+Example *after this source is published, tested and approved*:
+
+[source,yaml]
+----
+permissions:
+  contents: read
+  checks: read
+jobs:
+  sonar-result:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: hyperpolymath/cicd-suite/actions/sonarcloud-result-check@REPLACE_WITH_PUBLISHED_TESTED_40_HEX_SHA
+        with:
+          sha: ${{ github.event.pull_request.head.sha || github.sha }}
+----
+
+The placeholder is deliberately not a usable deployment pin. This action needs
+GitHub's read-only token, not `SONAR_TOKEN`; it does not analyse code itself.
+Keep existing required status names until a reviewed migration maps them to the
+new real result. Do not remove an Actions scan just because it is red: first prove
+same-repository, same-commit official analysis, inspect event/project coverage,
+and check required contexts. Fork and merge-queue event support need separate
+consumer canaries. The default PR subject is the head SHA, not the synthetic merge
+SHA; explicitly choose another SHA only when that is what the official app scans.
+
+== Regression and live evidence
+
+`tests/lock-pin-contract.sh` uses minimal synthetic records reproducing the
+observed old/fixed checkout representations, including invalid and uninspected
+cases. It requires actual mikefarah yq v4, not a mocked parser.
+`actions/sonarcloud-result-check/test.sh` uses a mocked API, including pagination,
+wrong identity, unavailable results and reanalysis ordering. Both are wired into
+the existing hosted scanner-control workflow so no new external uses/lock edges
+are introduced.
+
+A separate live read-only probe successfully verified official check
+`124289772397` on `hyperpolymath/vocarium` commit
+`748cf83de60de9cc9b968d38c187a7330183b2e2`. That is evidence the verifier can
+consume a real receipt, not a consumer deployment or universal readiness proof.

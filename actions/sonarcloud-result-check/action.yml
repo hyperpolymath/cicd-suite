@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: MPL-2.0
+name: Verify official SonarCloud result
+description: Validate the official app result for this exact commit instead of running a duplicate scanner
+inputs:
+  repository:
+    description: Repository containing the authoritative analysis
+    default: ${{ github.repository }}
+  sha:
+    description: Exact analysed commit, not a moving branch
+    default: ${{ github.event.pull_request.head.sha || github.sha }}
+  wait-seconds:
+    description: Bounded wait for asynchronous app analysis (0..300)
+    default: '180'
+outputs:
+  check-run-id:
+    description: Verified official check-run ID
+    value: ${{ steps.result.outputs.check-run-id }}
+  conclusion:
+    description: Official success or failure; unavailable analysis fails the action
+    value: ${{ steps.result.outputs.conclusion }}
+runs:
+  using: composite
+  steps:
+    - name: Verify authoritative same-commit result
+      id: result
+      shell: bash
+      env:
+        ACTION_DIR: ${{ github.action_path }}
+        SUBJECT_REPOSITORY: ${{ inputs.repository }}
+        SUBJECT_SHA: ${{ inputs.sha }}
+        MAX_WAIT_SECONDS: ${{ inputs.wait-seconds }}
+        GH_TOKEN: ${{ github.token }}
+      run: bash "$ACTION_DIR/check.sh"
