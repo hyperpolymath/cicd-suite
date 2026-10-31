@@ -34,8 +34,6 @@ validate() {
     [[ $(sha256sum "$fixture/src/lib.rs" | cut -d' ' -f1) == 4792ac10f2cfc09020d8bb5c7164d6368ab42a47db44214db031c911dd9d877a ]] || return 1
     # Fix the manifest too: it cannot silently acquire external targets or build scripts.
     [[ $(sha256sum "$fixture/Cargo.toml" | cut -d' ' -f1) == ab9522c2a92e0e2f41d56f4db12caf05f7a2fad33b4c625a191ebdca03c240bd ]] || return 1
-    grep -Fq '#[ensures(result == x)]' "$fixture/src/lib.rs" || return 1
-    if grep -Eq '#\[trusted([[:space:]]|\])' "$fixture/src/lib.rs"; then return 1; fi
     echo "checking Cargo manifest metadata"
     cargo metadata --locked --format-version 1 --manifest-path "$fixture/Cargo.toml" > "$tmp/metadata.json" || return 1
     jq -e '[.packages[] | select(.name=="cicd-suite-creusot-live" and .edition=="2024") |
@@ -94,4 +92,7 @@ stage
 printf '#[trusted]\npub fn hidden_axiom() -> u32 { 0 }\n' > "$tmp/tree/tests/fixtures/creusot-live/src/extra.rs"
 printf '\nmod extra;\n' >> "$tmp/tree/tests/fixtures/creusot-live/src/lib.rs"
 reject 'additional module containing a trusted axiom'
-echo 'ok: eight live-canary prerequisite mutants; no proof claimed'
+stage
+sed -i '/#\[ensures/i #[ trusted ]' "$tmp/tree/tests/fixtures/creusot-live/src/lib.rs"
+reject 'whitespace-formatted trusted attribute'
+echo 'ok: nine live-canary prerequisite mutants; no proof claimed'
