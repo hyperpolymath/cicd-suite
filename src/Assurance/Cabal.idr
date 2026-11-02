@@ -15,3 +15,12 @@ planOnlineBuild : IndexState -> BuildPlan
 planOnlineBuild Available = Resolve
 planOnlineBuild Missing = RefreshThenResolve
 planOnlineBuild Unknown = RefreshThenResolve
+
+missingRefreshes : planOnlineBuild Missing = RefreshThenResolve
+missingRefreshes = Refl
+
+unknownRefreshes : planOnlineBuild Unknown = RefreshThenResolve
+unknownRefreshes = Refl
+
+availableResolves : planOnlineBuild Available = Resolve
+availableResolves = Refl
