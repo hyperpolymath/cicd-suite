@@ -43,10 +43,8 @@ jobs:
     # (hypatia WF013 / WH006). The whole job is a clone, a sed and a PR.
     timeout-minutes: 20
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
     env:
-      GH_TOKEN: ${{ secrets.AUTOMATION_TOKEN || secrets.GITHUB_TOKEN }}
       BRANCH: ci/track-estate-audit
       BOT_EMAIL: 41898583+github-actions[bot]@users.noreply.github.com
     steps:
@@ -60,6 +58,9 @@ jobs:
             api.github.com:443
             github.com:443
       - name: Move every cicd-suite pin to HEAD and open a PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WRITE_TOKEN: ${{ secrets.AUTOMATION_TOKEN }}
         run: |
           set -euo pipefail
           gh auth setup-git
@@ -98,6 +99,12 @@ jobs:
             echo "Every cicd-suite pin is at HEAD."
             exit 0
           fi
+
+          if [ -z "$WRITE_TOKEN" ]; then
+            echo "::error::Stale cicd-suite pins detected. AUTOMATION_TOKEN is required to propose their update."
+            exit 1
+          fi
+          export GH_TOKEN="$WRITE_TOKEN"
 
           # The bot branch is rebuilt from the default branch each run, which
           # would discard anything else on it. If someone has pushed to it
