@@ -179,10 +179,10 @@ jobs:
         uses: hyperpolymath/cicd-suite/actions/www-compliance-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
       - name: Accreditations & Badges Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/badges-check@1387a42957458e0c57be17537df47eaf2b4f0870 # advisory evidence repair, 2026-11-03
+        uses: hyperpolymath/cicd-suite/actions/badges-check@88c55e28f37b8dfc5a435e86f548737997746cc9 # advisory evidence repair, 2026-11-03
       - name: Metrics Extraction Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/metrics-check@1387a42957458e0c57be17537df47eaf2b4f0870 # advisory evidence repair, 2026-11-03
+        uses: hyperpolymath/cicd-suite/actions/metrics-check@88c55e28f37b8dfc5a435e86f548737997746cc9 # advisory evidence repair, 2026-11-03
       - name: Test & Benchmarks Dashboard Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
         uses: hyperpolymath/cicd-suite/actions/tests-benches-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
