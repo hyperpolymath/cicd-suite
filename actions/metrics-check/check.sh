@@ -11,7 +11,7 @@ report_log() {
         return
     fi
     if [[ ! -f "$log" || ! -r "$log" ]]; then
-        echo "::warning::$label: NOT ASSESSED ($log is not a readable regular file)."
+        echo "::warning::$label: NOT ASSESSED ($log is not a readable regular file)." >&2
         return
     fi
 
@@ -22,7 +22,7 @@ report_log() {
     else
         rc=$?
         if [[ "$rc" -ne 1 ]]; then
-            echo "::warning::$label: NOT ASSESSED (could not read $log; grep exited $rc)."
+            echo "::warning::$label: NOT ASSESSED (could not read $log; grep exited $rc)." >&2
             return
         fi
     fi

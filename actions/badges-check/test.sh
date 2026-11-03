@@ -10,10 +10,11 @@ out=$work/output
 
 fail() { echo "badges-check: $1" >&2; cat "$out" >&2; exit 1; }
 make_repo() {
-    mkdir -p -- "$1"
-    git -C "$1" init -q
-    printf '%s\n' 'GLAMA Greenweb OpenSSF License' > "$1/README.adoc"
-    git -C "$1" add README.adoc
+    local repo=$1
+    mkdir -p -- "$repo"
+    git -C "$repo" init -q
+    printf '%s\n' 'GLAMA Greenweb OpenSSF License' > "$repo/README.adoc"
+    git -C "$repo" add README.adoc
 }
 run_check() {
     local dir=$1 script=${2:-$here/check.sh}
