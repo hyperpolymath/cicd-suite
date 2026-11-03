@@ -17,8 +17,8 @@ make_repo() {
     git -C "$repo" add README.adoc
 }
 run_check() {
-    local dir=$1 script=${2:-$here/check.sh}
-    if ! (cd -- "$dir" && bash --noprofile --norc -e -o pipefail "$script") > "$out" 2>&1; then
+    local dir=$1 script=${2:-$here/check.sh} check_path=${3:-$PATH}
+    if ! (cd -- "$dir" && PATH="$check_path" bash --noprofile --norc -e -o pipefail "$script") > "$out" 2>&1; then
         fail 'advisory action exited unsuccessfully'
     fi
 }
@@ -81,8 +81,30 @@ echo 'ok: all four existing accreditation/license recommendations remain visible
 
 rm "$agda/README.adoc"
 run_check "$agda"
-grep -qF '::warning::No README found to check badges.' "$out" || fail 'missing README was silently accepted'
-echo 'ok: missing README still produces its warning'
+grep -qF '::warning::No README found to check badges; badge presence NOT ASSESSED.' "$out" || fail 'missing README was silently accepted'
+echo 'ok: missing README is explicitly not assessed'
+
+mkdir "$agda/README.adoc"
+run_check "$agda"
+grep -qF 'badge presence NOT ASSESSED.' "$out" || fail 'a non-file README was silently accepted'
+if grep -qE '::warning::Missing .* badge|badge is missing' "$out"; then
+    fail 'a non-file README was misreported as missing badge wording'
+fi
+rmdir "$agda/README.adoc"
+echo 'ok: a non-file README cannot establish absent badge wording'
+
+# Deterministic even when tests run as root, which can read chmod-000 files.
+# The real Idris fixture exercises all four shared and both Idris checks.
+mkdir "$work/bin"
+printf '%s\n' '#!/usr/bin/env bash' 'exit 2' > "$work/bin/grep"
+chmod +x "$work/bin/grep"
+run_check "$idris" "$here/check.sh" "$work/bin:$PATH"
+[[ $(grep -c '^::warning::Badge presence NOT ASSESSED for ' "$out") -eq 6 ]] \
+    || fail 'a grep error did not leave all six badge checks unassessed'
+if grep -qE '::warning::Missing .* badge|badge is missing' "$out"; then
+    fail 'a grep read/tool failure was misreported as missing badge wording'
+fi
+echo 'ok: grep errors leave shared and Idris badge presence unassessed'
 
 outside=$work/outside-git
 mkdir "$outside"

@@ -7,16 +7,36 @@ echo 'Inspecting badge conventions (advisory)...'
 readme=README.adoc
 if [[ -f README.md ]]; then readme=README.md; fi
 if [[ ! -f "$readme" ]]; then
-    echo '::warning::No README found to check badges.'
+    echo '::warning::No README found to check badges; badge presence NOT ASSESSED.'
     exit 0
 fi
+if [[ ! -r "$readme" ]]; then
+    echo "::warning::Badge presence NOT ASSESSED: $readme is not readable." >&2
+    exit 0
+fi
+
+# A non-match is advice about missing wording; a failed read/tool is unknown.
+# Read the whole file rather than grep -q, which can succeed after a match
+# even when a read error also occurred.
+advise_badge() {
+    local pattern=$1 missing_message=$2 rc
+    if grep -i -- "$pattern" "$readme" > /dev/null; then
+        return
+    else
+        rc=$?
+    fi
+    if [[ "$rc" -eq 1 ]]; then
+        printf '::warning::%s\n' "$missing_message"
+    else
+        printf '::warning::Badge presence NOT ASSESSED for %s: cannot inspect %s (grep exited %s).\n' \
+            "$pattern" "$readme" "$rc" >&2
+    fi
+}
 
 # Preserve the estate's existing recommendations. Missing accreditation must
 # be investigated, never invented just to remove an annotation.
 for badge in GLAMA Greenweb OpenSSF License; do
-    if ! grep -qi -- "$badge" "$readme"; then
-        echo "::warning::Missing $badge badge in $readme. Check standing and display."
-    fi
+    advise_badge "$badge" "Missing $badge badge in $readme. Check standing and display."
 done
 
 # A generic src/ directory says nothing about language. Inspect existing,
@@ -39,12 +59,8 @@ while IFS= read -r -d '' source; do
 done < "$source_list"
 
 if [[ "$has_idris" = true ]]; then
-    if ! grep -qi -- 'Idris Inside' "$readme"; then
-        echo "::warning::Idris source detected but 'Idris Inside' badge is missing."
-    fi
-    if ! grep -qi -- RSR "$readme"; then
-        echo '::warning::Missing RSR-compliant badge in Idris repository.'
-    fi
+    advise_badge 'Idris Inside' "Idris source detected but 'Idris Inside' badge is missing."
+    advise_badge RSR 'Missing RSR-compliant badge in Idris repository.'
 else
     echo 'Idris badge advice is not applicable: no existing tracked Idris sources or packages.'
 fi

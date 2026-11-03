@@ -25,6 +25,9 @@ An untracked file, deleted tracked file, or generic source directory does not
 establish Idris applicability. Failed source discovery is explicitly
 unassessed. Existing GLAMA, Greenweb, OpenSSF, License, and applicable
 Idris/RSR recommendations remain; the action does not verify their standing.
+Missing or unreadable README files leave badge presence unassessed. The
+presence checks distinguish a successful grep non-match from a read/tool
+failure, including the Idris-specific recommendations.
 
 Metrics now count lines containing the literal uppercase marker `ERROR` only
 when the named log is readable. A zero count is a text observation, not a
@@ -45,7 +48,9 @@ bash --noprofile --norc -e -o pipefail
 
 The badge controls cover Agda-only sources, tracked and untracked Idris,
 packages without a source directory, deleted sources, literate Idris, missing
-README, discovery failure, and unchanged accreditation advice. A
+or non-file README, discovery failure, and unchanged accreditation advice.
+A deterministic grep failure leaves all six applicable badge checks
+unassessed; this does not rely on file permissions that root can bypass. A
 syntax-valid mutant restoring the original `src/` shortcut must produce the
 specific false Idris warnings, or the control suite fails.
 
