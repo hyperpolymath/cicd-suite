@@ -1,0 +1,103 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Badge Applicability and Metrics Evidence Repair
+:toc:
+
+== Scope and classification
+
+`badges-check` and `metrics-check` remain *advisory*. Their zero exit status
+does not certify accreditation, scanner execution, or proof correctness.
+This change repairs what they report, without adding applicability overrides,
+removing accreditation recommendations, or changing Actions policy.
+
+The originating observation was
+https://github.com/hyperpolymath/residual-evidence-types/actions/runs/41674254427/job/126050482689[estate audit run 41674254427].
+Its old aggregate workflow called composites at
+`0da816c05ae7486671d863e07935f93981c0c2d5`. A generic `src/` directory caused
+two incorrect Idris warnings in an Agda repository. The metrics step emitted
+three integer-comparison errors and then reported `Status: PROVEN`, even
+though it ran no prover. Missing scanner logs were reported as zero errors.
+
+== Changed observations
+
+Badge applicability now requires an existing, Git-tracked `.idr`, `.lidr`, or
+`.ipkg` file. Nested paths and filenames containing whitespace are supported.
+An untracked file, deleted tracked file, or generic source directory does not
+establish Idris applicability. Failed source discovery is explicitly
+unassessed. Existing GLAMA, Greenweb, OpenSSF, License, and applicable
+Idris/RSR recommendations remain; the action does not verify their standing.
+
+Metrics now count lines containing the literal uppercase marker `ERROR` only
+when the named log is readable. A zero count is a text observation, not a
+scanner result. Missing or unreadable logs are unassessed. No source keyword
+search can promote the proof status to a verdict. Compiler/prover receipts
+remain necessary evidence for proof claims.
+
+== Local controls
+
+link:../../actions/badges-check/test.sh[Badge controls] and
+link:../../actions/metrics-check/test.sh[metrics controls] execute the action
+scripts under GitHub's composite Bash options:
+
+[source,bash]
+----
+bash --noprofile --norc -e -o pipefail
+----
+
+The badge controls cover Agda-only sources, tracked and untracked Idris,
+packages without a source directory, deleted sources, literate Idris, missing
+README, discovery failure, and unchanged accreditation advice. A
+syntax-valid mutant restoring the original `src/` shortcut must produce the
+specific false Idris warnings, or the control suite fails.
+
+The metrics controls cover absent logs, non-file paths, counting-tool failure,
+zero and nonzero counts, line-count semantics, and source keywords that must
+never become proof evidence. These tests validate reporting behavior; they
+do not execute Pons, Panic Attack, or a prover.
+
+== Two real repository snapshots
+
+On 3 November 2026, the previous inline action bodies from suite main
+`de35c57b3f21659d7fc1d42757e20e9e7345d268` and the repaired scripts were run
+locally against Git archives of these exact commits. Each archive was placed
+in a temporary Git index so tracked-source discovery saw the original file
+inventory. No consumer working tree or repository setting was changed.
+
+[cols="2,3,1,1,2",options="header"]
+|===
+|Repository |Subject SHA |Badge warnings before |After |Idris observation
+|`hyperpolymath/residual-evidence-types`
+|`69a4637273d0ebbb47813f749f30463a4b867893`
+|5 |3 |No tracked Idris files; only the two incorrect Idris warnings disappear.
+|`hyperpolymath/cicd-suite`
+|`de35c57b3f21659d7fc1d42757e20e9e7345d268`
+|5 |5 |`src/Assurance/Cabal.idr` exists; both Idris recommendations remain.
+|===
+
+Both snapshots produced the same metrics comparison:
+
+[cols="3,1,1",options="header"]
+|===
+|Observation |Before |After
+|Integer-comparison errors |3 |0
+|Unsupported `Status: PROVEN` claims |1 |0
+|Zero-error claims for missing logs |2 |0
+|===
+
+All eight before/after action invocations exited zero, consistent with their
+advisory classification. The repaired metrics output instead reports absent
+logs and proof status as `NOT ASSESSED`. The three remaining accreditation
+warnings in the Agda snapshot have not been hidden or satisfied with invented
+badges.
+
+These are local, bounded reporting checks. They are not hosted CI receipts,
+proof execution results, or consumer deployment evidence.
+
+== Publication boundary
+
+The aggregate workflow pins composite implementations separately from its
+own workflow revision. A source fix must be followed by an update to those
+literal composite SHAs; `tests/lock-transitive-closure.sh` checks that each
+referenced composite matches the published source. Consumers must then pin
+the resulting reviewed main revision and validate their own caller and lock
+requirements. A consumer pin change alone cannot select an unpublished
+working-tree repair.
