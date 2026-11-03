@@ -29,7 +29,9 @@ constructor, including `AdmissionVerified` and `ExemptValidated`, is an
 *assumption supplied by a future independently verified adapter*. Its mere
 presence in parsed external data has no evidential value.
 
-The first verdict rejects empty or exclusively exempt requirement sets,
+The first verdict rejects invalid or undetermined advisory bundle members as
+untrusted observations, while permitting a verified advisory failure without
+masking a mandatory success. It rejects empty or exclusively exempt requirement sets,
 skipped/never-started applicable mandatory checks, stale revisions, revoked or
 unverified admissions, unknown applicability and mandatory failure masked by
 advisory success. It proves only these stated cases, not completeness against
@@ -46,9 +48,10 @@ or one observed GitHub status.
 
 `assurance-kernel.ipkg` typechecks the existing Cabal model plus
 `Assurance.Verdict`. `tests/assurance-kernel.sh` first compiles the
-unmodified package, then adds a contradictory theorem that `decide []`
+unmodified package, then first builds a separate pristine baseline copy, then adds a contradictory theorem that `decide []`
 equals `Passed` in a fresh temporary source copy and requires Idris2 to
-reject it. Missing Idris2 is exit 2, never evidence of successful execution.
+reject it with a diagnostic naming the deliberately false theorem. An unrelated
+compile failure cannot count as proof of successful rejection. Missing Idris2 is exit 2, never evidence of successful execution.
 Only an actual successful CI run can establish that these tests executed.
 
 For this initial isolated canary, Idris2 0.7.0 source is pinned to full commit

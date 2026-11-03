@@ -16,6 +16,13 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 cp -R src "$tmp/src"
 cp assurance-kernel.ipkg "$tmp/assurance-kernel.ipkg"
+# Baseline the copied tree before injecting the contradiction; a broken copy
+# must not masquerade as a valid negative proof observation.
+if ! (cd "$tmp" && idris2 --build assurance-kernel.ipkg) >"$tmp/baseline.log" 2>&1; then
+  echo "FAIL: isolated baseline did not compile before mutation" >&2
+  cat "$tmp/baseline.log" >&2
+  exit 1
+fi
 
 # A purported proof of an empty requirement set passing must not typecheck.
 # The unmodified package above must compile first, so a negative result is
@@ -26,6 +33,14 @@ counterfeitEmptyPass = Refl
 BAD
 if (cd "$tmp" && idris2 --build assurance-kernel.ipkg) >"$tmp/negative.log" 2>&1; then
   echo "FAIL: Idris2 accepted a proof that empty requirements pass" >&2
+  exit 1
+fi
+# A generic failing build is not a negative-control result. Demand both
+# a real Idris2 diagnostic and its attribution to our false theorem.
+if ! grep -Fq 'counterfeitEmptyPass' "$tmp/negative.log" ||
+   ! grep -Eq 'Error|error' "$tmp/negative.log"; then
+  echo "FAIL: negative build was not a diagnosed counterfeitEmptyPass rejection" >&2
+  cat "$tmp/negative.log" >&2
   exit 1
 fi
 echo "ok: real compiler rejected contradictory empty-pass proof"

@@ -45,11 +45,12 @@ isRequired (MkObservation Mandatory Applies _ _ _) = True
 isRequired (MkObservation Conditional Applies _ _ _) = True
 isRequired _ = False
 
-||| Advisory evidence never discharges a mandatory obligation. A policy-
-||| validated exemption is non-applicable, rather than a successful execution.
+||| Advisory observations may fail without failing mandatory obligations, but
+||| their policy applicability and provenance still need trusted admission.
+||| A policy-validated exemption is non-applicable, not successful execution.
 public export
 acceptable : Observation -> Bool
-acceptable (MkObservation Advisory _ _ _ _) = True
+acceptable (MkObservation Advisory Applies _ _ AdmissionVerified) = True
 acceptable (MkObservation _ ExemptValidated _ _ _) = True
 acceptable (MkObservation _ Applies CompletedSuccess CurrentRevision AdmissionVerified) = True
 acceptable _ = False
@@ -122,3 +123,19 @@ public export
 undeterminedCannotPass :
   decide [MkObservation Mandatory Undetermined CompletedSuccess CurrentRevision AdmissionVerified] = Blocked
 undeterminedCannotPass = Refl
+
+||| An unverified advisory bundle member cannot accompany a PASS verdict.
+public export
+unverifiedAdvisoryCannotSharePass :
+  decide [ MkObservation Mandatory Applies CompletedSuccess CurrentRevision AdmissionVerified
+         , MkObservation Advisory Applies CompletedSuccess CurrentRevision AdmissionUnverified
+         ] = Blocked
+unverifiedAdvisoryCannotSharePass = Refl
+
+||| Verified advisory failures remain non-blocking for mandatory success.
+public export
+verifiedAdvisoryFailureNonblocking :
+  decide [ MkObservation Mandatory Applies CompletedSuccess CurrentRevision AdmissionVerified
+         , MkObservation Advisory Applies CompletedFailure CurrentRevision AdmissionVerified
+         ] = Passed
+verifiedAdvisoryFailureNonblocking = Refl

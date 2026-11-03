@@ -15,6 +15,11 @@ on:
 permissions:
   contents: read
 
+# PR updates supersede previous costly compiler boots; manual dispatches are unique.
+concurrency:
+  group: assurance-kernel-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   typecheck:
     name: Compiler proofs and contradictory-proof control
