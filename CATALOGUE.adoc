@@ -163,10 +163,10 @@ link:catalogue/clades/observatory.adoc[Explore this clade — 7 capabilities]
 [cols="2,2,2,5",options="header"]
 |===
 |Capability |Nature |Status |What it does
-|link:actions/badges-check/action.yml[Accreditations & badges] |advisory |advisory |Inspect badge/accreditation conventions and report advisory signals.
+|link:actions/badges-check/action.yml[Accreditations & badges] |advisory |advisory |Inspect README badge conventions, with Idris advice based on existing tracked sources or packages.
 |link:actions/gitsea-check/action.yml[Analytics declarations] |advisory |advisory |Inspect Git-Sea analytics configuration and disclaimer conventions.
 |link:actions/hosting-check/action.yml[Hosting configuration] |advisory |advisory |Identify hosting targets from repository configuration.
-|link:actions/metrics-check/action.yml[Metrics & proof indicators] |advisory |advisory |Extract log/source heuristics for an advisory metrics view.
+|link:actions/metrics-check/action.yml[Metrics & proof indicators] |advisory |advisory |Count ERROR-marker lines in available Pons and Panic Attack logs; explicitly leave proof status unassessed.
 |link:actions/tests-benches-check/action.yml[Test & benchmark discoverability] |advisory |advisory |Look for benchmark mentions and test/benchmark dashboards.
 |link:actions/trust-humans-check/action.yml[Human trust declarations] |advisory |advisory |Inspect trust.txt/humans.txt and association conventions.
 |link:actions/www-compliance-check/action.yml[Web & well-known conventions] |advisory |advisory |Inspect website and well-known/resource conventions.

@@ -289,8 +289,8 @@
       "status": "advisory",
       "nature": "advisory",
       "title": "Accreditations & badges",
-      "summary": "Inspect badge/accreditation conventions and report advisory signals.",
-      "limitations": "Not independent certification of the advertised accreditation.",
+      "summary": "Inspect README badge conventions, with Idris advice based on existing tracked sources or packages.",
+      "limitations": "Presence advice only: README words do not verify accreditation standing or RSR compliance.",
       "path": "actions/badges-check/action.yml"
     },
     {
@@ -319,8 +319,8 @@
       "status": "advisory",
       "nature": "advisory",
       "title": "Metrics & proof indicators",
-      "summary": "Extract log/source heuristics for an advisory metrics view.",
-      "limitations": "Contains simulated defaults and brittle source-count heuristics; never use its PROVEN label as proof evidence.",
+      "summary": "Count ERROR-marker lines in available Pons and Panic Attack logs; explicitly leave proof status unassessed.",
+      "limitations": "Absent or unreadable logs are NOT ASSESSED. Text counts do not establish scan execution, freshness, success, or proof correctness.",
       "path": "actions/metrics-check/action.yml"
     },
     {

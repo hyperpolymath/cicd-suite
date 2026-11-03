@@ -23,6 +23,8 @@
         "actions/required-files-check/**",
         "actions/spdx-license-check/**",
         "actions/formatting-check/**",
+        "actions/badges-check/**",
+        "actions/metrics-check/**",
         "tests/**",
         "scripts/deonboard-estate-audit.sh",
         "scripts/deonboard-workflow.sh",
@@ -49,6 +51,8 @@
         "actions/required-files-check/**",
         "actions/spdx-license-check/**",
         "actions/formatting-check/**",
+        "actions/badges-check/**",
+        "actions/metrics-check/**",
         "tests/**",
         "scripts/deonboard-estate-audit.sh",
         "scripts/deonboard-workflow.sh",
@@ -140,6 +144,14 @@
         },
         {
           run: "bash actions/boj-cartridge-check/test.sh",
+        },
+        {
+          name: "Badge applicability controls (advisory, not accreditation)",
+          run: "bash actions/badges-check/test.sh",
+        },
+        {
+          name: "Metrics evidence controls (advisory, not proof)",
+          run: "bash actions/metrics-check/test.sh",
         },
         {
           name: "Create manifest controls",
