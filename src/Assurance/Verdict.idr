@@ -39,15 +39,20 @@ record Observation where
 public export
 data Verdict = Passed | Blocked
 
+||| True for an applicable mandatory or conditional observation, regardless of
+||| its execution, revision or admission state.
 public export
 isRequired : Observation -> Bool
 isRequired (MkObservation Mandatory Applies _ _ _) = True
 isRequired (MkObservation Conditional Applies _ _ _) = True
 isRequired _ = False
 
-||| Advisory observations may fail without failing mandatory obligations, but
-||| their policy applicability and provenance still need trusted admission.
-||| A policy-validated exemption is non-applicable, not successful execution.
+||| A validated exemption is non-applicable, not successful execution, and is
+||| acceptable regardless of the other fields. An applicable advisory observation
+||| is acceptable when its admission is verified, regardless of execution or
+||| revision. Other applicable observations require successful execution on the
+||| current revision and verified admission.
+||| Undetermined applicability is not acceptable.
 public export
 acceptable : Observation -> Bool
 acceptable (MkObservation Advisory Applies _ _ AdmissionVerified) = True
@@ -55,18 +60,22 @@ acceptable (MkObservation _ ExemptValidated _ _ _) = True
 acceptable (MkObservation _ Applies CompletedSuccess CurrentRevision AdmissionVerified) = True
 acceptable _ = False
 
+||| True when at least one observation is applicable and mandatory or conditional.
 public export
 hasRequired : List Observation -> Bool
 hasRequired [] = False
 hasRequired (x :: xs) = isRequired x || hasRequired xs
 
+||| True when every observation is acceptable, including for an empty list.
 public export
 allAcceptable : List Observation -> Bool
 allAcceptable [] = True
 allAcceptable (x :: xs) = acceptable x && allAcceptable xs
 
-||| This pure algorithm assumes an external policy enumerated all requirements
-||| and validated exemptions/admission. It cannot authenticate a JSON receipt.
+||| Passes only when at least one observation is required and all are acceptable;
+||| an empty list is blocked. This pure algorithm assumes an external policy
+||| enumerated all requirements and validated exemptions/admission. It cannot
+||| authenticate a JSON receipt.
 public export
 decide : List Observation -> Verdict
 decide xs = if hasRequired xs && allAcceptable xs then Passed else Blocked
