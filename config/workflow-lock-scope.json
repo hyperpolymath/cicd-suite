@@ -2,6 +2,11 @@
   "schema_version": 1,
   "workflows": [
     {
+      "path": ".github/workflows/assurance-kernel.yml",
+      "mode": "immutable",
+      "reason": "Isolated experimental Idris2 compiler canary; SHA-pinned checkout, no lock-map onboarding or consumer enforcement."
+    },
+    {
       "path": ".github/workflows/code-hygiene-self-test.yml",
       "mode": "managed",
       "reason": "Existing actions.lock onboarding; preserve direct and declared composite closure."
