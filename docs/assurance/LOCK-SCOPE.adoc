@@ -144,7 +144,7 @@ additional trusted modules. Those were guard weaknesses, not properties of the
 identity fixture used for these successful cold/warm receipts.
 
 
-The published general-purpose detect/theatre source still uses textual Rust
+At that historical published revision, the general-purpose detect/theatre source uses textual Rust
 attribute counting. Commented contracts and whitespace-formatted trusted
 attributes therefore remain broader-source limitations, not fixes claimed by
 this canary. Its exact-source/manifest admission rejects those spellings before
@@ -154,3 +154,10 @@ trusted recognition across source modules, with regression controls under the
 composite shell. Publish that repair and repeat a pinned canary before asking
 consumers to rely on those general detection counts. Do not mutate this
 canary's historical published gate SHA or imply that its source was repaired.
+
+The later source-reader repair is described in
+link:CREUSOT-EXECUTION.adoc[Creusot execution attribution]. It uses pinned Rust
+syntax parsing, supported conditional function attributes and comment/string
+rejection, with explicit unavailable outcomes for unsupported proof conditions.
+Its source facts and nonzero runtime proof denominator still require new runs
+at the changed gate revision; none of the historical receipts above validate it.
