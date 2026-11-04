@@ -14,6 +14,7 @@ on:
         options:
           - hyperpolymath/hypatia
           - hyperpolymath/boj-server-cartridges
+          - hyperpolymath/echidna
       sha:
         description: Exact 40-hex subject commit; never a branch or tag
         type: string
@@ -47,7 +48,7 @@ jobs:
             REQUESTED_SHA=936196794e0266715e7b1902893cdcbca64ef73a
           fi
           case "$REQUESTED_REPO" in
-            hyperpolymath/hypatia|hyperpolymath/boj-server-cartridges) ;;
+            hyperpolymath/hypatia|hyperpolymath/boj-server-cartridges|hyperpolymath/echidna) ;;
             *) echo 'Repository is outside this recovery scope'; exit 2 ;;
           esac
           [[ "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'An exact subject SHA is required'; exit 2; }
