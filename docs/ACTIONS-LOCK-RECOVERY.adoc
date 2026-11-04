@@ -2,8 +2,12 @@
 = Actions lock recovery candidate runner
 
 This is a narrowly scoped maintenance runner, not a replacement governance
-gate. It creates a reviewable lock candidate for `hyperpolymath/hypatia` when
-an unreadable lock prevents that repository's own workflows from starting.
+gate. It creates a reviewable lock candidate for the two explicitly admitted
+repositories: `hyperpolymath/hypatia` and
+`hyperpolymath/boj-server-cartridges`. The initial Hypatia use addresses an
+unreadable lock that prevents its own workflows from starting. BoJ uses the
+same canonical generation chain to reconcile its reviewed wrapper changes
+and existing dependency drift.
 It never commits, opens a pull request, changes Actions admission, changes a
 required check or alters a repository security setting.
 
@@ -11,9 +15,10 @@ required check or alters a repository security setting.
 
 The first execution is limited to pushes on `repair/actions-lock-recovery`
 and subject commit `936196794e0266715e7b1902893cdcbca64ef73a`. Manual dispatch
-requires the exact repository and a full 40-hex commit. Repository scope is
-still only `hyperpolymath/hypatia`; branches and tags are refused. Subject
-code is checked out for inspection and is never executed.
+requires one of those two repository choices and a full 40-hex commit.
+The push subject and default choice remain Hypatia; branches, tags, other
+repositories and similarly named slugs are refused by both the workflow and
+the generator. Subject code is checked out for inspection and is never executed.
 
 Acquisition and execution are separate jobs. The acquisition job performs only
 fixed inline inspection and archive packaging after its input-selected checkout;

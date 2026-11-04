@@ -69,19 +69,76 @@ rc=0
 [[ "$rc" -eq 2 && ! -s "$CALL_LOG" ]]
 echo 'ok: wrong original digest is refused before invoking the tool'
 
-for repo in untrusted/hypatia hyperpolymath/other; do
+for repo in '' untrusted/hypatia hyperpolymath/other hyperpolymath/boj-server hyperpolymath/boj-server-cartridges-extra; do
   rc=0
   SUBJECT_REPOSITORY=$repo SUBJECT_SHA=0123456789abcdef0123456789abcdef01234567 \
     SUBJECT_DIR="$tmp/fixture" AUTHORITY_DIR="$tmp/authority" RECOVERY_OUTPUT="$tmp/output" RUNNER_TEMP=$tmp \
     bash "$root/scripts/generate-lock-recovery-candidate.sh" > "$tmp/log" 2>&1 || rc=$?
   [[ "$rc" -eq 2 ]]
+  grep -Fxq 'Recovery subject is outside the admitted repository scope' "$tmp/log"
 done
 echo 'ok: candidate generator refuses other repositories'
+
+for repo in hyperpolymath/hypatia hyperpolymath/boj-server-cartridges; do
+  rc=0
+  SUBJECT_REPOSITORY=$repo SUBJECT_SHA=0123456789abcdef0123456789abcdef01234567 \
+    SUBJECT_DIR="$tmp/fixture" AUTHORITY_DIR="$tmp/authority" RECOVERY_OUTPUT="$tmp/outside" RUNNER_TEMP="$tmp/runner" \
+    bash "$root/scripts/generate-lock-recovery-candidate.sh" > "$tmp/log" 2>&1 || rc=$?
+  [[ "$rc" -eq 2 ]]
+  grep -Fxq 'Recovery output must be in the disposable runner directory' "$tmp/log"
+  echo "ok: candidate generator admits $repo only as far as the next independent boundary"
+  for bad_sha in main v0.2.0 0123456789abcdef ABCDEF0123456789ABCDEF0123456789ABCDEF0123 0123456789abcdef0123456789abcdef01234567extra; do
+    rc=0
+    SUBJECT_REPOSITORY=$repo SUBJECT_SHA=$bad_sha \
+      SUBJECT_DIR="$tmp/fixture" AUTHORITY_DIR="$tmp/authority" RECOVERY_OUTPUT="$tmp/output" RUNNER_TEMP=$tmp \
+      bash "$root/scripts/generate-lock-recovery-candidate.sh" > "$tmp/log" 2>&1 || rc=$?
+    [[ "$rc" -eq 2 ]]
+    grep -Fxq 'Recovery subject is outside the admitted repository/revision scope' "$tmp/log"
+  done
+done
+echo 'ok: candidate generator refuses floating, partial and malformed revisions for both repositories'
 
 # Execute the workflow's actual data-transfer blocks against local Git
 # fixtures. Source scripts and Git hooks are data, never commands to run.
 command -v yq >/dev/null || { echo 'yq unavailable for transfer controls'; exit 2; }
 workflow="$root/.github/workflows/actions-lock-recovery.yml"
+yq -o=json '.on.workflow_dispatch.inputs.repo' "$workflow" | jq -e '
+  .type == "choice" and .required == true and .default == "hyperpolymath/hypatia" and
+  .options == ["hyperpolymath/hypatia", "hyperpolymath/boj-server-cartridges"]' >/dev/null
+yq -r '.jobs."acquire-subject".steps[] | select(.id == "subject") | .run' "$workflow" > "$tmp/admit.sh"
+[[ -s "$tmp/admit.sh" ]] || exit 2
+export GITHUB_OUTPUT="$tmp/subject-outputs"
+valid_sha=0123456789abcdef0123456789abcdef01234567
+for repo in hyperpolymath/hypatia hyperpolymath/boj-server-cartridges; do
+  : > "$GITHUB_OUTPUT"
+  EVENT=workflow_dispatch REQUESTED_REPO=$repo REQUESTED_SHA=$valid_sha bash "$tmp/admit.sh"
+  printf 'repository=%s\nsha=%s\n' "$repo" "$valid_sha" > "$tmp/expected-outputs"
+  cmp "$tmp/expected-outputs" "$GITHUB_OUTPUT"
+  echo "ok: workflow admission binds the exact $repo and SHA outputs"
+done
+: > "$GITHUB_OUTPUT"
+EVENT=push REQUESTED_REPO=untrusted/ignored REQUESTED_SHA=main bash "$tmp/admit.sh"
+printf 'repository=hyperpolymath/hypatia\nsha=936196794e0266715e7b1902893cdcbca64ef73a\n' > "$tmp/expected-outputs"
+cmp "$tmp/expected-outputs" "$GITHUB_OUTPUT"
+echo 'ok: the push subject remains the fixed Hypatia revision'
+for repo in '' untrusted/hypatia hyperpolymath/boj-server hyperpolymath/boj-server-cartridges-extra; do
+  : > "$GITHUB_OUTPUT"
+  rc=0
+  EVENT=workflow_dispatch REQUESTED_REPO=$repo REQUESTED_SHA=$valid_sha bash "$tmp/admit.sh" > "$tmp/log" 2>&1 || rc=$?
+  [[ "$rc" -eq 2 && ! -s "$GITHUB_OUTPUT" ]]
+  grep -Fxq 'Repository is outside this recovery scope' "$tmp/log"
+done
+echo 'ok: workflow admission refuses absent, other-owner and similarly named repositories'
+for repo in hyperpolymath/hypatia hyperpolymath/boj-server-cartridges; do
+  for bad_sha in '' main v0.2.0 0123456789abcdef ABCDEF0123456789ABCDEF0123456789ABCDEF0123 0123456789abcdef0123456789abcdef01234567extra; do
+    : > "$GITHUB_OUTPUT"
+    rc=0
+    EVENT=workflow_dispatch REQUESTED_REPO=$repo REQUESTED_SHA=$bad_sha bash "$tmp/admit.sh" > "$tmp/log" 2>&1 || rc=$?
+    [[ "$rc" -eq 2 && ! -s "$GITHUB_OUTPUT" ]]
+    grep -Fxq 'An exact subject SHA is required' "$tmp/log"
+  done
+done
+echo 'ok: workflow admission refuses missing, floating, partial and malformed revisions for both repositories'
 yq -r '.jobs."acquire-subject".steps[] | select(.id == "archive") | .run' "$workflow" > "$tmp/package.sh"
 yq -r '.jobs.candidate.steps[] | select(.name == "Verify and unpack the subject data") | .run' "$workflow" > "$tmp/unpack.sh"
 [[ -s "$tmp/package.sh" && -s "$tmp/unpack.sh" ]] || exit 2

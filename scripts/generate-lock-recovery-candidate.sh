@@ -9,7 +9,11 @@ authority=${AUTHORITY_DIR:?}
 output=${RECOVERY_OUTPUT:?}
 authority_sha=d3e4b485a2af90c92a8e18af0888cd19cb132cd9
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-[[ "$repository" == hyperpolymath/hypatia && "$revision" =~ ^[0-9a-f]{40}$ ]] \
+case "$repository" in
+  hyperpolymath/hypatia|hyperpolymath/boj-server-cartridges) ;;
+  *) echo 'Recovery subject is outside the admitted repository scope'; exit 2 ;;
+esac
+[[ "$revision" =~ ^[0-9a-f]{40}$ ]] \
   || { echo 'Recovery subject is outside the admitted repository/revision scope'; exit 2; }
 [[ -n "${RUNNER_TEMP:-}" && "$output" == "$RUNNER_TEMP/"* ]] \
   || { echo 'Recovery output must be in the disposable runner directory'; exit 2; }
