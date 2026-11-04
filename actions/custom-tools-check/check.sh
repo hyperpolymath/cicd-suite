@@ -51,6 +51,10 @@ fi
 # Run both tools even if the first refuses, preserving independent evidence.
 failed=0
 incomplete=0
+# run_scan <command> [args...] — run a scanner with the deadline in seconds
+# and a five-second kill grace. Record exits 2 and 124–255 in incomplete,
+# and exits 1 and 3–123 in failed; exit 0 leaves both flags unchanged.
+# Non-zero command statuses are converted to these shared flags.
 run_scan() {
   local rc=0 scanner=$1
   echo "Running: $*"
