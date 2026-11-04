@@ -49,13 +49,14 @@ isRequired _ = False
 
 ||| A validated exemption is non-applicable, not successful execution, and is
 ||| acceptable regardless of the other fields. An applicable advisory observation
-||| is acceptable when its admission is verified, regardless of execution or
-||| revision. Other applicable observations require successful execution on the
+||| requires a terminal success or failure on the current revision and verified
+||| admission. Other applicable observations require successful execution on the
 ||| current revision and verified admission.
 ||| Undetermined applicability is not acceptable.
 public export
 acceptable : Observation -> Bool
-acceptable (MkObservation Advisory Applies _ _ AdmissionVerified) = True
+acceptable (MkObservation Advisory Applies CompletedSuccess CurrentRevision AdmissionVerified) = True
+acceptable (MkObservation Advisory Applies CompletedFailure CurrentRevision AdmissionVerified) = True
 acceptable (MkObservation _ ExemptValidated _ _ _) = True
 acceptable (MkObservation _ Applies CompletedSuccess CurrentRevision AdmissionVerified) = True
 acceptable _ = False
@@ -133,7 +134,8 @@ undeterminedCannotPass :
   decide [MkObservation Mandatory Undetermined CompletedSuccess CurrentRevision AdmissionVerified] = Blocked
 undeterminedCannotPass = Refl
 
-||| An unverified advisory bundle member cannot accompany a PASS verdict.
+||| An applicable, unverified advisory bundle member cannot accompany PASS.
+||| ExemptValidated remains a separately trusted policy exemption.
 public export
 unverifiedAdvisoryCannotSharePass :
   decide [ MkObservation Mandatory Applies CompletedSuccess CurrentRevision AdmissionVerified
@@ -148,3 +150,54 @@ verifiedAdvisoryFailureNonblocking :
          , MkObservation Advisory Applies CompletedFailure CurrentRevision AdmissionVerified
          ] = Passed
 verifiedAdvisoryFailureNonblocking = Refl
+
+||| An admitted advisory result must still have run to completion on this revision.
+public export
+neverStartedAdvisoryCannotSharePass :
+  decide [ MkObservation Mandatory Applies CompletedSuccess CurrentRevision AdmissionVerified
+         , MkObservation Advisory Applies NeverStarted CurrentRevision AdmissionVerified
+         ] = Blocked
+neverStartedAdvisoryCannotSharePass = Refl
+
+public export
+runningAdvisoryCannotSharePass :
+  decide [ MkObservation Mandatory Applies CompletedSuccess CurrentRevision AdmissionVerified
+         , MkObservation Advisory Applies StillRunning CurrentRevision AdmissionVerified
+         ] = Blocked
+runningAdvisoryCannotSharePass = Refl
+
+public export
+skippedAdvisoryCannotSharePass :
+  decide [ MkObservation Mandatory Applies CompletedSuccess CurrentRevision AdmissionVerified
+         , MkObservation Advisory Applies Skipped CurrentRevision AdmissionVerified
+         ] = Blocked
+skippedAdvisoryCannotSharePass = Refl
+
+public export
+cancelledAdvisoryCannotSharePass :
+  decide [ MkObservation Mandatory Applies CompletedSuccess CurrentRevision AdmissionVerified
+         , MkObservation Advisory Applies Cancelled CurrentRevision AdmissionVerified
+         ] = Blocked
+cancelledAdvisoryCannotSharePass = Refl
+
+public export
+staleAdvisoryCannotSharePass :
+  decide [ MkObservation Mandatory Applies CompletedSuccess CurrentRevision AdmissionVerified
+         , MkObservation Advisory Applies CompletedSuccess PreviousRevision AdmissionVerified
+         ] = Blocked
+staleAdvisoryCannotSharePass = Refl
+
+public export
+unknownRevisionAdvisoryCannotSharePass :
+  decide [ MkObservation Mandatory Applies CompletedSuccess CurrentRevision AdmissionVerified
+         , MkObservation Advisory Applies CompletedFailure RevisionUnknown AdmissionVerified
+         ] = Blocked
+unknownRevisionAdvisoryCannotSharePass = Refl
+
+||| A trusted policy exemption need not claim an observed run or admission.
+public export
+validatedExemptionCanSharePass :
+  decide [ MkObservation Mandatory Applies CompletedSuccess CurrentRevision AdmissionVerified
+         , MkObservation Advisory ExemptValidated NeverStarted RevisionUnknown AdmissionUnverified
+         ] = Passed
+validatedExemptionCanSharePass = Refl
