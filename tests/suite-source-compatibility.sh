@@ -106,6 +106,23 @@ jobs:
   second:
     uses: $legacy/.github/workflows/$workflow@main"
             run_case 2 'floating second call cannot hide beside a valid pin'
+            for invalid in \
+                "untrusted/proven-cicd/.github/workflows/$workflow@$sha" \
+                "$canonical/.github/workflows/$workflow" \
+                "$canonical/.github/workflows/${workflow}-extra@$sha"; do
+                stage_text "jobs:
+  first:
+    uses: $canonical/.github/workflows/$workflow@$sha
+  second:
+    uses: $invalid"
+                run_case 2 'unexpected relevant source cannot hide beside a valid pin'
+            done
+            stage_text "jobs:
+  first:
+    uses: $canonical/.github/workflows/$workflow@$sha
+  governance:
+    uses: metadatastician/standards/.github/workflows/governance.yml@$sha"
+            run_case 0 'unrelated reusable job does not select this gate source' "$canonical"
             stage_text "jobs:
   first:
     uses: $canonical/.github/workflows/$workflow@$sha

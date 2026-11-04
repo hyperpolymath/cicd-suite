@@ -95,6 +95,8 @@ jobs:
             || { echo '::error::caller workflow cannot be parsed; source pin NOT VERIFIED'; exit 2; }
           refs=''
           while IFS= read -r ref; do
+            # Other reusable workflows do not select this gate's source.
+            [[ "$ref" == */.github/workflows/"$SUITE_WORKFLOW"* ]] || continue
             case "$ref" in
               hyperpolymath/cicd-suite/.github/workflows/"$SUITE_WORKFLOW"@*|hyperpolymath/proven-cicd/.github/workflows/"$SUITE_WORKFLOW"@*)
                 repository=${ref%%/.github/workflows/*}
@@ -103,6 +105,7 @@ jobs:
                   || { echo '::error::suite caller must pin one complete 40-hex SHA; source pin NOT VERIFIED'; exit 2; }
                 refs+="$repository@$sha"$'\n'
                 ;;
+              *) echo '::error::unexpected suite source reference; source pin NOT VERIFIED'; exit 2 ;;
             esac
           done <<< "$candidates"
           refs=$(printf '%s' "$refs" | sort -u)
