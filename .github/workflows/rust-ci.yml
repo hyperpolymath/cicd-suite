@@ -332,7 +332,7 @@ jobs:
         # has no channel of its own and fails without it. detect refuses to
         # emit an empty value, so this can never be the silent "" that
         # killed the estate's rust-ci on 2026-09-29.
-        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master 2026-08-04 (v1)
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master 2026-08-04 (v1)
         with:
           toolchain: ${{ needs.detect.outputs.toolchain }}
           components: ${{ inputs.components }}
@@ -424,7 +424,7 @@ jobs:
           EXPECTED_REPOSITORY: ${{ steps.suite.outputs.repository }}
         run: bash .cicd-suite/scripts/verify-suite-checkout.sh
       - name: Install Rust ${{ needs.detect.outputs.toolchain }}
-        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master 2026-08-04 (v1)
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master 2026-08-04 (v1)
         with:
           toolchain: ${{ needs.detect.outputs.toolchain }}
       - name: Install Zig for a native build
@@ -515,7 +515,7 @@ jobs:
           EXPECTED_REPOSITORY: ${{ steps.suite.outputs.repository }}
         run: bash .cicd-suite/scripts/verify-suite-checkout.sh
       - name: Install Rust ${{ needs.detect.outputs.toolchain }}
-        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master 2026-08-04 (v1)
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master 2026-08-04 (v1)
         with:
           toolchain: ${{ needs.detect.outputs.toolchain }}
       - name: Install Zig for a native build
@@ -604,7 +604,7 @@ jobs:
           EXPECTED_REPOSITORY: ${{ steps.suite.outputs.repository }}
         run: bash .cicd-suite/scripts/verify-suite-checkout.sh
       - name: Install the declared rust-version ${{ needs.detect.outputs.msrv }}
-        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master 2026-08-04 (v1)
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master 2026-08-04 (v1)
         with:
           toolchain: ${{ needs.detect.outputs.msrv }}
       - name: Install Zig for a native build
@@ -699,7 +699,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Install Rust ${{ needs.detect.outputs.toolchain }} with llvm-tools
-        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master 2026-08-04 (v1)
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master 2026-08-04 (v1)
         with:
           toolchain: ${{ needs.detect.outputs.toolchain }}
           components: llvm-tools-preview
