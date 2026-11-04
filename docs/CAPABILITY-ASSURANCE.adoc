@@ -356,9 +356,9 @@ Test source linked, not a claim that it was freshly executed or provides complet
 
 *advisory · advisory · advisory-only*
 
-*Claim:* Inspect badge/accreditation conventions and report advisory signals.
+*Claim:* Inspect README badge conventions, with Idris advice based on existing tracked sources or packages.
 
-*Prerequisites / boundary:* Not independent certification of the advertised accreditation.
+*Prerequisites / boundary:* Presence advice only: README words do not verify accreditation standing or RSR compliance.
 
 *Control evidence:* Not established in this pass.
 
@@ -398,9 +398,9 @@ No independent assurance verdict; retain the catalogue limitation.
 
 *advisory · advisory · advisory-only*
 
-*Claim:* Extract log/source heuristics for an advisory metrics view.
+*Claim:* Count ERROR-marker lines in available Pons and Panic Attack logs; explicitly leave proof status unassessed.
 
-*Prerequisites / boundary:* Contains simulated defaults and brittle source-count heuristics; never use its PROVEN label as proof evidence.
+*Prerequisites / boundary:* Absent or unreadable logs are NOT ASSESSED. Text counts do not establish scan execution, freshness, success, or proof correctness.
 
 *Control evidence:* Not established in this pass.
 

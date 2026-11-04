@@ -1,0 +1,169 @@
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell (hyperpolymath)
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Cross-repository adversarial audit — 2026-11-04
+
+== Status and scope
+
+This is an incomplete audit checkpoint, not programme completion or a security
+certificate. Tested bases: cicd-suite `20fb1b1`, proven-tests-and-benches
+`9b00b3c`, Pons `84f58f9`, panic-attack `be6ac46`. Proposed fixes are separate
+changes. Full-history issue closure, authenticated GitHub security-alert and
+Sonar dashboards, all proof checkers and runtime stress profiles are not covered.
+The connected repository API does not expose the security-alert or community
+profile endpoints. Their absence from this report does not mean zero alerts.
+
+== Executed controls
+
+* Pons baseline: 250 Rust tests passed; zero ignored.
+* panic-attack baseline: 653 passed, three ignored. With signing/http/sarif:
+  720 passed, three ignored. These overlapping runs are not additive coverage.
+* Shared scanner gate: 183 controls passed after repair. All 144 pairs of scanner
+  exits (0, 1, 2, 124, 127, 128, 129, 137, 139, 150, 192, 255) checked with stand-ins; both scanners must
+  run even if the first refuses. A real sleeping process exercises the deadline.
+  The original gate fails the stronger exit/argument controls; its hanging
+  specimen also exceeded the independent 20-second test bound.
+* Bounded scanner experiment: 73 controls, seed 1371, 10 seconds per invocation:
+  two empty-input refusals, a positive scan, a valid report, five malformed
+  reports and 64 generated Python/PHP parser inputs. This checks termination,
+  report shape and rejection on these samples, not semantic precision/recall.
+  The published Bash driver uses a specified LCG and records input hashes; its
+  samples differ from the initial Python experiment. The Python driver was
+  replaced after hosted CI correctly rejected its language-policy violation.
+* Proven contract: existing 20 fixture cases pass; nine Python test methods
+  including malformed nested values, counters, contexts and CLI dispatch pass.
+  New adversarial controls initially produced 19 assertion failures and 11
+  errors, before repair. The benchmark-gate suite passed 18 controls.
+* REUSE: the baseline fails solely for missing metadata on
+  `fixtures/ci/cabal-index.jsonl`; the exact-path annotation repairs that defect. Hosted CI then caught missing
+  copyright metadata on this audit's new Proven Tests document: the initial
+  local lint had missed the untracked file. Metadata is repaired, and the
+  rerun must include new files, not just the original tracked inventory.
+* Suite shell/control survey: 28 scripts attempted with per-process 90-second
+  bounds. Initial missing-yq/cargo outcomes are environment refusals. After
+  provisioning, the remaining lock-closure failure was missing local Git
+  objects; fetching the two pins produced 28/28 passing closure assertions.
+  GPG-agent and Guile execution remain unverified in this environment.
+
+Commands, inventories, scan summaries and measurements are in
+link:2026-11-04/inventory.json[], link:2026-11-04/suite-controls.json[],
+link:2026-11-04/scanner-results.json[], link:2026-11-04/scanner-controls.json[]
+and link:2026-11-04/scan-performance.json[]. Inventories list tracked files;
+file presence does not establish that a test or proof executes in CI.
+
+== Scanner coverage and findings
+
+Both scanners ran on both suites and on themselves, using strict coverage.
+Every run returned partial coverage, not clean assurance.
+
+[cols="3,1,1,1,1",options="header"]
+|===
+|Target |Pons analysed |Pons findings |panic analysed |panic findings
+|cicd-suite |1 |0 |64 |4
+|proven-tests-and-benches |8 |3 |102 |3
+|Pons |225 |102 |300 |35
+|panic-attack |102 |1 |141 |16
+|===
+
+These are untriaged scanner findings, including deliberately vulnerable test
+specimens. They are not confirmed defect counts. Pons cannot analyse the bulk
+of shell/configuration/Idris code here. Panic's non-PHP adapters are heuristic.
+ShellCheck independently found mostly intentional glob/single-item-loop
+warnings, plus an unchecked test-directory change now repaired. A frozen legacy
+scanner fixture remains byte-exact; it is not cleaned to please a linter.
+
+Pons's three suite findings involve branch correlation or a helper that raises;
+they are candidates for infeasible-path/interprocedural limitations. Conversely,
+a former negative fixture assumes Python property reads are stable. Executing
+it with a property returning None then a value raises UnboundLocalError.
+The original specimen is retained as a positive fixture; the corrected negative
+snapshots the property once. Attribute guards no longer qualify for pruning.
+Other correlated-guard and exception limitations remain open; this is not a
+soundness proof. Findings now state the abstract-path countercondition.
+
+== CI defects and repairs
+
+The shared gate previously omitted both tools' strict coverage flags. It now
+requests `pons scan --fail-on-skips --fail-on warn` and
+`panic-attack assail --fail-on-incomplete`, runs both, and has a configurable
+1..3600 second deadline (default 180 seconds, five-second kill grace).
+Incomplete coverage or process failure prevents passing. panic assail findings
+are still report-only: this gate does not invent a severity policy for that CLI.
+
+Proven Tests main run 41694405362 stopped at REUSE. Its installer also accepts
+numeric versions from CI but upstream release tags require `v`; release-ref
+normalisation, invalid-ref rejection and controls are added at the producer.
+Panic's scheduled framework run 41390102464 demonstrates the same tag fault in
+its older pinned installer; the caller now supplies the required prefix.
+
+No checks, proof fixtures, required contexts or failing alerts are deleted to
+obtain green. Hosted acceptance of the new changes remains separate from local
+results. Existing zero-job governance/Hypatia/secret/mirror failures need their
+own current-head receipts and migration fixes.
+
+== Proof structure and outstanding work
+
+* Pons: executable AST/CFG/dataflow and explicit protocol trace models. No
+  general source-to-model soundness theorem, complete solver integration or
+  proof of scanner correctness. Creusot lane presence is not such a proof.
+* panic-attack: Idris models cover selected classification, comment-stripping
+  and conditional attestation properties. Rust property tests are experiments;
+  they do not prove all implementations refine those models. The three ignored
+  baseline tests and GUI/Chapel paths remain outside these runs.
+* Proven Tests: typed evidence and coverage derivation, tropical laws and test
+  taxonomy. JSON conformance does not authenticate a theorem or execution.
+  Live Idris2 0.7.0 results are now 41/41 framework, 56/56 type-safe and
+  110/110 specification checks. Eight SafeOrdering law checks compiled and ran
+  against proven at `53600326ca31f6f99767c5371cc77af2dade996c`. Four benchmark
+  checksums and the regression gate passed. Local generated executable modes
+  needed repair; hosted framework run 41815922308 subsequently passed.
+  These are scoped laws and experiments, not an end-to-end implementation proof.
+* Suite PR #74: experimental Idris verdict kernel is not merged. Review still
+  flags acceptance of stale/unstarted advisory observations and PR-head receipt
+  attribution. Address these before calling it a verified CI decision engine.
+* Hypatia: the proof ledger distinguishes model proofs from Elixir refinement.
+  Its neural coordinator is documented as five components; neural scores must
+  never upgrade incomplete coverage or correlated heuristics to proof. Existing
+  ingestion issue panic-attack#117 and Hypatia#984 are the appropriate routing
+  points for provenance, execution truth and qualified learning.
+* proven: its ledger explicitly records owed declarations and model/FFI gaps.
+  Recheck actual owning modules before importing any safety claim.
+* proven-servers: its ledger establishes no repository-wide build or protocol
+  proof. Model/Idris → Zig → C ABI → language binding correspondence needs
+  executable cross-boundary tests and separate refinement obligations.
+
+== Remaining programme and rename
+
+Priority: unblock the remaining startup failures and establish current-head hosted receipts;
+then fix malformed-evidence and scanner defects at their owners; then close
+consumer correspondence and proof-runtime obligations. Independent precision
+labels, mutation/fuzz campaigns, line/branch coverage and representative
+performance baselines are still required. A million redundant checks would not
+replace any of these obligations.
+
+The requested `cicd-suite` → `proven-cicd` rename is not executed. Repository
+administration is unavailable through the connected API, and Actions consumers
+must not rely on repository redirects. Before renaming: enumerate all estate
+caller/action/lock references, prepare admission-policy and Sonar updates,
+coordinate open PRs, preserve required check names, and verify a migrated canary.
+The current four-repository inventories are not an estate-wide consumer census.
+
+== Failed migration experiment and review follow-up
+
+Proven Tests `6c1c567` and panic-attack `6addd22` tested migrated Standards owner
+paths with the suite's lock deonboarding procedure. All six reusable lanes
+still startup-failed. Both repositories' own lock gates also rejected the
+changed boundary. These experimental changes were reverted; neither lock
+gate was weakened. Migration needs the consumer lock contract, callee lock
+state and repository Actions admission policy to agree.
+
+Review follow-up expanded scanner exit controls through 255 and clarified the
+Hexad property's in-memory scope. Additional malformed theorem/proposition
+and counter controls reproduced 11 failures in the Python validator before
+repair, with corresponding Rust changes. The 2,000-case seed-1371 shape
+experiment returned 795 violations, 195 malformed outcomes and 1,010 accepted
+mutations without unexpected exceptions. Optional-field mutations may remain
+valid; these numbers are not a precision or recall measurement.
+
+Feedback is routed to Hypatia#984, panic-attack#117 and proven#211. In particular,
+compiling a proof module does not validate arbitrary DISCHARGED prose markers
+or establish foreign-implementation correspondence.

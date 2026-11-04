@@ -12,9 +12,9 @@ Discover useful signals without presenting warnings or heuristics as certificati
 
 *`badges` · advisory · advisory*
 
-Inspect badge/accreditation conventions and report advisory signals.
+Inspect README badge conventions, with Idris advice based on existing tracked sources or packages.
 
-*Assurance boundary:* Not independent certification of the advertised accreditation.
+*Assurance boundary:* Presence advice only: README words do not verify accreditation standing or RSR compliance.
 
 * link:../../actions/badges-check/action.yml[Action definition and inputs]
 
@@ -45,9 +45,9 @@ Identify hosting targets from repository configuration.
 
 *`metrics` · advisory · advisory*
 
-Extract log/source heuristics for an advisory metrics view.
+Count ERROR-marker lines in available Pons and Panic Attack logs; explicitly leave proof status unassessed.
 
-*Assurance boundary:* Contains simulated defaults and brittle source-count heuristics; never use its PROVEN label as proof evidence.
+*Assurance boundary:* Absent or unreadable logs are NOT ASSESSED. Text counts do not establish scan execution, freshness, success, or proof correctness.
 
 * link:../../actions/metrics-check/action.yml[Action definition and inputs]
 
