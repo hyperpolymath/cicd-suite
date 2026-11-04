@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell (hyperpolymath)
 // SPDX-License-Identifier: CC-BY-SA-4.0
 = Cross-repository adversarial audit — 2026-11-04
 
@@ -25,12 +26,18 @@ profile endpoints. Their absence from this report does not mean zero alerts.
   two empty-input refusals, a positive scan, a valid report, five malformed
   reports and 64 generated Python/PHP parser inputs. This checks termination,
   report shape and rejection on these samples, not semantic precision/recall.
+  The published Bash driver uses a specified LCG and records input hashes; its
+  samples differ from the initial Python experiment. The Python driver was
+  replaced after hosted CI correctly rejected its language-policy violation.
 * Proven contract: existing 20 fixture cases pass; seven Python test methods
   including malformed nested values, counters, contexts and CLI dispatch pass.
   New adversarial controls initially produced 19 assertion failures and 11
   errors, before repair. The benchmark-gate suite passed 18 controls.
 * REUSE: the baseline fails solely for missing metadata on
-  `fixtures/ci/cabal-index.jsonl`; the exact-path annotation makes the scan clean.
+  `fixtures/ci/cabal-index.jsonl`; the exact-path annotation repairs that defect. Hosted CI then caught missing
+  copyright metadata on this audit's new Proven Tests document: the initial
+  local lint had missed the untracked file. Metadata is repaired, and the
+  rerun must include new files, not just the original tracked inventory.
 * Suite shell/control survey: 28 scripts attempted with per-process 90-second
   bounds. Initial missing-yq/cargo outcomes are environment refusals. After
   provisioning, the remaining lock-closure failure was missing local Git
