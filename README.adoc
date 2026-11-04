@@ -514,4 +514,4 @@ remain report-only; strict coverage is not a security verdict.
 See link:docs/assurance/AUDIT-2026-11-04.adoc[the adversarial audit checkpoint]
 for executed controls, coverage gaps, proof boundaries and the pending
 `proven-cicd` rename. Reproduce bounded scanner controls with
-`python3 tests/scanner-adversarial.py /path/to/pons /path/to/panic-attack`.
+`bash tests/scanner-adversarial.sh /path/to/pons /path/to/panic-attack`.
