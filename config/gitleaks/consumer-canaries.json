@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "suite_repository": "hyperpolymath/cicd-suite",
   "suite_sha": "41f8a325cf5ceae0f8ce213f991c86b95c987f9b",
   "subjects": [
     {

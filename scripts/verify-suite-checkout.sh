@@ -14,11 +14,18 @@
 # full-SHA doctrine exists to prevent. An empty value is therefore
 # exit 2: NO CHECK WAS PERFORMED.
 #
-# Env: EXPECTED (the SHA), SUITE_DIR (default .cicd-suite).
+# Env: EXPECTED (the SHA), SUITE_DIR (default .cicd-suite),
+# EXPECTED_REPOSITORY (an admitted suite coordinate; legacy default retained).
 set -euo pipefail
 
 expected="${EXPECTED:-}"
 suite="${SUITE_DIR:-.cicd-suite}"
+repository="${EXPECTED_REPOSITORY-hyperpolymath/cicd-suite}"
+
+case "$repository" in
+  hyperpolymath/cicd-suite|hyperpolymath/proven-cicd) ;;
+  *) echo '::error::suite repository is not admitted. NO CHECK WAS PERFORMED.' >&2; exit 2 ;;
+esac
 
 if ! printf '%s' "$expected" | grep -qE '^[0-9a-f]{40}$'; then
   echo "::error::cicd-suite: the caller's cicd-suite pin resolved to '${expected:-<empty>}', not a 40-hex commit — cannot pin the gate scripts. NO CHECK WAS PERFORMED." >&2
@@ -33,4 +40,4 @@ fi
 for s in actions/rust-ci-check/check.sh actions/creusot-check/check.sh actions/spark-check/check.sh actions/kanren-check/check.sh; do
   [ -f "$suite/$s" ] || { echo "::error::cicd-suite: $s is missing at $expected. NO CHECK WAS PERFORMED." >&2; exit 2; }
 done
-echo "cicd-suite gate scripts pinned at $expected"
+echo "Suite gate scripts pinned at $repository@$expected"

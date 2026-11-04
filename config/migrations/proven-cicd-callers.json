@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "spdx_license_id": "MPL-2.0",
+  "publication_scope": "Aggregate migration totals only; no repository, path, ref or blob inventory rows.",
+  "observed_at": "2026-11-04T17:13:24.587Z",
+  "complete_authenticated_inventory": {
+    "workflow_files": 106,
+    "repositories": 91,
+    "direct_action_edges": 854,
+    "checkout_edges": 19,
+    "invalid_yaml_files": 1
+  },
+  "verified_public_subset": {
+    "workflow_files": 94,
+    "repositories": 80,
+    "direct_action_edges": 719,
+    "checkout_edges": 18,
+    "parse_errors": 1,
+    "kinds": {
+      "composite-action-consumer": 28,
+      "other-reference": 3,
+      "pin-updater": 3,
+      "reusable-workflow-caller": 48,
+      "suite-checkout": 11
+    }
+  },
+  "verification": {
+    "workflow_contents_matched_indexed_git_blob_shas": 106,
+    "repository_visibility_checks": 100,
+    "public_repository_metadata_results": 88,
+    "private_repository_metadata_results": 12
+  },
+  "detailed_inventory": "Retained separately for private estate coordination. Obtain the exact repository/path/blob records and refresh them before any caller mutation.",
+  "limitations": [
+    "Indexed default branches only; this is not an exhaustive private or nondefault estate census.",
+    "Counts do not authorize a bulk update or identify a current writable head.",
+    "This source change creates no canonical repository and changes no estate caller."
+  ]
+}
