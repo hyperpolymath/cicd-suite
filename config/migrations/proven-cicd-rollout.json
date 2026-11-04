@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "spdx_license_id": "MPL-2.0",
+  "state": "prepared-not-executed",
+  "execution_enabled": false,
+  "requested_canonical_repository": "hyperpolymath/proven-cicd",
+  "compatibility_repository": "hyperpolymath/cicd-suite",
+  "compatibility_repository_id": 1326697643,
+  "baseline_published_sha": "52a90c24bf183437b887dd182c5a9406af02c5dd",
+  "compatibility_source_published_sha": null,
+  "canonical_repository_id": null,
+  "canonical_published_sha": null,
+  "recommended_route": "Publish a full-history canonical successor; retain the original repository identity and historical pins as compatibility source.",
+  "literal_rename_risks": [
+    "Action calls do not redirect after repository rename.",
+    "Recreating the old slug changes repository identity and requires requalification of locks and admission.",
+    "Historical pinned reusable workflows parse and check out the old literal slug."
+  ],
+  "inventory": {
+    "path": "config/migrations/proven-cicd-callers.json",
+    "publication": "aggregate totals only",
+    "complete_authenticated_workflow_files": 106,
+    "complete_authenticated_repositories": 91,
+    "verified_public_workflow_files": 94,
+    "verified_public_repositories": 80,
+    "scope": "Detailed current repository/path/blob records are retained privately and must be refreshed before caller changes."
+  },
+  "canaries": [
+    {
+      "repository": "hyperpolymath/cicd-suite",
+      "pull_request": 78,
+      "receipt": null,
+      "last_observed_source_sha": "52a90c24bf183437b887dd182c5a9406af02c5dd",
+      "required_next_source_sha": "8d94c37463ccdba24810da488364a7c3f82aea37"
+    },
+    {
+      "repository": "hyperpolymath/echidna",
+      "pull_request": 455,
+      "receipt": null,
+      "last_observed_source_sha": "52a90c24bf183437b887dd182c5a9406af02c5dd",
+      "required_next_source_sha": "8d94c37463ccdba24810da488364a7c3f82aea37"
+    }
+  ],
+  "scanner_coverage": {
+    "mode": "full",
+    "tree": true,
+    "history": true,
+    "rust_supplement": true,
+    "shell_supplement": true,
+    "fast_pr": false
+  },
+  "stages": [
+    {
+      "id": "qualify-published-scanner",
+      "state": "in-progress",
+      "gate": "After source PR81 is reviewed and published, run both real consumer workflows at that same corrected published SHA and compare actual detector receipts and check contexts. Earlier baseline observations do not qualify the correction or later compatibility code."
+    },
+    {
+      "id": "qualify-compatibility-source",
+      "state": "pending",
+      "gate": "Review and publish this narrow compatibility source, exercise its actual bootstrap in both consumer workflows, and preserve all negative controls and receipt bindings. Canonical-namespace qualification follows history publication."
+    },
+    {
+      "id": "publish-canonical-history",
+      "state": "pending",
+      "gate": "Mirror all required history/branches/tags without rewriting commit IDs; verify SHA reachability and original repository identity; retain historical issue/review links. No template-only snapshot."
+    },
+    {
+      "id": "qualify-canonical-namespace",
+      "state": "pending",
+      "gate": "After canonical history publication, verify the immutable source is reachable on canonical main, admission and official lock generation work, and both real consumer workflows produce correctly bound detector receipts using the canonical coordinate."
+    },
+    {
+      "id": "control-plane",
+      "state": "pending",
+      "gate": "Update canonical allowlists, actual lock-generator contracts, pin propagators and templates before broad caller changes. Official tooling must regenerate locks; no hand-edited records."
+    },
+    {
+      "id": "bounded-callers",
+      "state": "pending",
+      "gate": "Re-inventory current file blobs and required contexts, review each bounded batch, obtain real exact-head runs, retain rollback pins. A changed blob or unknown admission blocks the update."
+    },
+    {
+      "id": "retire-duplicates",
+      "state": "pending",
+      "gate": "After both scanner canaries and context inventory pass, remove only the redundant Supplemental secret checks workflow and its scope row. Retain detector code, negative controls and differential tests."
+    },
+    {
+      "id": "verify-estate-closure",
+      "state": "pending",
+      "gate": "Requery both names including private/nondefault callers; document intentional historical references. Test compatibility sources before archival; do not delete historical pinned code."
+    }
+  ],
+  "evidence_limits": [
+    "No repository was renamed or copied by this change.",
+    "No caller outside the two separately coordinated canaries was changed.",
+    "No required context, source pin, proof result, detector coverage or admission rule is waived.",
+    "Private repository names, paths, refs and control-plane details are not published in this manifest.",
+    "All row-level inventory and exact control-plane coordinates are retained outside this public source repository."
+  ],
+  "qualified_scanner_source_published_sha": "8d94c37463ccdba24810da488364a7c3f82aea37",
+  "scanner_source_followup_pr": 81,
+  "scanner_contexts_to_preserve": [
+    "scan / gitleaks",
+    "scan / rust-secrets",
+    "scan / shell-secrets"
+  ],
+  "branch_required_context_inventory": null,
+  "scanner_source_followup_state": "published; consumer receipts still pending",
+  "control_plane_roles": [
+    "Canonical action admission, lock-generation and pin contracts",
+    "Estate pin propagation, templates and self callers",
+    "Private dispatch and coordination services"
+  ],
+  "inventory_blocker": {
+    "count": 1,
+    "reason": "One inventoried caller has invalid workflow YAML. Its privately retained exact path and blob must be repaired and re-inventoried before migration."
+  }
+}
