@@ -42,7 +42,8 @@ is_ignored() {
   for glob in "${IGNORE_GLOBS[@]}"; do
     # Use bash pattern matching; strip leading ./ for consistency.
     local stripped="${path#./}"
-    # shellcheck disable=SC2254
+    # Intentional glob comparison against the documented ignore patterns.
+    # shellcheck disable=SC2053
     if [[ "$stripped" == $glob ]]; then
       return 0
     fi

@@ -38,7 +38,7 @@ trap 'rm -rf "$WORK"' EXIT
 # carrying no SPDX headers (the case spdx-license-check exists to warn about).
 FIX="$WORK/fixture"
 mkdir -p "$FIX/crates"
-cd "$FIX"
+cd "$FIX" || exit 2
 git init -q .
 : > .editorconfig
 : > .gitignore

@@ -500,3 +500,18 @@ that implementation before advancing consumer pins: the currently deployed
 suite pin still selects the previously published scanner, while separate
 local supplement jobs preserve this repository's supplementary checking.
 No estate-wide rollout or whole-corpus equivalence is claimed by the fixtures.
+
+== Strict scanner coverage and audit checkpoint
+
+The shared custom-tools gate now requires complete coverage from both scanners,
+gates Pons WARN/ERROR findings and bounds each invocation to 180 seconds by
+default (`CUSTOM_TOOLS_TIMEOUT_SECONDS`, 1..3600). Both scanners run even when
+the first refuses. Unsupported inputs therefore make the gate incomplete;
+callers must add a real adapter or explicitly scoped analysis rather than
+interpret an exit-zero partial scan as assurance. panic-attack assail findings
+remain report-only; strict coverage is not a security verdict.
+
+See link:docs/assurance/AUDIT-2026-11-04.adoc[the adversarial audit checkpoint]
+for executed controls, coverage gaps, proof boundaries and the pending
+`proven-cicd` rename. Reproduce bounded scanner controls with
+`bash tests/scanner-adversarial.sh /path/to/pons /path/to/panic-attack`.
