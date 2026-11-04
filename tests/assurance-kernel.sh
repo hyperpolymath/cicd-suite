@@ -24,23 +24,30 @@ if ! (cd "$tmp" && idris2 --build assurance-kernel.ipkg) >"$tmp/baseline.log" 2>
   exit 1
 fi
 
-# A purported proof of an empty requirement set passing must not typecheck.
-# The unmodified package above must compile first, so a negative result is
-# attributable to this single, well-formed contradictory declaration.
-cat >> "$tmp/src/Assurance/Verdict.idr" <<'BAD'
-counterfeitEmptyPass : decide [] = Passed
-counterfeitEmptyPass = Refl
-BAD
-if (cd "$tmp" && idris2 --build assurance-kernel.ipkg) >"$tmp/negative.log" 2>&1; then
-  echo "FAIL: Idris2 accepted a proof that empty requirements pass" >&2
-  exit 1
-fi
-# A generic failing build is not a negative-control result. Demand both
-# a real Idris2 diagnostic and its attribution to our false theorem.
-if ! grep -Fq 'counterfeitEmptyPass' "$tmp/negative.log" ||
-   ! grep -Eq 'Error|error' "$tmp/negative.log"; then
-  echo "FAIL: negative build was not a diagnosed counterfeitEmptyPass rejection" >&2
-  cat "$tmp/negative.log" >&2
-  exit 1
-fi
-echo "ok: real compiler rejected contradictory empty-pass proof"
+# Each contradictory theorem is compiled independently against the baseline.
+# A stale error from one mutation must not count as rejection of another one.
+reject_proof() {
+  local theorem="$1" proposition="$2"
+  cp "$root/src/Assurance/Verdict.idr" "$tmp/src/Assurance/Verdict.idr"
+  printf '\n%s : %s\n%s = Refl\n' "$theorem" "$proposition" "$theorem" \
+    >> "$tmp/src/Assurance/Verdict.idr"
+  if (cd "$tmp" && idris2 --build assurance-kernel.ipkg) >"$tmp/negative.log" 2>&1; then
+    echo "FAIL: Idris2 accepted the contradictory proof $theorem" >&2
+    exit 1
+  fi
+  # A generic failing build is not a negative-control result. Demand both
+  # a real Idris2 diagnostic and its attribution to this false theorem.
+  if ! grep -Fq "$theorem" "$tmp/negative.log" ||
+     ! grep -Eq 'Error|error' "$tmp/negative.log"; then
+    echo "FAIL: negative build was not a diagnosed $theorem rejection" >&2
+    cat "$tmp/negative.log" >&2
+    exit 1
+  fi
+  echo "ok: real compiler rejected $theorem"
+}
+
+reject_proof counterfeitEmptyPass 'decide [] = Passed'
+reject_proof counterfeitPendingAdvisoryPass \
+  'decide [MkObservation Mandatory Applies CompletedSuccess CurrentRevision AdmissionVerified, MkObservation Advisory Applies NeverStarted CurrentRevision AdmissionVerified] = Passed'
+reject_proof counterfeitStaleAdvisoryPass \
+  'decide [MkObservation Mandatory Applies CompletedSuccess CurrentRevision AdmissionVerified, MkObservation Advisory Applies CompletedSuccess PreviousRevision AdmissionVerified] = Passed'
