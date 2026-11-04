@@ -1,0 +1,63 @@
+# SPDX-License-Identifier: MPL-2.0
+# Experimental, non-enforcing parallel lane: never replace existing gates on
+# the strength of this job alone. Source pin is an immutable commit, not a tag.
+name: Assurance kernel (Idris2 canary)
+
+on:
+  pull_request:
+    paths:
+      - "src/Assurance/**"
+      - "assurance-kernel.ipkg"
+      - "tests/assurance-kernel.sh"
+      - ".github/workflows/assurance-kernel.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# PR updates supersede previous costly compiler boots; manual dispatches are unique.
+concurrency:
+  group: assurance-kernel-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  typecheck:
+    name: Compiler proofs and contradictory-proof control
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify and record the exact subject revision
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$EXPECTED_SHA"
+          printf 'Assurance compiler subject: `%s`\n' "$actual" >> "$GITHUB_STEP_SUMMARY"
+      - name: Install Chez Scheme and Idris2 build dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends chezscheme libgmp-dev git make gcc ca-certificates
+      - name: Bootstrap pinned Idris2 0.7.0 source
+        env:
+          IDRIS2_SOURCE_SHA: 27780073c8631826d846499840b3857d9b9a4fd5
+        run: |
+          set -euo pipefail
+          dir="$(mktemp -d)"
+          trap 'rm -rf "$dir"' EXIT
+          git -C "$dir" init -q
+          git -C "$dir" remote add origin https://github.com/idris-lang/Idris2.git
+          git -C "$dir" fetch --depth=1 origin "$IDRIS2_SOURCE_SHA"
+          git -C "$dir" checkout --detach -q FETCH_HEAD
+          test "$(git -C "$dir" rev-parse HEAD)" = "$IDRIS2_SOURCE_SHA"
+          make -C "$dir" bootstrap SCHEME=chezscheme
+          make -C "$dir" install
+          "$HOME/.idris2/bin/idris2" --version
+          echo "$HOME/.idris2/bin" >> "$GITHUB_PATH"
+      - name: Compile model and reject contradictory proof
+        run: bash tests/assurance-kernel.sh

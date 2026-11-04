@@ -4,10 +4,16 @@
 # PR-only implementation pins can become unresolvable after squash/branch deletion.
 set -euo pipefail
 pin=${1:-}
+repository=${2-hyperpolymath/cicd-suite}
 [[ $pin =~ ^[0-9a-f]{40}$ ]] || { echo 'scanner pin must be a full SHA' >&2; exit 2; }
-status=$(gh api "repos/hyperpolymath/cicd-suite/compare/$pin...main" --jq .status) \
+case "$repository" in
+    hyperpolymath/cicd-suite|hyperpolymath/proven-cicd) ;;
+    *) echo 'scanner source repository is not admitted' >&2; exit 2 ;;
+esac
+status=$(gh api "repos/$repository/compare/$pin...main" --jq .status) \
     || { echo 'cannot verify published scanner ancestry' >&2; exit 2; }
 case $status in
-    ahead|identical) echo "scanner pin $pin is published on suite main" ;;
-    *) echo "scanner pin $pin is not on suite main (comparison=$status)" >&2; exit 1 ;;
+    ahead|identical) echo "scanner pin $repository@$pin is published on its main" ;;
+    behind|diverged) echo "scanner pin $repository@$pin is not on its main (comparison=$status)" >&2; exit 1 ;;
+    *) echo 'scanner ancestry result is unavailable or unknown' >&2; exit 2 ;;
 esac

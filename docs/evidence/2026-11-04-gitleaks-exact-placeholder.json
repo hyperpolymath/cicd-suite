@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "SPDX-License-Identifier": "CC-BY-SA-4.0",
+  "qualified_on": "2026-11-04",
+  "execution_environment": "local workspace; hosted consumer canaries remain required after publication",
+  "gitleaks_version": "8.30.1",
+  "gitleaks_binary_sha256": "88f91962aa2f93ac6ab281d553b9e125f5197bbbce38f9f2437f7299c32e5509",
+  "base_suite_sha": "a45e5d084f773acff29c3b3053e547e0f06ab203",
+  "baseline_before_sha256": "a85b77a248475ac2fc7e20325fb080b46d23802775365d9048005524c69ff941",
+  "baseline_after_sha256": "375eabe017ebd02fb81b70f4c2c72712373ad61228b65d935e1cb06e8f43242a",
+  "change": {
+    "rule_id": "curl-auth-header",
+    "regex_target": "secret",
+    "complete_literal_regex": "^your-key-here$",
+    "upstream_detector_regex_changed": false,
+    "path_exclusions_added": false,
+    "ignore_file_policy_changed": false
+  },
+  "qualification_controls": [
+    {
+      "case": "placeholder",
+      "configuration": "before",
+      "exit": 10,
+      "expected_exit": 10,
+      "rules": [
+        "curl-auth-header"
+      ]
+    },
+    {
+      "case": "placeholder",
+      "configuration": "after",
+      "exit": 0,
+      "expected_exit": 0,
+      "rules": []
+    },
+    {
+      "case": "credential",
+      "configuration": "before",
+      "exit": 10,
+      "expected_exit": 10,
+      "rules": [
+        "curl-auth-header"
+      ]
+    },
+    {
+      "case": "credential",
+      "configuration": "after",
+      "exit": 10,
+      "expected_exit": 10,
+      "rules": [
+        "curl-auth-header"
+      ]
+    },
+    {
+      "case": "prefix",
+      "configuration": "before",
+      "exit": 10,
+      "expected_exit": 10,
+      "rules": [
+        "curl-auth-header"
+      ]
+    },
+    {
+      "case": "prefix",
+      "configuration": "after",
+      "exit": 10,
+      "expected_exit": 10,
+      "rules": [
+        "curl-auth-header"
+      ]
+    },
+    {
+      "case": "suffix",
+      "configuration": "before",
+      "exit": 10,
+      "expected_exit": 10,
+      "rules": [
+        "curl-auth-header"
+      ]
+    },
+    {
+      "case": "suffix",
+      "configuration": "after",
+      "exit": 10,
+      "expected_exit": 10,
+      "rules": [
+        "curl-auth-header"
+      ]
+    }
+  ],
+  "durable_control": {
+    "path": "actions/secret-scan-check/placeholder-control.sh",
+    "sha256": "65a5d5688644b2dc252825f045ced7da74f9a8c960783cd8d2b7076eeb2b9ab6",
+    "cases": [
+      "exact literal accepted with zero findings",
+      "same-path synthetic credential rejected by curl-auth-header",
+      "credential prefixed to placeholder rejected by curl-auth-header",
+      "credential suffixed to placeholder rejected by curl-auth-header"
+    ]
+  },
+  "consumer_history": {
+    "repository": "hyperpolymath/echidna",
+    "subject_sha": "977ce94d9a83b8a3a47f54a67a14d004380fcdfa",
+    "scope": "--all full non-shallow history",
+    "reported_commits_scanned": 1364,
+    "reported_bytes_scanned_approx": 1690915263,
+    "exit_status": 0,
+    "wall_seconds": 33.12,
+    "findings_after": 0,
+    "previous_findings": [
+      {
+        "rule_id": "curl-auth-header",
+        "path": "V1.2_DEPLOYMENT_GUIDE.md",
+        "line": 436,
+        "commit_sha": "cc4da97cc6ba7d32a23fc735a955cb64fb5d8d59",
+        "disposition": "exact public instructional placeholder"
+      },
+      {
+        "rule_id": "curl-auth-header",
+        "path": "V1.2_DEPLOYMENT_GUIDE.md",
+        "line": 436,
+        "commit_sha": "4df5bb218b827dd06297b9f291a4a8e30812ec5e",
+        "disposition": "exact public instructional placeholder"
+      }
+    ]
+  },
+  "limitations": [
+    "This is evidence for the exact configuration, scanner and subject recorded here.",
+    "A successful secret scan does not establish general security or absence of unknown secrets.",
+    "No consumer pin was changed by this source patch. Both actual consumers must run the published resulting source."
+  ]
+}

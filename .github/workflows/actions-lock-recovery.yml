@@ -1,0 +1,172 @@
+# SPDX-License-Identifier: MPL-2.0
+# Candidate generation only. This runner never commits or changes repository policy.
+name: Actions lock recovery candidate
+on:
+  push:
+    branches: [repair/actions-lock-recovery]
+  workflow_dispatch:
+    inputs:
+      repo:
+        description: Admitted public repository to inspect
+        type: choice
+        required: true
+        default: hyperpolymath/hypatia
+        options:
+          - hyperpolymath/hypatia
+          - hyperpolymath/boj-server-cartridges
+          - hyperpolymath/echidna
+      sha:
+        description: Exact 40-hex subject commit; never a branch or tag
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: actions-lock-recovery-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  acquire-subject:
+    name: Acquire the immutable subject as data
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      repository: ${{ steps.subject.outputs.repository }}
+      sha: ${{ steps.subject.outputs.sha }}
+      archive_sha256: ${{ steps.archive.outputs.sha256 }}
+    steps:
+      - name: Validate the bounded subject
+        id: subject
+        shell: bash
+        env:
+          REQUESTED_REPO: ${{ inputs.repo }}
+          REQUESTED_SHA: ${{ inputs.sha }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT" == push ]]; then
+            REQUESTED_REPO=hyperpolymath/hypatia
+            REQUESTED_SHA=936196794e0266715e7b1902893cdcbca64ef73a
+          fi
+          case "$REQUESTED_REPO" in
+            hyperpolymath/hypatia|hyperpolymath/boj-server-cartridges|hyperpolymath/echidna) ;;
+            *) echo 'Repository is outside this recovery scope'; exit 2 ;;
+          esac
+          [[ "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'An exact subject SHA is required'; exit 2; }
+          printf 'repository=%s\nsha=%s\n' "$REQUESTED_REPO" "$REQUESTED_SHA" >> "$GITHUB_OUTPUT"
+      - name: Check out the immutable subject without running its code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ steps.subject.outputs.repository }}
+          ref: ${{ steps.subject.outputs.sha }}
+          path: subject
+          persist-credentials: false
+          submodules: false
+          lfs: false
+      - name: Package inspected subject as data
+        id: archive
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ steps.subject.outputs.sha }}
+        run: |
+          set -euo pipefail
+          [[ $(git -C subject rev-parse HEAD) == "$EXPECTED_SHA" ]] || exit 2
+          [[ -d subject/.git && ! -L subject/.git ]] || exit 2
+          [[ -z $(git -C subject status --porcelain --untracked-files=all) ]] || exit 2
+          # The initial recovery scope admits only regular Git blobs. Do not
+          # pass symlinks/gitlinks or source-controlled executables to a shell.
+          git -C subject ls-tree -r --format='%(objectmode)' HEAD > "$RUNNER_TEMP/subject-modes"
+          if grep -Ev '^(100644|100755)$' "$RUNNER_TEMP/subject-modes"; then
+            echo 'Non-regular source objects require separate recovery review'; exit 2
+          fi
+          if [[ -n $(find subject -type l -print -quit) ]]; then
+            echo 'Subject contains a symlink; no archive is produced'; exit 2
+          fi
+          config_rc=0
+          git -C subject config --local --name-only --get-regexp '^(credential\.|http\..*\.extraheader$)' > "$RUNNER_TEMP/subject-credential-keys" || config_rc=$?
+          case "$config_rc" in
+            1) ;; # No matching credential metadata.
+            0) echo 'Checkout credentials must not enter the data artifact'; exit 2 ;;
+            *) echo 'Cannot inspect checkout credential metadata'; exit 2 ;;
+          esac
+          # No subject script is run in this job. Git hooks are tool metadata,
+          # not source, and are deliberately excluded from the transfer.
+          tar --exclude='./.git/hooks' -czf "$RUNNER_TEMP/subject.tar.gz" -C subject .
+          digest=$(sha256sum "$RUNNER_TEMP/subject.tar.gz" | cut -d ' ' -f1)
+          printf 'sha256=%s\n' "$digest" >> "$GITHUB_OUTPUT"
+      - name: Transfer subject data within this workflow run
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: actions-lock-recovery-subject
+          path: ${{ runner.temp }}/subject.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+
+  candidate:
+    name: Generate a reviewable lock candidate
+    needs: acquire-subject
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out this recovery implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: recovery-suite
+          persist-credentials: false
+      - name: Check out the canonical lock authority
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: metadatastician/standards
+          ref: d3e4b485a2af90c92a8e18af0888cd19cb132cd9
+          path: authority
+          sparse-checkout: scripts
+          persist-credentials: false
+      - name: Verify and install the official tool's committed binary identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v gawk >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends gawk
+          fi
+          command -v yq
+          command -v jq
+          bash recovery-suite/scripts/install-lock-recovery-tool.sh
+      - name: Run recovery boundary controls
+        run: bash recovery-suite/tests/actions-lock-recovery.sh
+      - name: Download only this run's subject data
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: actions-lock-recovery-subject
+          path: ${{ runner.temp }}/recovery-subject-data
+      - name: Verify and unpack the subject data
+        shell: bash
+        env:
+          EXPECTED_ARCHIVE_SHA256: ${{ needs.acquire-subject.outputs.archive_sha256 }}
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_ARCHIVE_SHA256" =~ ^[0-9a-f]{64}$ ]] || exit 2
+          archive="$RUNNER_TEMP/recovery-subject-data/subject.tar.gz"
+          [[ $(sha256sum "$archive" | cut -d ' ' -f1) == "$EXPECTED_ARCHIVE_SHA256" ]] || exit 2
+          mkdir subject
+          tar --no-same-owner -xzf "$archive" -C subject
+          [[ ! -e subject/.git/hooks ]] || exit 2
+      - name: Generate and verify the candidate using canonical policy
+        id: recovery
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SUBJECT_REPOSITORY: ${{ needs.acquire-subject.outputs.repository }}
+          SUBJECT_SHA: ${{ needs.acquire-subject.outputs.sha }}
+          SUBJECT_DIR: ${{ github.workspace }}/subject
+          AUTHORITY_DIR: ${{ github.workspace }}/authority
+          RECOVERY_OUTPUT: ${{ runner.temp }}/actions-lock-recovery
+        run: bash recovery-suite/scripts/generate-lock-recovery-candidate.sh
+      - name: Upload candidate or failure diagnostics
+        if: ${{ always() && steps.recovery.outcome != 'skipped' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: actions-lock-recovery-${{ needs.acquire-subject.outputs.sha }}
+          path: ${{ runner.temp }}/actions-lock-recovery/
+          if-no-files-found: error
+          retention-days: 14

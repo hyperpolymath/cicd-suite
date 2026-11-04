@@ -1,0 +1,104 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= ADR 001: Parallel Idris2 assurance verdict kernel
+:status: Experimental; draft, not an accepted policy or enforcing gate
+
+== Decision and historical context
+
+Keep `hyperpolymath/cicd-suite`, all published action paths, existing audit
+workflows and their enforcement unchanged. Add an isolated *pure decision*
+kernel in Idris2. The first published commit (11b5ab51, 7 August 2026)
+contained 26 composite actions and explicitly warned that 13 could not fail.
+The inspected main (de35c57b, 2 November 2026) has 32 catalogued actions
+in eight clades; `src/Assurance/Cabal.idr` is a genuine but separate
+dependency-readiness model, not the CI verdict engine.
+
+The proof runner currently attempts actual Idris2/Lean execution and refuses
+to pass when a present project's tool is missing. Its historical always-green
+issue #29 describes a past implementation; the current runner needs a fresh
+whole-capability assessment. The ABI purity composite is a source-pattern
+check, *not* a theorem prover. Some architecture prose still describes the
+old 26-action, no-build shape and must not be treated as live inventory.
+
+== Scope and trusted boundary
+
+The initial kernel takes typed, already-admitted observations and proves
+properties of `decide`. It does not acquire observations from GitHub, verify
+signatures, enumerate required contexts, validate policy exemptions, verify
+job/step execution or establish authority to alter policy. Every input
+constructor, including `AdmissionVerified` and `ExemptValidated`, is an
+*assumption supplied by a future independently verified adapter*. Its mere
+presence in parsed external data has no evidential value.
+
+The first verdict rejects applicable advisory bundle members with invalid
+admission, incomplete execution or a stale/unknown revision, while permitting
+a verified current-revision advisory failure without
+masking a mandatory success. A validated policy exemption is non-applicable and
+does not assert an observed execution or verified admission. It rejects empty
+or exclusively exempt requirement sets,
+skipped/never-started applicable mandatory checks, stale revisions, revoked or
+unverified admissions, unknown applicability and mandatory failure masked by
+advisory success. It proves only these stated cases, not completeness against
+the full space of GitHub event histories. Requirements must be enumerated
+exhaustively by a trusted policy evaluator before a verdict has operational
+meaning.
+
+The current verdict is binary `Passed | Blocked` only for this pure model.
+A later operational adapter must preserve distinct FAILED, PENDING, UNKNOWN,
+NOT_APPLICABLE and ADVISORY receipts rather than collapse those into one green
+or one observed GitHub status.
+
+== Proof and negative control
+
+`assurance-kernel.ipkg` typechecks the existing Cabal model plus
+`Assurance.Verdict`. `tests/assurance-kernel.sh` first compiles the
+unmodified package, then builds a separate pristine baseline copy. It adds three
+independent contradictory theorems: empty requirements, an unfinished advisory
+observation beside a mandatory success, and a stale advisory observation beside
+a mandatory success would each produce `Passed`. Idris2 must reject each with
+a diagnostic naming that deliberately false theorem. An unrelated
+compile failure cannot count as proof of successful rejection. Missing Idris2 is exit 2, never evidence of successful execution.
+Only an actual successful CI run can establish that these tests executed.
+
+For pull requests, checkout is pinned to `github.event.pull_request.head.sha`;
+manual dispatch uses `github.sha`. A separate step verifies `git rev-parse HEAD`
+against that immutable subject and records it in the run summary. The compiler
+receipt therefore names the source it checks, rather than GitHub's synthetic
+merge revision.
+
+For this initial isolated canary, Idris2 0.7.0 source is pinned to full commit
+27780073c8631826d846499840b3857d9b9a4fd5, matching the current
+Proven-Tests line. This is a *deliberate provisional compatibility choice*,
+not a silent estate-wide upgrade. Chez and Ubuntu dependencies remain part of
+the build trusted base and are not bit-reproducibly pinned by this canary.
+A migration or independent compiler witness needs its own decision.
+
+== Integration and non-goals
+
+This is a parallel PR lane only; it does not run as a current mandatory
+consumer gate, modify any of the 32 actions, or change branch protections.
+The next adapter must bind exact subject SHA, policy digest, required-context
+closure, tool/configuration identity, execution evidence, freshness and
+revocation status before granting any trusted constructor. It must not obtain
+a trusted witness from JSON field names. Any Proven-Tests interchange adapter
+must explicitly pin and validate the schema and its evidence tiers. No implicit
+dependence on Hypatia, gitbot-fleet or cicd-squabbler is allowed.
+
+Run a defective real canary and a passing real canary on this repository first,
+then a separately approved consumer at the same subject revision for old and
+new verdicts. Require review, independent provenance validation, timeout and
+failure testing, rollback and measured performance before any promotion.
+No blanket rollout or automatic merge follows from this ADR.
+
+== Open assurance obligations
+
+* Real compiler and deliberate-negative-control CI receipt on the PR head.
+* General proof covering arbitrary requirement lists and contradictions.
+* Policy requirement-set integrity and externally checked exemptions.
+* Revision, signature, execution, cancellation and revocation ingestion.
+* Stable, neutral interchange version handshake with Proven-Tests.
+* Read-only real GitHub adapter and two bounded canary receipts.
+* Per-action evidence matrix refresh, K9-DEED conformance summary and
+  required reviewers/conversations closed before completion.
+
+Event chain: witnessed execution -> accepted observation -> applicable policy
+-> proven aggregation -> attributable receipt -> human-authorised propagation.

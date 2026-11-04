@@ -28,6 +28,7 @@ on:
       - "scripts/deonboard-workflow.sh"
       - "tests/gate-action-owners.sh"
       - "tests/inspect-pr-ci.sh"
+      - "tests/suite-source-compatibility.sh"
       - "scripts/inspect-pr-ci.sh"
       - ".github/workflows/rust-ci.yml"
       - ".github/workflows/creusot-gate.yml"
@@ -45,6 +46,7 @@ on:
       - "scripts/deonboard-workflow.sh"
       - "tests/gate-action-owners.sh"
       - "tests/inspect-pr-ci.sh"
+      - "tests/suite-source-compatibility.sh"
       - "scripts/inspect-pr-ci.sh"
       - ".github/workflows/rust-ci.yml"
       - ".github/workflows/creusot-gate.yml"
@@ -99,6 +101,8 @@ jobs:
           EXPECTED="$(git rev-parse HEAD)" SUITE_DIR=. bash scripts/verify-suite-checkout.sh
       - name: PR evidence collector refuses invisible-green and denied-probe assumptions
         run: bash tests/inspect-pr-ci.sh
+      - name: Suite source pins remain exact across repository naming compatibility
+        run: bash tests/suite-source-compatibility.sh
       - name: Rust gate
         run: bash actions/rust-ci-check/test.sh
       - name: Creusot gate

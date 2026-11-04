@@ -72,7 +72,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Resolve the cicd-suite commit this caller pins
+      - name: Resolve the suite repository and commit this caller pins
         id: suite
         env:
           SUITE_WORKFLOW: kanren-gate.yml
@@ -85,26 +85,48 @@ jobs:
         # and reading the token would need id-token: write from every caller.)
         run: |
           set -euo pipefail
+          command -v yq >/dev/null || { echo '::error::yq is unavailable; source pin NOT VERIFIED'; exit 2; }
+          [[ "$GITHUB_WORKFLOW_REF" == "$GITHUB_REPOSITORY/"* ]] || exit 2
           path="${GITHUB_WORKFLOW_REF#"$GITHUB_REPOSITORY"/}"; path="${path%@*}"
-          [ -f "$path" ] || { echo "::error::caller workflow '$path' is not in the checkout, so the gate scripts cannot be pinned. NO CHECK WAS PERFORMED."; exit 2; }
-          shas="$(grep -oE "uses:[[:space:]]*hyperpolymath/cicd-suite/\.github/workflows/${SUITE_WORKFLOW}@[0-9a-f]{40}" "$path" | sed 's/.*@//' | sort -u || true)"
-          n="$(printf '%s' "$shas" | grep -c . || true)"
-          if [ "$n" -ne 1 ]; then
-            echo "::error::$path pins hyperpolymath/cicd-suite/.github/workflows/${SUITE_WORKFLOW} at $n distinct full SHAs; exactly one is required (a branch or tag ref does not count). NO CHECK WAS PERFORMED."
-            exit 2
-          fi
-          echo "sha=$shas" >> "$GITHUB_OUTPUT"
-          echo "cicd-suite pinned at $shas by $path"
-      - name: Check out cicd-suite at that commit
+          case "$path" in .github/workflows/*.yml|.github/workflows/*.yaml) ;; *) exit 2 ;; esac
+          [[ "${path#.github/workflows/}" != */* && -f "$path" && ! -L "$path" ]] \
+            || { echo '::error::caller workflow is absent or is not a direct workflow file; source pin NOT VERIFIED'; exit 2; }
+          candidates=$(yq -r '.jobs[] | select(has("uses")) | .uses' "$path") \
+            || { echo '::error::caller workflow cannot be parsed; source pin NOT VERIFIED'; exit 2; }
+          refs=''
+          while IFS= read -r ref; do
+            # Other reusable workflows do not select this gate's source.
+            [[ "$ref" == */.github/workflows/"$SUITE_WORKFLOW"* ]] || continue
+            case "$ref" in
+              hyperpolymath/cicd-suite/.github/workflows/"$SUITE_WORKFLOW"@*|hyperpolymath/proven-cicd/.github/workflows/"$SUITE_WORKFLOW"@*)
+                repository=${ref%%/.github/workflows/*}
+                sha=${ref##*@}
+                [[ "$sha" =~ ^[0-9a-f]{40}$ && "$ref" == "$repository/.github/workflows/$SUITE_WORKFLOW@$sha" ]] \
+                  || { echo '::error::suite caller must pin one complete 40-hex SHA; source pin NOT VERIFIED'; exit 2; }
+                refs+="$repository@$sha"$'\n'
+                ;;
+              *) echo '::error::unexpected suite source reference; source pin NOT VERIFIED'; exit 2 ;;
+            esac
+          done <<< "$candidates"
+          refs=$(printf '%s' "$refs" | sort -u)
+          n=$(printf '%s' "$refs" | grep -c . || true)
+          [[ "$n" -eq 1 ]] \
+            || { echo "::error::$path selects $n distinct suite repository/commit pairs; exactly one is required. NO CHECK WAS PERFORMED."; exit 2; }
+          repository=${refs%@*}
+          sha=${refs##*@}
+          printf 'repository=%s\nsha=%s\n' "$repository" "$sha" >> "$GITHUB_OUTPUT"
+          echo "Suite source pinned at $repository@$sha by $path"
+      - name: Check out the selected suite at that commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: hyperpolymath/cicd-suite
+          repository: ${{ steps.suite.outputs.repository }}
           ref: ${{ steps.suite.outputs.sha }}
           path: .cicd-suite
           persist-credentials: false
       - name: Refuse gate scripts from an unverified cicd-suite commit
         env:
           EXPECTED: ${{ steps.suite.outputs.sha }}
+          EXPECTED_REPOSITORY: ${{ steps.suite.outputs.repository }}
         run: bash .cicd-suite/scripts/verify-suite-checkout.sh
       - name: Install the requested interpreters
         env:
