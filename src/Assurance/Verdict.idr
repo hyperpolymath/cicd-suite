@@ -109,21 +109,29 @@ skippedRequiredCannotPass : (xs : List Observation) ->
   decide (MkObservation Mandatory Applies Skipped CurrentRevision AdmissionVerified :: xs) = Blocked
 skippedRequiredCannotPass xs = Refl
 
+||| An arbitrary tail cannot make a never-started applicable mandatory check
+||| pass, even with a current revision and verified admission.
 public export
 neverStartedCannotPass : (xs : List Observation) ->
   decide (MkObservation Mandatory Applies NeverStarted CurrentRevision AdmissionVerified :: xs) = Blocked
 neverStartedCannotPass xs = Refl
 
+||| An arbitrary tail cannot make an applicable mandatory success from a
+||| previous revision pass, even with verified admission.
 public export
 staleCannotPass : (xs : List Observation) ->
   decide (MkObservation Mandatory Applies CompletedSuccess PreviousRevision AdmissionVerified :: xs) = Blocked
 staleCannotPass xs = Refl
 
+||| An arbitrary tail cannot make an applicable mandatory success with revoked
+||| admission pass, even on the current revision.
 public export
 revokedCannotPass : (xs : List Observation) ->
   decide (MkObservation Mandatory Applies CompletedSuccess CurrentRevision AdmissionRevoked :: xs) = Blocked
 revokedCannotPass xs = Refl
 
+||| An arbitrary tail cannot make an applicable mandatory success with unverified
+||| admission pass, even on the current revision.
 public export
 unverifiedCannotPass : (xs : List Observation) ->
   decide (MkObservation Mandatory Applies CompletedSuccess CurrentRevision AdmissionUnverified :: xs) = Blocked
