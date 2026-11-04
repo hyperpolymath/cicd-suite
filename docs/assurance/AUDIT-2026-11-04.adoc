@@ -111,7 +111,12 @@ own current-head receipts and migration fixes.
   baseline tests and GUI/Chapel paths remain outside these runs.
 * Proven Tests: typed evidence and coverage derivation, tropical laws and test
   taxonomy. JSON conformance does not authenticate a theorem or execution.
-  Source-only documentation checks passed but do not establish live Idris tests.
+  Live Idris2 0.7.0 results are now 41/41 framework, 56/56 type-safe and
+  110/110 specification checks. Eight SafeOrdering law checks compiled and ran
+  against proven at `53600326ca31f6f99767c5371cc77af2dade996c`. Four benchmark
+  checksums and the regression gate passed. Local generated executable modes
+  needed repair; hosted framework run 41815922308 subsequently passed.
+  These are scoped laws and experiments, not an end-to-end implementation proof.
 * Suite PR #74: experimental Idris verdict kernel is not merged. Review still
   flags acceptance of stale/unstarted advisory observations and PR-head receipt
   attribution. Address these before calling it a verified CI decision engine.
@@ -128,7 +133,7 @@ own current-head receipts and migration fixes.
 
 == Remaining programme and rename
 
-Priority: finish live Idris/benchmark receipts and unblock startup failures;
+Priority: unblock the remaining startup failures and establish current-head hosted receipts;
 then fix malformed-evidence and scanner defects at their owners; then close
 consumer correspondence and proof-runtime obligations. Independent precision
 labels, mutation/fuzz campaigns, line/branch coverage and representative
