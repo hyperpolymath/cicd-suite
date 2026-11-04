@@ -1,0 +1,101 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Actions lock recovery candidate runner
+
+This is a narrowly scoped maintenance runner, not a replacement governance
+gate. It creates a reviewable lock candidate for the two explicitly admitted
+repositories: `hyperpolymath/hypatia` and
+`hyperpolymath/boj-server-cartridges`. The initial Hypatia use addresses an
+unreadable lock that prevents its own workflows from starting. BoJ uses the
+same canonical generation chain to reconcile its reviewed wrapper changes
+and existing dependency drift.
+It never commits, opens a pull request, changes Actions admission, changes a
+required check or alters a repository security setting.
+
+== Source and authority
+
+The first execution is limited to pushes on `repair/actions-lock-recovery`
+and subject commit `936196794e0266715e7b1902893cdcbca64ef73a`. Manual dispatch
+requires one of those two repository choices and a full 40-hex commit.
+The push subject and default choice remain Hypatia; branches, tags, other
+repositories and similarly named slugs are refused by both the workflow and
+the generator. Subject code is checked out for inspection and is never executed.
+
+Acquisition and execution are separate jobs. The acquisition job performs only
+fixed inline inspection and archive packaging after its input-selected checkout;
+it runs no subject script, build or local action. Only regular tracked Git blobs
+are admitted: symlinks and gitlinks need separate review. Checkout credentials
+must be absent from local Git metadata, and Git hooks are excluded from the
+archive. The candidate job runs suite and standards code from their verified
+sources and downloads only this run's named data artifact. It verifies the
+acquisition job's SHA-256 before unpacking and then verifies the exact subject
+commit again. The one-day transfer artifact is data, not executable policy.
+
+This boundary addresses the CodeQL cache-poisoning reviews on the original
+single-job implementation. A read-only repository token alone is insufficient
+to establish the cache boundary of a manually dispatched job; arbitrary subject
+code must never execute beside the trusted maintenance implementation.
+
+Policy remains in
+https://github.com/metadatastician/standards/tree/d3e4b485a2af90c92a8e18af0888cd19cb132cd9/scripts[the pinned standards scripts].
+The runner invokes their `regen_lock` function with official
+`github/gh-actions-lock` at `v0.2.0`, exactly the authority's tool pin. The
+committed `config/actions-lock-recovery-tool.json` also fixes the official
+Linux AMD64 release binary's SHA-256 and byte count. The published digest
+from release-asset metadata was independently compared with downloaded bytes
+before first execution. No checksum-file asset exists for that release; this
+is a binary-identity claim, not an attestation or reproducible-build claim.
+
+Installation has no GitHub credentials. It refuses a different digest before
+making the download executable or registering it. Registration uses an
+isolated extension directory, and the generator rechecks both the binary
+digest and the registered extension's exact path before token-bearing use.
+A moved release tag or replaced asset cannot change the accepted bytes.
+
+It does
+not call the authority's main loop, App applier, branch creation or commit
+functions. The only GitHub token has `contents: read`.
+
+The canonical order remains: official generation, restore original source
+and workflow bytes, `relock-sha-keys`, `complete-job-refs`, `close-lock` using
+the original prior, `prune-stale`, `update-actions-lock --verify-local`, and
+`check-lock-sync`. The runner sources that implementation instead of copying
+its policy or inventing its own lock entries.
+
+== Unreadable input
+
+https://github.com/github/gh-actions-lock/blob/v0.2.0/cmd/gh-actions-lock/lockrecovery.go[The official tool's recovery policy]
+instructs a CI session to delete unreadable input and recreate it. The adapter
+performs that operation only when the pinned tool returns its exact
+unreadable-input diagnostic and exit 2, an independent offline parser reports
+the same structural failure, the original digest remains unchanged, and the
+disposable checkout remains clean. Network, authentication and unexpected
+mutation failures do not trigger this operation.
+
+The original bytes remain in the artifact and in the canonical function's
+`--prior` snapshot. Only the disposable checkout's unreadable lock is removed;
+the official generator creates its replacement. No dependency record is
+hand-edited, no moved pin is implicitly waived, and failed closure or coverage
+verification produces no candidate.
+
+== Reading the artifact
+
+A successful run uploads `original-actions.lock`, `candidate-actions.lock`,
+`candidate.patch`, `receipt.json`, `SHA256SUMS` and diagnostic logs. The
+receipt records the exact subject and authority commits, official tool
+version, the verified binary digest and release identity, both lock digests,
+and the fact that every original workflow/source
+byte was preserved. The only changed path may be
+`.github/workflows/actions.lock`. A zero-change result is not reported as a
+repair. On failure, candidate files are removed and the job remains failing;
+the receipt and diagnostics explain the attempted operation.
+
+The candidate is not evidence that the submitted target repository already
+passes. Before applying it, verify its checksums and that the target head
+still equals the receipt's subject SHA. Use the existing authorised commit
+path, then require the target's actual startup and canonical governance
+checks on that new head. A moved subject requires a fresh candidate.
+
+The local boundary controls use a stand-in command only to prove that
+unreadable input is distinguishable from authentication, mutation and digest
+failures. They do not count as execution of the real official generator;
+that separate result comes from the hosted candidate step.

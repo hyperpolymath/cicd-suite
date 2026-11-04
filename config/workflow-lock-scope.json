@@ -2,6 +2,11 @@
   "schema_version": 1,
   "workflows": [
     {
+      "path": ".github/workflows/actions-lock-recovery.yml",
+      "mode": "immutable",
+      "reason": "Bounded read-only recovery runner; full-SHA official actions, candidate artifacts only, no target writeback or policy changes."
+    },
+    {
       "path": ".github/workflows/assurance-kernel.yml",
       "mode": "immutable",
       "reason": "Isolated experimental Idris2 compiler canary; SHA-pinned checkout, no lock-map onboarding or consumer enforcement."
