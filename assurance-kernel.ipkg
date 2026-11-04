@@ -1,0 +1,5 @@
+-- SPDX-License-Identifier: MPL-2.0
+package assurance-kernel
+version = 0.1.0
+sourcedir = "src"
+modules = Assurance.Cabal, Assurance.Verdict
