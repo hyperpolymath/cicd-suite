@@ -77,3 +77,56 @@ for repo in untrusted/hypatia hyperpolymath/other; do
   [[ "$rc" -eq 2 ]]
 done
 echo 'ok: candidate generator refuses other repositories'
+
+# Execute the workflow's actual data-transfer blocks against local Git
+# fixtures. Source scripts and Git hooks are data, never commands to run.
+command -v yq >/dev/null || { echo 'yq unavailable for transfer controls'; exit 2; }
+workflow="$root/.github/workflows/actions-lock-recovery.yml"
+yq -r '.jobs."acquire-subject".steps[] | select(.id == "archive") | .run' "$workflow" > "$tmp/package.sh"
+yq -r '.jobs.candidate.steps[] | select(.name == "Verify and unpack the subject data") | .run' "$workflow" > "$tmp/unpack.sh"
+[[ -s "$tmp/package.sh" && -s "$tmp/unpack.sh" ]] || exit 2
+mkdir -p "$tmp/acquisition" "$tmp/transfer/recovery-subject-data" "$tmp/consumer"
+git clone --quiet --no-local "$tmp/fixture" "$tmp/acquisition/subject"
+printf '#!/usr/bin/env bash\ntouch "%s"\n' "$tmp/executed-source" > "$tmp/acquisition/subject/subject-script.sh"
+git -C "$tmp/acquisition/subject" add subject-script.sh
+git -C "$tmp/acquisition/subject" -c user.name='CI control' -c user.email='ci-control@example.invalid' commit -qm 'non-executed source payload'
+subject_sha=$(git -C "$tmp/acquisition/subject" rev-parse HEAD)
+printf '#!/usr/bin/env bash\ntouch "%s"\n' "$tmp/executed-hook" > "$tmp/acquisition/subject/.git/hooks/post-checkout"
+chmod +x "$tmp/acquisition/subject/.git/hooks/post-checkout"
+export RUNNER_TEMP="$tmp/transfer" GITHUB_OUTPUT="$tmp/transfer-outputs"
+: > "$GITHUB_OUTPUT"
+(cd "$tmp/acquisition" && EXPECTED_SHA=$subject_sha bash "$tmp/package.sh")
+[[ ! -e "$tmp/executed-source" && ! -e "$tmp/executed-hook" ]]
+tar -tzf "$RUNNER_TEMP/subject.tar.gz" > "$tmp/archive-paths"
+! grep -q '^./.git/hooks' "$tmp/archive-paths"
+cp "$RUNNER_TEMP/subject.tar.gz" "$RUNNER_TEMP/recovery-subject-data/subject.tar.gz"
+archive_sha=$(sha256sum "$RUNNER_TEMP/subject.tar.gz" | cut -d ' ' -f1)
+(cd "$tmp/consumer" && EXPECTED_ARCHIVE_SHA256=$archive_sha bash "$tmp/unpack.sh")
+[[ $(git -C "$tmp/consumer/subject" rev-parse HEAD) == "$subject_sha" ]]
+[[ ! -e "$tmp/consumer/subject/.git/hooks" && ! -e "$tmp/executed-source" && ! -e "$tmp/executed-hook" ]]
+echo 'ok: same-run archive preserves exact source and excludes Git hooks without executing either'
+
+rc=0
+(cd "$tmp/acquisition" && EXPECTED_SHA=0000000000000000000000000000000000000000 bash "$tmp/package.sh") > "$tmp/log" 2>&1 || rc=$?
+[[ "$rc" -eq 2 ]]
+echo 'ok: acquisition refuses a mismatched subject SHA'
+git -C "$tmp/acquisition/subject" config http.https://github.com/.extraheader 'synthetic-credential-fixture'
+rc=0
+(cd "$tmp/acquisition" && EXPECTED_SHA=$subject_sha bash "$tmp/package.sh") > "$tmp/log" 2>&1 || rc=$?
+[[ "$rc" -eq 2 ]] && grep -Fq 'Checkout credentials must not enter' "$tmp/log"
+! grep -Fq synthetic-credential-fixture "$tmp/log"
+git -C "$tmp/acquisition/subject" config --unset http.https://github.com/.extraheader
+echo 'ok: acquisition refuses credential metadata without printing its value'
+ln -s /outside-subject "$tmp/acquisition/subject/external-link"
+git -C "$tmp/acquisition/subject" add external-link
+git -C "$tmp/acquisition/subject" -c user.name='CI control' -c user.email='ci-control@example.invalid' commit -qm 'unsafe symbolic link fixture'
+rc=0
+(cd "$tmp/acquisition" && EXPECTED_SHA=$(git -C subject rev-parse HEAD) bash "$tmp/package.sh") > "$tmp/log" 2>&1 || rc=$?
+[[ "$rc" -eq 2 ]] && grep -Fq 'Non-regular source objects require separate recovery review' "$tmp/log"
+echo 'ok: acquisition refuses source symlinks before archive transfer'
+mkdir "$tmp/tampered-consumer"
+printf 'tampered archive' >> "$RUNNER_TEMP/recovery-subject-data/subject.tar.gz"
+rc=0
+(cd "$tmp/tampered-consumer" && EXPECTED_ARCHIVE_SHA256=$archive_sha bash "$tmp/unpack.sh") > "$tmp/log" 2>&1 || rc=$?
+[[ "$rc" -eq 2 && ! -e "$tmp/tampered-consumer/subject" ]]
+echo 'ok: consumer refuses a changed archive before extraction'

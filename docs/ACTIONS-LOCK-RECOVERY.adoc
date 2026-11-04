@@ -15,6 +15,21 @@ requires the exact repository and a full 40-hex commit. Repository scope is
 still only `hyperpolymath/hypatia`; branches and tags are refused. Subject
 code is checked out for inspection and is never executed.
 
+Acquisition and execution are separate jobs. The acquisition job performs only
+fixed inline inspection and archive packaging after its input-selected checkout;
+it runs no subject script, build or local action. Only regular tracked Git blobs
+are admitted: symlinks and gitlinks need separate review. Checkout credentials
+must be absent from local Git metadata, and Git hooks are excluded from the
+archive. The candidate job runs suite and standards code from their verified
+sources and downloads only this run's named data artifact. It verifies the
+acquisition job's SHA-256 before unpacking and then verifies the exact subject
+commit again. The one-day transfer artifact is data, not executable policy.
+
+This boundary addresses the CodeQL cache-poisoning reviews on the original
+single-job implementation. A read-only repository token alone is insufficient
+to establish the cache boundary of a manually dispatched job; arbitrary subject
+code must never execute beside the trusted maintenance implementation.
+
 Policy remains in
 https://github.com/metadatastician/standards/tree/d3e4b485a2af90c92a8e18af0888cd19cb132cd9/scripts[the pinned standards scripts].
 The runner invokes their `regen_lock` function with official
