@@ -41,7 +41,7 @@
 # missing, planted control misbehaved, unreadable tree). 2 is never a pass.
 #
 # Env: WORKING_DIRECTORY (default "."), ENFORCE_HOLLOW (default false),
-#      PROVE_ARGS (appended to `cargo creusot`), CREUSOT_FACTS (path
+#      PROVE_ARGS (--no-cache, --why3session, -j N only), CREUSOT_FACTS (path
 #      the detect phase writes its crate list to; default $RUNNER_TEMP or
 #      /tmp).
 set -uo pipefail
@@ -53,7 +53,39 @@ prove_args="${PROVE_ARGS:-}"
 facts_dir="${CREUSOT_FACTS:-${RUNNER_TEMP:-/tmp}/creusot-facts}"
 mkdir -p "$facts_dir"
 
+# These are observations of this invocation, not an authenticated proof
+# certificate. The workflow also checks the actual step/job conclusions.
+# A setup failure must never be promoted to a failure of the caller's contracts.
+execution_stage=setup
+execution_outcome=unavailable
+controls_passed=false
+proof_started=false
+proof_completed=false
+crates_expected=0
+crates_attempted=0
+crates_completed=0
+source_revision=""
+record_execution() {
+  local rc=$?
+  if [ "$phase" = prove ] && [ -n "${GITHUB_OUTPUT:-}" ]; then
+    # Fixed keys and validated scalar values only. In particular, no compiler
+    # output is allowed to write additional GitHub Actions output records.
+    [[ "$source_revision" =~ ^[0-9a-f]{40}$ ]] || source_revision=""
+    local suite_revision="${CREUSOT_SUITE_REVISION:-}"
+    [[ "$suite_revision" =~ ^[0-9a-f]{40}$ ]] || suite_revision=""
+    {
+      printf 'execution_stage=%s\nexecution_outcome=%s\n' "$execution_stage" "$execution_outcome"
+      printf 'controls_passed=%s\nproof_started=%s\nproof_completed=%s\n' "$controls_passed" "$proof_started" "$proof_completed"
+      printf 'crates_expected=%s\ncrates_attempted=%s\ncrates_completed=%s\n' "$crates_expected" "$crates_attempted" "$crates_completed"
+      printf 'source_revision=%s\nsuite_revision=%s\nproof_exit_code=%s\n' "$source_revision" "$suite_revision" "$rc"
+    } >> "$GITHUB_OUTPUT" || return 2
+  fi
+  return "$rc"
+}
+trap 'record_execution' EXIT
+
 cd "$dir" || { echo "::error::creusot-check[$phase]: cannot enter $dir — NO CHECK WAS PERFORMED." >&2; exit 2; }
+source_revision="$(git rev-parse HEAD 2>/dev/null || true)"
 
 # Tracked files only: an untracked checkout of this suite (.cicd-suite/) or a
 # target/ tree must never count as the caller's sources.
@@ -174,12 +206,108 @@ case "$phase" in
       echo "::error::creusot-check[prove]: no Creusot obligations in this tree — NO PROOF WAS PERFORMED. The prove job must only run when detect reported obligations=true." >&2
       exit 2
     fi
-    command -v cargo >/dev/null 2>&1 && cargo creusot --help >/dev/null 2>&1 || {
-      echo "::error::creusot-check[prove]: 'cargo creusot' is not available — NO PROOF WAS PERFORMED. The workflow installs Creusot (pinned) before this step." >&2
+    # Unrestricted CLI arguments can narrow the proof to a positional pattern,
+    # select other packages, skip translation/proving, or replace the compiler.
+    # Controls do not establish coverage of omitted caller obligations. Accept
+    # only operational v0.14 options that preserve package and proof scope.
+    reject_prove_args() {
+      echo "::error::creusot-check[prove]: unsupported PROVE_ARGS. Only --no-cache, --why3session and -j N (positive decimal) preserve this gate's proof scope. NO PROOF WAS PERFORMED." >&2
       exit 2
     }
+    [[ "$prove_args" != *$'\n'* && "$prove_args" != *$'\r'* ]] || reject_prove_args
+    requested_options=()
+    read -r -a requested_options <<< "$prove_args"
+    prove_options=()
+    for ((i=0; i<${#requested_options[@]}; i++)); do
+      case "${requested_options[$i]}" in
+        --no-cache|--why3session) prove_options+=("${requested_options[$i]}") ;;
+        -j)
+          i=$((i + 1))
+          [[ "${requested_options[$i]:-}" =~ ^[1-9][0-9]*$ ]] || reject_prove_args
+          prove_options+=(-j "${requested_options[$i]}")
+          ;;
+        -j*)
+          jobs="${requested_options[$i]#-j}"
+          [[ "$jobs" =~ ^[1-9][0-9]*$ ]] || reject_prove_args
+          prove_options+=(-j "$jobs")
+          ;;
+        *) reject_prove_args ;;
+      esac
+    done
+
+    if ! command -v cargo >/dev/null 2>&1 || ! cargo creusot --help >/dev/null 2>&1; then
+      echo "::error::creusot-check[prove]: 'cargo creusot' is not available — NO PROOF WAS PERFORMED. The workflow installs Creusot (pinned) before this step." >&2
+      exit 2
+    fi
+
+    # Creusot v0.14 resolves Why3find configuration at Cargo's workspace
+    # root, and its default package selection may include other members.
+    # Resolve the real workspace and select the identified package explicitly;
+    # a member-local or ambient configuration is not a valid substitute.
+    command -v jq >/dev/null 2>&1 || {
+      echo "::error::creusot-check[prove]: jq is required to read Cargo metadata. NO PROOF WAS PERFORMED." >&2
+      exit 2
+    }
+    source_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+    source_root="$(cd "$source_root" && pwd -P)" || exit 2
+    : > "$facts_dir/proof-plan"
+    while IFS= read -r crate; do
+      [ -n "$crate" ] || continue
+      manifest_path="$(realpath -e -- "$crate/Cargo.toml")" || exit 2
+      case "$manifest_path" in
+        "$source_root"/*) ;;
+        *) echo "::error::creusot-check[prove]: selected manifest escapes the source repository. NO PROOF WAS PERFORMED." >&2; exit 2 ;;
+      esac
+      if ! metadata="$(cargo metadata --format-version 1 --no-deps --manifest-path "$manifest_path")"; then
+        echo "::error file=$crate/Cargo.toml::creusot-check[prove]: Cargo metadata could not resolve this crate. NO PROOF WAS PERFORMED." >&2
+        exit 2
+      fi
+      workspace_root="$(jq -er '.workspace_root | select(type == "string" and length > 0)' <<< "$metadata")" || exit 2
+      workspace_root="$(cd "$workspace_root" && pwd -P)" || exit 2
+      case "$workspace_root" in
+        "$source_root"|"$source_root"/*) ;;
+        *) echo "::error::creusot-check[prove]: Cargo workspace is outside the source repository. NO PROOF WAS PERFORMED." >&2; exit 2 ;;
+      esac
+      package="$(jq -er --arg manifest "$manifest_path" '[.packages[] | select(.manifest_path == $manifest) | .name] | if length == 1 then .[0] else empty end' <<< "$metadata")" || {
+        # A virtual workspace can declare creusot-std for its members, but is
+        # not itself an executable package. Member manifests are selected by
+        # the same detector; zero actual packages below remains unavailable.
+        if [ "$manifest_path" = "$workspace_root/Cargo.toml" ]; then
+          continue
+        fi
+        echo "::error file=$crate/Cargo.toml::creusot-check[prove]: no unique package matches the selected manifest. NO PROOF WAS PERFORMED." >&2
+        exit 2
+      }
+      if [[ ! "$package" =~ ^[A-Za-z0-9_-]+$ ]] || [[ "$crate" = *$'\t'* ]]; then
+        echo "::error::creusot-check[prove]: unsupported package or manifest path. NO PROOF WAS PERFORMED." >&2
+        exit 2
+      fi
+      if [ ! -s "$workspace_root/why3find.json" ]; then
+        echo "::error file=$workspace_root/why3find.json::creusot-check[prove]: missing Cargo workspace Why3find configuration. NO PROOF WAS PERFORMED." >&2
+        exit 2
+      fi
+      configuration_path="$(realpath -e -- "$workspace_root/why3find.json")" || exit 2
+      case "$configuration_path" in
+        "$source_root"/*) ;;
+        *) echo "::error::creusot-check[prove]: Why3find configuration escapes the source repository. NO PROOF WAS PERFORMED." >&2; exit 2 ;;
+      esac
+      if ! jq -e 'type == "object"' "$configuration_path" >/dev/null; then
+        echo "::error file=$workspace_root/why3find.json::creusot-check[prove]: malformed Why3find configuration. NO PROOF WAS PERFORMED." >&2
+        exit 2
+      fi
+      printf '%s\t%s\n' "$crate" "$package" >> "$facts_dir/proof-plan"
+      crates_expected=$((crates_expected + 1))
+    done < "$facts_dir/crates"
+    # Source-level attributes alone do not identify an executable Cargo target.
+    # An empty crate list must not execute zero commands and still pass.
+    if [ "$crates_expected" -eq 0 ]; then
+      echo "::error::creusot-check[prove]: obligations were detected but no Cargo package was selected. NO PROOF WAS PERFORMED." >&2
+      exit 2
+    fi
 
     # ---- planted controls: the prover must be able to say NO -------------
+    execution_stage=harness
+    execution_outcome=failed
     ctl="$(mktemp -d)"
     # Create a named control crate under $ctl from the supplied Rust source.
     # If initialisation fails or why3find.json is missing or empty, remove $ctl
@@ -209,8 +337,7 @@ pub fn planted_must_fail() -> u32 { 1 }'
 #[ensures(result == 2u32)]
 pub fn planted_must_pass() -> u32 { 2 }'
     echo "::group::planted control: a false postcondition must NOT prove"
-    # shellcheck disable=SC2086
-    if (cd "$ctl/creusot-control-failing" && cargo creusot $prove_args); then
+    if (cd "$ctl/creusot-control-failing" && cargo creusot "${prove_options[@]}"); then
       echo "::endgroup::"
       echo "::error::creusot-check[prove]: the planted FALSE contract was reported proved (exit 0). This prover cannot fail, so any verdict it gives over the caller's crate is VOID. NO PROOF WAS PERFORMED." >&2
       rm -rf "$ctl"; exit 2
@@ -218,8 +345,7 @@ pub fn planted_must_pass() -> u32 { 2 }'
     echo "::endgroup::"
     echo "planted control: false contract refused — the oracle can say no."
     echo "::group::planted control: a true postcondition must prove"
-    # shellcheck disable=SC2086
-    if ! (cd "$ctl/creusot-control-passing" && cargo creusot $prove_args); then
+    if ! (cd "$ctl/creusot-control-passing" && cargo creusot "${prove_options[@]}"); then
       echo "::endgroup::"
       echo "::error::creusot-check[prove]: the planted TRUE contract did not prove. The toolchain is broken (solver or prelude), so a red on the caller's crate would be misattributed. NO PROOF WAS PERFORMED." >&2
       rm -rf "$ctl"; exit 2
@@ -227,25 +353,33 @@ pub fn planted_must_pass() -> u32 { 2 }'
     echo "::endgroup::"
     rm -rf "$ctl"
     echo "planted control: true contract proved — the oracle can say yes."
+    controls_passed=true
 
     # ---- the caller's crates ---------------------------------------------
+    execution_stage=substantive
+    execution_outcome=unavailable
     fail=0
-    while IFS= read -r crate; do
+    while IFS=$'\t' read -r crate package; do
       [ -n "$crate" ] || continue
-      echo "::group::cargo creusot — $crate"
-      # shellcheck disable=SC2086
-      if (cd "$crate" && cargo creusot $prove_args); then
+      echo "::group::cargo creusot — $crate (package $package)"
+      proof_started=true
+      crates_attempted=$((crates_attempted + 1))
+      if (cd "$crate" && cargo creusot -p "$package" "${prove_options[@]}"); then
         echo "::endgroup::"
-        echo "ok: $crate — every obligation discharged"
+        echo "ok: $crate — cargo creusot completed successfully"
       else
         rc=$?
         echo "::endgroup::"
-        echo "::error file=$crate/Cargo.toml::creusot-check[prove]: 'cargo creusot' exited $rc in $crate — at least one obligation is unproved. Fix the contract or the code; never mark it #[trusted] to get green."
+        echo "::error file=$crate/Cargo.toml::creusot-check[prove]: 'cargo creusot' exited $rc in $crate. The policy step ran; inspect its report to distinguish translation, dependency, solver and obligation failures. This exit alone does not show that a contract is false."
         fail=1
       fi
-    done < "$facts_dir/crates"
+      crates_completed=$((crates_completed + 1))
+    done < "$facts_dir/proof-plan"
+    proof_completed=true
+    execution_outcome=failed
     [ "$fail" -eq 0 ] || exit 1
-    echo "creusot-check[prove]: all Creusot obligations discharged (trusted axioms: $trusted_count)."
+    execution_outcome=passed
+    echo "creusot-check[prove]: controls passed and all $crates_completed selected crate commands completed successfully (source-detected trusted axioms: $trusted_count)."
     exit 0
     ;;
   *)

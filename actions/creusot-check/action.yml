@@ -20,7 +20,7 @@ inputs:
     required: false
     default: 'false'
   prove_args:
-    description: 'Args appended to cargo creusot'
+    description: 'Scope-preserving options only: --no-cache, --why3session, -j N (positive decimal)'
     required: false
     default: ''
 runs:

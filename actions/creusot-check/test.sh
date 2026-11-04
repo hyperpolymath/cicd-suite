@@ -34,11 +34,14 @@ fresh_fixture() {
     printf '[package]\nname = "fx"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\n' > "$FIX/Cargo.toml"
     printf '//! fixture\npub fn id(x: u32) -> u32 { x }\n' > "$FIX/src/lib.rs"
     printf '= fx\n\nA small crate.\n' > "$FIX/README.adoc"
+    printf '{"packages":["creusot"],"provers":["z3"]}\n' > "$FIX/why3find.json"
     git -C "$FIX" add -A && git -C "$FIX" commit -qm fixture
 }
 commit() { git -C "$FIX" add -A && git -C "$FIX" commit -qm change >/dev/null; }
 run_phase() { # <phase> [env...]
-    ( cd "$FIX" && env CREUSOT_GATE_PHASE="$1" CREUSOT_FACTS="$WORK/facts" "${@:2}" \
+    : > "$WORK/receipt"
+    ( cd "$FIX" && env CREUSOT_GATE_PHASE="$1" CREUSOT_FACTS="$WORK/facts" \
+        GITHUB_OUTPUT="$WORK/receipt" CREUSOT_SUITE_REVISION=1111111111111111111111111111111111111111 "${@:2}" \
         bash --noprofile --norc -e -o pipefail "$checker" ) > "$OUT" 2>&1
     RC=$?
 }
@@ -116,6 +119,13 @@ fi
 if [ -f Cargo.toml ] && grep -q 'name = "creusot-control-' Cargo.toml && [ ! -s why3find.json ]; then
   echo "missing control Why3find configuration" >&2; exit 65
 fi
+if ! grep -q 'name = "creusot-control-' Cargo.toml; then
+  package="$(sed -nE 's/^name = "([^"]+)"/\1/p' Cargo.toml)"
+  if [ "${2:-}" != -p ] || [ "${3:-}" != "$package" ]; then
+    echo "caller package was not selected explicitly" >&2; exit 66
+  fi
+  echo "stub: selected package $package"
+fi
 if grep -qE 'planted_must_fail|// UNPROVED' src/lib.rs 2>/dev/null; then
   echo "stub: 1 goal unproved"; exit 1
 fi
@@ -124,11 +134,29 @@ SH
 chmod +x "$STAND_IN/cargo-creusot"
 run_phase prove PATH="$STAND_IN:$PATH"
 [ "$RC" -eq 0 ] && ok "prove exits 0 when every crate proves" || { bad "prove exits $RC"; cat "$OUT"; }
+for fact in execution_stage=substantive execution_outcome=passed controls_passed=true proof_started=true proof_completed=true crates_expected=1 crates_attempted=1 crates_completed=1 proof_exit_code=0; do
+  grep -qx "$fact" "$WORK/receipt" && ok "execution receipt: $fact" || bad "missing execution fact: $fact"
+done
+grep -qx "source_revision=$(git -C "$FIX" rev-parse HEAD)" "$WORK/receipt" && ok "records actual checked-out revision" || bad "wrong receipt revision"
 grep -q 'false contract refused' "$OUT" && ok "planted failing control was exercised" || bad "failing control not run"
 grep -q 'true contract proved' "$OUT" && ok "planted passing control was exercised" || bad "passing control not run"
+echo "== caller proof scope cannot be overridden with extra arguments =="
+run_phase prove PATH="$STAND_IN:$PATH" PROVE_ARGS='--no-cache --why3session -j 2'
+[ "$RC" -eq 0 ] && ok "supported operational options preserve caller execution" || { bad "supported options exit $RC"; cat "$OUT"; }
+run_phase prove PATH="$STAND_IN:$PATH" PROVE_ARGS='-j2'
+[ "$RC" -eq 0 ] && ok "compact positive prover concurrency is normalised safely" || bad "compact concurrency exits $RC"
+for unsafe in '--only coma' '--only=prove' '--dry-run-why3find' '--package fx' '-pfx' '--workspace' '--manifest-path elsewhere/Cargo.toml' '-- --no-default-features' '--why3find-arg=--help' 'planted_*' '--replay' '--no-check-version' '--creusot-rustc=/tmp/fake' 'doc' '-j' '-j 0' '-j=-1' $'--no-cache\n--only coma'; do
+  run_phase prove PATH="$STAND_IN:$PATH" PROVE_ARGS="$unsafe"
+  if [ "$RC" -eq 2 ] && grep -qx 'execution_stage=setup' "$WORK/receipt" && grep -qx 'proof_started=false' "$WORK/receipt"; then
+    ok "scope-changing or malformed arguments refused before execution: $unsafe"
+  else
+    bad "unsafe arguments accepted or misattributed: $unsafe (exit $RC)"
+    cat "$OUT"
+  fi
+done
 echo "== obsolete CLI mutation must not produce a proof verdict =="
 original_checker="$checker"
-sed 's/cargo creusot \$prove_args/cargo creusot prove $prove_args/g' "$checker" > "$WORK/obsolete-check.sh"
+sed 's/cargo creusot "${prove_options\[@\]}"/cargo creusot prove "${prove_options[@]}"/g' "$checker" > "$WORK/obsolete-check.sh"
 checker="$WORK/obsolete-check.sh"
 run_phase prove PATH="$STAND_IN:$PATH"
 [ "$RC" -eq 2 ] && ok "obsolete subcommand is NOT RUN, never proof success" || bad "obsolete CLI exited $RC"
@@ -142,9 +170,77 @@ run_phase prove PATH="$STAND_IN:$PATH"
 [ "$RC" -eq 2 ] && ok "missing control configuration is NOT RUN" || bad "missing configuration exited $RC"
 grep -q 'control initialisation did not supply why3find.json' "$OUT" && ok "names the actual setup failure" || bad "configuration failure not explained"
 cp "$WORK/good-oracle" "$STAND_IN/cargo-creusot"
+echo "== caller prerequisites must be distinguished from a failed proof =="
+mv "$FIX/why3find.json" "$WORK/caller-config"
+run_phase prove PATH="$STAND_IN:$PATH"
+[ "$RC" -eq 2 ] && ok "missing caller configuration is NOT RUN" || bad "missing caller configuration exited $RC"
+grep -qx 'execution_stage=setup' "$WORK/receipt" && grep -qx 'proof_started=false' "$WORK/receipt" && ok "configuration failure is setup, not a caller proof result" || bad "wrong configuration failure attribution"
+mv "$WORK/caller-config" "$FIX/why3find.json"
+cp "$FIX/Cargo.toml" "$WORK/caller-manifest"
+sed -i '/^creusot-std = /d' "$FIX/Cargo.toml"
+run_phase prove PATH="$STAND_IN:$PATH"
+[ "$RC" -eq 2 ] && ok "attributes with zero selected crates cannot pass" || bad "zero crate commands exited $RC"
+grep -qx 'crates_attempted=0' "$WORK/receipt" && ok "zero commands recorded honestly" || bad "invented a caller command"
+mv "$WORK/caller-manifest" "$FIX/Cargo.toml"
+echo "== Cargo workspace configuration and package scope use real metadata =="
+cp -a "$FIX" "$WORK/single-package"
+mkdir -p "$FIX/member"
+mv "$FIX/src" "$FIX/member/src"
+cat > "$FIX/Cargo.toml" <<'TOML'
+[workspace]
+members = ["member"]
+resolver = "2"
+[workspace.dependencies]
+creusot-std = "0.14"
+TOML
+cat > "$FIX/member/Cargo.toml" <<'TOML'
+[package]
+name = "fx-member"
+version = "0.1.0"
+edition = "2021"
+[dependencies]
+creusot-std = { workspace = true }
+TOML
+commit
+run_phase prove PATH="$STAND_IN:$PATH"
+[ "$RC" -eq 0 ] && ok "workspace root configuration serves a real member package" || { bad "workspace root configuration exits $RC"; cat "$OUT"; }
+grep -qx 'crates_expected=1' "$WORK/receipt" && ok "virtual workspace is not counted as a second proof package" || bad "virtual workspace was counted"
+grep -q 'stub: selected package fx-member' "$OUT" && ok "caller command selects the discovered Cargo package explicitly" || bad "caller package selection missing"
+run_phase prove PATH="$STAND_IN:$PATH" WORKING_DIRECTORY=member
+[ "$RC" -eq 0 ] && ok "member working directory uses the same repository workspace root" || { bad "member working directory exits $RC"; cat "$OUT"; }
+mv "$FIX/why3find.json" "$FIX/member/why3find.json"
+run_phase prove PATH="$STAND_IN:$PATH" WORKING_DIRECTORY=member
+[ "$RC" -eq 2 ] && ok "member-local configuration cannot substitute for the workspace configuration" || bad "member-only configuration exits $RC"
+grep -qx 'proof_started=false' "$WORK/receipt" && ok "workspace configuration failure precedes caller execution" || bad "workspace configuration failure started a caller command"
+mv "$FIX/member/why3find.json" "$WORK/ambient-why3find.json"
+ln -s "$WORK/ambient-why3find.json" "$FIX/why3find.json"
+run_phase prove PATH="$STAND_IN:$PATH"
+[ "$RC" -eq 2 ] && ok "configuration symlink outside the source repository is refused" || bad "ambient configuration exits $RC"
+rm "$FIX/why3find.json"
+mv "$WORK/ambient-why3find.json" "$FIX/why3find.json"
+printf 'not JSON\n' > "$FIX/why3find.json"
+run_phase prove PATH="$STAND_IN:$PATH"
+[ "$RC" -eq 2 ] && ok "malformed workspace configuration is a prerequisite failure" || bad "malformed configuration exits $RC"
+printf '{"packages":["creusot"],"provers":["z3"]}\n' > "$FIX/why3find.json"
+printf '\n[invalid TOML\n' >> "$FIX/member/Cargo.toml"
+run_phase prove PATH="$STAND_IN:$PATH"
+[ "$RC" -eq 2 ] && ok "unresolvable Cargo metadata cannot become a proof result" || bad "invalid Cargo metadata exits $RC"
+rm -rf "$FIX"
+cp -a "$WORK/single-package" "$FIX"
+# A valid Cargo workspace may itself live above the Git repository. The gate
+# must refuse its config rather than accept ambient state outside the subject.
+printf '[workspace]\nmembers = ["fixture"]\n' > "$WORK/Cargo.toml"
+sed -i '/^edition = /a workspace = ".."' "$FIX/Cargo.toml"
+run_phase prove PATH="$STAND_IN:$PATH"
+[ "$RC" -eq 2 ] && ok "a Cargo workspace outside the subject repository is refused" || bad "external Cargo workspace exits $RC"
+grep -q 'Cargo workspace is outside the source repository' "$OUT" && ok "external workspace boundary failure is explicit" || { bad "workspace boundary failure not explained"; cat "$OUT"; }
+rm "$WORK/Cargo.toml"
+rm -rf "$FIX"
+mv "$WORK/single-package" "$FIX"
 printf '// UNPROVED\n' >> "$FIX/src/lib.rs"; commit
 run_phase prove PATH="$STAND_IN:$PATH"
 [ "$RC" -eq 1 ] && ok "an unproved crate fails the gate" || bad "unproved crate exits $RC, expected 1"
+grep -qx 'execution_stage=substantive' "$WORK/receipt" && grep -qx 'execution_outcome=failed' "$WORK/receipt" && grep -qx 'proof_completed=true' "$WORK/receipt" && ok "a completed failing invocation is distinguished from a prerequisite" || bad "wrong caller failure attribution"
 grep -q "::error file=./Cargo.toml::creusot-check\[prove\]" "$OUT" && ok "the failing crate is annotated" || bad "crate not annotated: $(cat "$OUT")"
 
 echo "== prove: an oracle that can only say yes makes the verdict VOID =="
@@ -158,6 +254,7 @@ echo yes; exit 0
 SH
 run_phase prove PATH="$STAND_IN:$PATH"
 [ "$RC" -eq 2 ] && ok "exits 2 (NO PROOF WAS PERFORMED)" || bad "exits $RC, expected 2"
+grep -qx 'execution_stage=harness' "$WORK/receipt" && grep -qx 'proof_started=false' "$WORK/receipt" && ok "oracle failure is a harness outcome without caller execution" || bad "oracle failure misattributed"
 grep -q 'cannot fail' "$OUT" && ok "says the prover cannot fail" || bad "no explanation"
 
 echo "== prove: no cargo creusot at all is exit 2 =="
@@ -167,4 +264,5 @@ run_phase prove PATH="$STAND_IN:/usr/bin:/bin"
 
 echo
 echo "PASS=$PASS FAIL=$FAIL"
-[ "$FAIL" -eq 0 ]
+[ "$FAIL" -eq 0 ] || exit 1
+bash "$here/verdict-test.sh"
