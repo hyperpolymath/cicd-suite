@@ -120,10 +120,8 @@ jobs:
           path: authority
           sparse-checkout: scripts
           persist-credentials: false
-      - name: Install the official tool at the authority's pin
+      - name: Verify and install the official tool's committed binary identity
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           if ! command -v gawk >/dev/null; then
@@ -132,8 +130,7 @@ jobs:
           fi
           command -v yq
           command -v jq
-          gh extension install github/gh-actions-lock --pin v0.2.0
-          gh actions-lock --version
+          bash recovery-suite/scripts/install-lock-recovery-tool.sh
       - name: Run recovery boundary controls
         run: bash recovery-suite/tests/actions-lock-recovery.sh
       - name: Download only this run's subject data

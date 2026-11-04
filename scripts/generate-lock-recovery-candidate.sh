@@ -43,6 +43,16 @@ producer_sha=$(git -C "$root" rev-parse HEAD)
 lock=.github/workflows/actions.lock
 [[ -f "$subject/$lock" && ! -L "$subject/$lock" ]] || { echo 'Original lock is absent or a symlink'; exit 2; }
 for tool in gh jq yq gawk; do command -v "$tool" >/dev/null || { echo "$tool unavailable; generation NOT RUN"; exit 2; }; done
+tool_manifest="$root/config/actions-lock-recovery-tool.json"
+expected_tool_sha=$(jq -er '.sha256 | select(test("^[0-9a-f]{64}$"))' "$tool_manifest")
+tool_binary=${RECOVERY_ACTIONS_LOCK_BIN:-}
+[[ "$tool_binary" == "$RUNNER_TEMP/"* && -f "$tool_binary" && ! -L "$tool_binary" && -x "$tool_binary" ]] \
+  || { echo 'Verified recovery binary is absent'; exit 2; }
+tool_sha=$(sha256sum "$tool_binary" | cut -d ' ' -f1)
+[[ "$tool_sha" == "$expected_tool_sha" ]] || { echo 'Recovery binary changed after installation'; exit 2; }
+[[ "${XDG_DATA_HOME:-}" == "$RUNNER_TEMP/"* &&
+   $(readlink -f "$XDG_DATA_HOME/gh/extensions/gh-actions-lock/gh-actions-lock") == "$tool_binary" ]] \
+  || { echo 'Recovery extension binding changed after installation'; exit 2; }
 version=$(gh actions-lock --version)
 [[ "$version" =~ (^|[[:space:]])v?0\.2\.0([[:space:]]|$) ]] || { echo 'Official tool is not the canonical v0.2.0'; exit 2; }
 cp -- "$subject/$lock" "$output/original-actions.lock"
@@ -85,9 +95,11 @@ git -C "$subject" diff --binary -- "$lock" > "$output/candidate.patch"
 candidate_sha=$(sha256sum "$output/candidate-actions.lock" | cut -d ' ' -f1)
 jq -n --arg repo "$repository" --arg sha "$revision" --arg authority "$authority_sha" \
   --arg producer "$producer_sha" --arg run "${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-hyperpolymath/cicd-suite}/actions/runs/${GITHUB_RUN_ID:-unavailable}" \
-  --arg tool "$version" --arg original "$RECOVERY_ORIGINAL_LOCK_SHA256" --arg candidate "$candidate_sha" \
+  --arg tool "$version" --arg tool_sha256 "$tool_sha" --argjson tool_identity "$(cat "$tool_manifest")" \
+  --arg original "$RECOVERY_ORIGINAL_LOCK_SHA256" --arg candidate "$candidate_sha" \
   '{schema_version:1,status:"candidate-created",repository:$repo,subject_sha:$sha,
     authority_repository:"metadatastician/standards",authority_sha:$authority,official_tool:$tool,
+    official_tool_sha256:$tool_sha256,official_tool_identity:$tool_identity,
     producer_sha:$producer,workflow_run:$run,
     original_lock_sha256:$original,candidate_lock_sha256:$candidate,
     changed_paths:[".github/workflows/actions.lock"],original_workflow_bytes_preserved:true,

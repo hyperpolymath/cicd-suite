@@ -187,3 +187,59 @@ rc=0
 (cd "$tmp/tampered-consumer" && EXPECTED_ARCHIVE_SHA256=$archive_sha bash "$tmp/unpack.sh") > "$tmp/log" 2>&1 || rc=$?
 [[ "$rc" -eq 2 && ! -e "$tmp/tampered-consumer/subject" ]]
 echo 'ok: consumer refuses a changed archive before extraction'
+
+# A binary claiming the expected version still has to match the committed
+# release digest before it becomes executable or reaches gh registration.
+mkdir "$tmp/tool-install-mocks" "$tmp/tool-install-temp"
+printf '#!/usr/bin/env bash\nprintf executed > "%s"\nprintf "actions-lock version v0.2.0\\n"\n' \
+  "$tmp/unverified-executed" > "$tmp/unverified-binary"
+cat > "$tmp/tool-install-mocks/curl" <<'MOCK'
+#!/usr/bin/env bash
+set -euo pipefail
+: > "$INSTALL_CURL_CALLED"
+[[ ${INSTALL_DOWNLOAD_MODE:-copy} != fail ]] || exit 22
+output=''
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --output) output=$2; shift 2 ;;
+    *) shift ;;
+  esac
+done
+[[ -n "$output" ]] || exit 99
+cp -- "$INSTALL_MOCK_ARTIFACT" "$output"
+MOCK
+cat > "$tmp/tool-install-mocks/gh" <<'MOCK'
+#!/usr/bin/env bash
+set -euo pipefail
+: > "$INSTALL_GH_CALLED"
+[[ ! -x ./gh-actions-lock ]] || ./gh-actions-lock --version
+MOCK
+chmod +x "$tmp/tool-install-mocks/curl" "$tmp/tool-install-mocks/gh"
+export INSTALL_CURL_CALLED="$tmp/install-curl-called" INSTALL_GH_CALLED="$tmp/install-gh-called"
+export INSTALL_MOCK_ARTIFACT="$tmp/unverified-binary"
+for mode in copy fail; do
+  : > "$tmp/install-env"
+  rm -f "$INSTALL_CURL_CALLED" "$INSTALL_GH_CALLED" "$tmp/unverified-executed"
+  rc=0
+  env -u GH_TOKEN -u GITHUB_TOKEN -u GH_ENTERPRISE_TOKEN -u GITHUB_ENTERPRISE_TOKEN \
+    PATH="$tmp/tool-install-mocks:$PATH" RUNNER_TEMP="$tmp/tool-install-temp" GITHUB_ENV="$tmp/install-env" \
+    INSTALL_DOWNLOAD_MODE=$mode bash "$root/scripts/install-lock-recovery-tool.sh" > "$tmp/log" 2>&1 || rc=$?
+  [[ "$rc" -eq 2 && -e "$INSTALL_CURL_CALLED" && ! -e "$INSTALL_GH_CALLED" && ! -e "$tmp/unverified-executed" && ! -s "$tmp/install-env" ]]
+  if [[ "$mode" == copy ]]; then
+    grep -Fxq 'Recovery binary identity mismatch; no downloaded code was executed' "$tmp/log"
+    echo 'ok: an unverified binary is refused before execution or gh registration despite its version claim'
+  else
+    grep -Fxq 'Official recovery binary download failed' "$tmp/log"
+    echo 'ok: download failure does not register or execute a recovery tool'
+  fi
+done
+rm -f "$INSTALL_CURL_CALLED" "$INSTALL_GH_CALLED"
+rc=0
+env -u GITHUB_TOKEN -u GH_ENTERPRISE_TOKEN -u GITHUB_ENTERPRISE_TOKEN \
+  GH_TOKEN=credential-fixture PATH="$tmp/tool-install-mocks:$PATH" \
+  RUNNER_TEMP="$tmp/tool-install-temp" GITHUB_ENV="$tmp/install-env" \
+  bash "$root/scripts/install-lock-recovery-tool.sh" > "$tmp/log" 2>&1 || rc=$?
+[[ "$rc" -eq 2 && ! -e "$INSTALL_CURL_CALLED" && ! -e "$INSTALL_GH_CALLED" && ! -s "$tmp/install-env" ]]
+grep -Fxq 'Recovery tool installation must run without GitHub credentials' "$tmp/log"
+! grep -Fq credential-fixture "$tmp/log"
+echo 'ok: installation refuses token-bearing execution before download without printing the token'

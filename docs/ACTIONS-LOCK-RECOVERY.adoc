@@ -38,7 +38,20 @@ code must never execute beside the trusted maintenance implementation.
 Policy remains in
 https://github.com/metadatastician/standards/tree/d3e4b485a2af90c92a8e18af0888cd19cb132cd9/scripts[the pinned standards scripts].
 The runner invokes their `regen_lock` function with official
-`github/gh-actions-lock` at `v0.2.0`, exactly the authority's tool pin. It does
+`github/gh-actions-lock` at `v0.2.0`, exactly the authority's tool pin. The
+committed `config/actions-lock-recovery-tool.json` also fixes the official
+Linux AMD64 release binary's SHA-256 and byte count. The published digest
+from release-asset metadata was independently compared with downloaded bytes
+before first execution. No checksum-file asset exists for that release; this
+is a binary-identity claim, not an attestation or reproducible-build claim.
+
+Installation has no GitHub credentials. It refuses a different digest before
+making the download executable or registering it. Registration uses an
+isolated extension directory, and the generator rechecks both the binary
+digest and the registered extension's exact path before token-bearing use.
+A moved release tag or replaced asset cannot change the accepted bytes.
+
+It does
 not call the authority's main loop, App applier, branch creation or commit
 functions. The only GitHub token has `contents: read`.
 
@@ -69,7 +82,8 @@ verification produces no candidate.
 A successful run uploads `original-actions.lock`, `candidate-actions.lock`,
 `candidate.patch`, `receipt.json`, `SHA256SUMS` and diagnostic logs. The
 receipt records the exact subject and authority commits, official tool
-version, both lock digests, and the fact that every original workflow/source
+version, the verified binary digest and release identity, both lock digests,
+and the fact that every original workflow/source
 byte was preserved. The only changed path may be
 `.github/workflows/actions.lock`. A zero-change result is not reported as a
 repair. On failure, candidate files are removed and the job remains failing;
