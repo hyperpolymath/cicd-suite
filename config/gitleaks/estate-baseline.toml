@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
-# Vendored unchanged from metadatastician/standards at
+# Derived from metadatastician/standards at
 # 1725bebd3773ea25627479f813283abf1c497a85 (config/gitleaks/estate-baseline.toml).
 # Historical comments below describe upstream, not suite staging.
 # SPDX-License-Identifier: MPL-2.0
@@ -227,3 +227,14 @@ regexes = [
   # and the class admits no `/`, so it names one file, never a path or a blob.
   '''^[A-Za-z0-9][A-Za-z0-9._-]*\.(adoc|md)$''',
 ]
+
+# Qualified 2026-11-04 with Gitleaks 8.30.1: the exact instructional
+# literal in an Authorization header is not issued key material. Keep this
+# scoped to the curl rule and the complete extracted value; never a path,
+# substring, or a pattern covering arbitrary your-* values.
+[[rules]]
+id = "curl-auth-header"
+[[rules.allowlists]]
+description = "Exact instructional placeholder, with same-path credential controls"
+regexTarget = "secret"
+regexes = ['^your-key-here$']
