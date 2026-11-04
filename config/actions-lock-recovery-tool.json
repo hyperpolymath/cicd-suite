@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "spdx_license_id": "MPL-2.0",
+  "repository": "github/gh-actions-lock",
+  "release_tag": "v0.2.0",
+  "release_id": 410936954,
+  "asset_id": 634768078,
+  "asset_name": "linux-amd64",
+  "download_url": "https://github.com/github/gh-actions-lock/releases/download/v0.2.0/linux-amd64",
+  "bytes": 11456696,
+  "sha256": "79ec84c191667fd935a277e6fd3662cf5d3669cccc9e99998731d8f306f373b6",
+  "identity_source": "https://api.github.com/repos/github/gh-actions-lock/releases/assets/634768078",
+  "qualified_on": "2026-11-04",
+  "qualification": "The release-asset API's published SHA256 matched an independent unauthenticated download before first execution. The release has no checksum-file asset; no attestation or source-reproducibility claim is made."
+}
