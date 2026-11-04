@@ -1,0 +1,1 @@
+{"cases":2000,"claim":"bounded JSON-shape robustness, not precision or complete schema validation","crashes":[],"outcomes":{"accepted":1010,"malformed":195,"violations":795},"seed":1371,"source":"proven-tests-and-benches/integrations/contract/test_adversarial_contract.py::test_bounded_json_shape_robustness"}

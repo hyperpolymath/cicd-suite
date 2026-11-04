@@ -52,17 +52,17 @@ fi
 failed=0
 incomplete=0
 run_scan() {
-  local rc=0
+  local rc=0 scanner=$1
   echo "Running: $*"
   timeout --kill-after=5 "${deadline}s" "$@" || rc=$?
   case "$rc" in
     0) ;;
     1) failed=1 ;;
-    2|124|125|126|127|13[0-9]|14[0-9])
+    2|12[4-9]|1[3-9][0-9]|2[0-5][0-9])
       incomplete=1
-      echo "::error::custom-tools-check: $1 incomplete or unavailable (exit $rc)." ;;
+      echo "::error::custom-tools-check: $scanner incomplete or unavailable (exit $rc)." ;;
     *) failed=1
-       echo "::error::custom-tools-check: $1 failed (exit $rc)." ;;
+       echo "::error::custom-tools-check: $scanner failed (exit $rc)." ;;
   esac
 }
 run_scan pons scan . --fail-on-skips --fail-on warn

@@ -101,8 +101,8 @@ run_check "$ROOT/actions/custom-tools-check/check.sh" "$FIX" "$STAND:$NOBIN"
 # Cross-product distinguishes refusal/crash from findings and runs both tools.
 echo "== custom-tools-check: exit-code cross-product =="
 FIX="$WORK/ct"
-for pons_rc in 0 1 2 124 127 137 139; do
-  for panic_rc in 0 1 2 124 127 137 139; do
+for pons_rc in 0 1 2 124 127 128 129 137 139 150 192 255; do
+  for panic_rc in 0 1 2 124 127 128 129 137 139 150 192 255; do
     mkstandin pons "$pons_rc"; mkstandin panic-attack "$panic_rc"
     run_check "$ROOT/actions/custom-tools-check/check.sh" "$FIX" "$STAND:$NOBIN"
     want=0; state=passed

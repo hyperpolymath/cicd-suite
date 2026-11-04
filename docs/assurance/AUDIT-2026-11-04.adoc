@@ -17,8 +17,8 @@ profile endpoints. Their absence from this report does not mean zero alerts.
 * Pons baseline: 250 Rust tests passed; zero ignored.
 * panic-attack baseline: 653 passed, three ignored. With signing/http/sarif:
   720 passed, three ignored. These overlapping runs are not additive coverage.
-* Shared scanner gate: 88 controls passed after repair. All 49 pairs of scanner
-  exits (0, 1, 2, 124, 127, 137, 139) checked with stand-ins; both scanners must
+* Shared scanner gate: 183 controls passed after repair. All 144 pairs of scanner
+  exits (0, 1, 2, 124, 127, 128, 129, 137, 139, 150, 192, 255) checked with stand-ins; both scanners must
   run even if the first refuses. A real sleeping process exercises the deadline.
   The original gate fails the stronger exit/argument controls; its hanging
   specimen also exceeded the independent 20-second test bound.
@@ -29,7 +29,7 @@ profile endpoints. Their absence from this report does not mean zero alerts.
   The published Bash driver uses a specified LCG and records input hashes; its
   samples differ from the initial Python experiment. The Python driver was
   replaced after hosted CI correctly rejected its language-policy violation.
-* Proven contract: existing 20 fixture cases pass; seven Python test methods
+* Proven contract: existing 20 fixture cases pass; nine Python test methods
   including malformed nested values, counters, contexts and CLI dispatch pass.
   New adversarial controls initially produced 19 assertion failures and 11
   errors, before repair. The benchmark-gate suite passed 18 controls.
@@ -146,3 +146,24 @@ must not rely on repository redirects. Before renaming: enumerate all estate
 caller/action/lock references, prepare admission-policy and Sonar updates,
 coordinate open PRs, preserve required check names, and verify a migrated canary.
 The current four-repository inventories are not an estate-wide consumer census.
+
+== Failed migration experiment and review follow-up
+
+Proven Tests `6c1c567` and panic-attack `6addd22` tested migrated Standards owner
+paths with the suite's lock deonboarding procedure. All six reusable lanes
+still startup-failed. Both repositories' own lock gates also rejected the
+changed boundary. These experimental changes were reverted; neither lock
+gate was weakened. Migration needs the consumer lock contract, callee lock
+state and repository Actions admission policy to agree.
+
+Review follow-up expanded scanner exit controls through 255 and clarified the
+Hexad property's in-memory scope. Additional malformed theorem/proposition
+and counter controls reproduced 11 failures in the Python validator before
+repair, with corresponding Rust changes. The 2,000-case seed-1371 shape
+experiment returned 795 violations, 195 malformed outcomes and 1,010 accepted
+mutations without unexpected exceptions. Optional-field mutations may remain
+valid; these numbers are not a precision or recall measurement.
+
+Feedback is routed to Hypatia#984, panic-attack#117 and proven#211. In particular,
+compiling a proof module does not validate arbitrary DISCHARGED prose markers
+or establish foreign-implementation correspondence.
