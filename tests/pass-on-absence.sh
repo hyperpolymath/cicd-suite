@@ -35,7 +35,7 @@ OUT="$WORK/out"
 
 # A PATH with bash/coreutils but provably none of the gate tools.
 NOBIN="$WORK/nobin"; mkdir -p "$NOBIN"
-for t in bash env tr find sort cat grep cp mktemp mkdir rm; do ln -sf "$(command -v "$t")" "$NOBIN/$t"; done
+for t in bash env tr find sort cat grep cp mktemp mkdir rm timeout sleep; do ln -sf "$(command -v "$t")" "$NOBIN/$t"; done
 
 run_check() { # <check.sh> <dir> <PATH> [env...]
   local script="$1" dir="$2" path="$3"; shift 3
@@ -74,7 +74,7 @@ mkstandin pons 0; mkstandin panic-attack 0
 run_check "$ROOT/actions/custom-tools-check/check.sh" "$FIX" "$STAND:$NOBIN"
 [ "$RC" -eq 0 ] && [ "$STATUS" = "passed" ] && ok "both ran clean: exits 0, status=passed" \
   || { bad "both ran clean: exits $RC status=$STATUS"; cat "$OUT"; }
-grep -q 'stand-in pons ran (scan .)' "$OUT" && grep -q 'stand-in panic-attack ran (assail .)' "$OUT" \
+grep -q 'stand-in pons ran (scan . --fail-on-skips --fail-on warn)' "$OUT" && grep -q 'stand-in panic-attack ran (assail . --fail-on-incomplete)' "$OUT" \
   && ok "both tools were actually invoked" || bad "stand-ins were not both invoked"
 
 echo "== custom-tools-check: only one tool absent is still not_run =="
@@ -97,6 +97,35 @@ echo "== custom-tools-check: a failing tool is exit 1, not 2 and not 0 =="
 mkstandin panic-attack 3
 run_check "$ROOT/actions/custom-tools-check/check.sh" "$FIX" "$STAND:$NOBIN"
 [ "$RC" -eq 1 ] && [ "$STATUS" = "failed" ] && ok "exits 1, status=failed" || bad "exits $RC status=$STATUS, expected 1/failed"
+
+# Cross-product distinguishes refusal/crash from findings and runs both tools.
+echo "== custom-tools-check: exit-code cross-product =="
+FIX="$WORK/ct"
+for pons_rc in 0 1 2 124 127 137 139; do
+  for panic_rc in 0 1 2 124 127 137 139; do
+    mkstandin pons "$pons_rc"; mkstandin panic-attack "$panic_rc"
+    run_check "$ROOT/actions/custom-tools-check/check.sh" "$FIX" "$STAND:$NOBIN"
+    want=0; state=passed
+    if (( pons_rc == 1 || panic_rc == 1 )); then want=1; state=failed; fi
+    if (( pons_rc >= 2 || panic_rc >= 2 )); then want=2; state=not_run; fi
+    if [[ "$RC" == "$want" && "$STATUS" == "$state" ]] &&
+       grep -q 'stand-in panic-attack ran (assail . --fail-on-incomplete)' "$OUT"; then
+      ok "scanner exits $pons_rc/$panic_rc: $want/$state; second tool ran"
+    else
+      bad "scanner exits $pons_rc/$panic_rc: got $RC/$STATUS, expected $want/$state"
+    fi
+  done
+done
+
+echo "== custom-tools-check: a hanging first tool is bounded; second tool still runs =="
+printf '#!/usr/bin/env bash\nsleep 30\n' > "$STAND/pons"
+mkstandin panic-attack 0
+run_check "$ROOT/actions/custom-tools-check/check.sh" "$WORK/ct" "$STAND:$NOBIN" CUSTOM_TOOLS_TIMEOUT_SECONDS=1
+if [[ "$RC" == 2 && "$STATUS" == not_run ]] && grep -q 'stand-in panic-attack ran' "$OUT"; then
+  ok "hang bounded and second scanner ran"
+else
+  bad "hang returned $RC/$STATUS or hid the second scanner"
+fi
 
 # --- contractile-validation-check ---------------------------------------------
 # Detection half only: the verdict belongs to the DEED validator step in
