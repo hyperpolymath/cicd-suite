@@ -1,0 +1,101 @@
+# SPDX-License-Identifier: MPL-2.0
+# Candidate generation only. This runner never commits or changes repository policy.
+name: Actions lock recovery candidate
+on:
+  push:
+    branches: [repair/actions-lock-recovery]
+  workflow_dispatch:
+    inputs:
+      repo:
+        description: Public repository to inspect (currently only hyperpolymath/hypatia)
+        type: string
+        required: true
+      sha:
+        description: Exact 40-hex subject commit; never a branch or tag
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: actions-lock-recovery-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  candidate:
+    name: Generate a reviewable lock candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Validate the bounded subject
+        id: subject
+        shell: bash
+        env:
+          REQUESTED_REPO: ${{ inputs.repo }}
+          REQUESTED_SHA: ${{ inputs.sha }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT" == push ]]; then
+            REQUESTED_REPO=hyperpolymath/hypatia
+            REQUESTED_SHA=936196794e0266715e7b1902893cdcbca64ef73a
+          fi
+          [[ "$REQUESTED_REPO" == hyperpolymath/hypatia ]] || { echo 'Repository is outside this recovery scope'; exit 2; }
+          [[ "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'An exact subject SHA is required'; exit 2; }
+          printf 'repository=%s\nsha=%s\n' "$REQUESTED_REPO" "$REQUESTED_SHA" >> "$GITHUB_OUTPUT"
+      - name: Check out this recovery implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: recovery-suite
+          persist-credentials: false
+      - name: Check out the canonical lock authority
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: metadatastician/standards
+          ref: d3e4b485a2af90c92a8e18af0888cd19cb132cd9
+          path: authority
+          sparse-checkout: scripts
+          persist-credentials: false
+      - name: Check out the immutable subject without running its code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ steps.subject.outputs.repository }}
+          ref: ${{ steps.subject.outputs.sha }}
+          path: subject
+          persist-credentials: false
+          submodules: false
+          lfs: false
+      - name: Install the official tool at the authority's pin
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if ! command -v gawk >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends gawk
+          fi
+          command -v yq
+          command -v jq
+          gh extension install github/gh-actions-lock --pin v0.2.0
+          gh actions-lock --version
+      - name: Run recovery boundary controls
+        run: bash recovery-suite/tests/actions-lock-recovery.sh
+      - name: Generate and verify the candidate using canonical policy
+        id: recovery
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SUBJECT_REPOSITORY: ${{ steps.subject.outputs.repository }}
+          SUBJECT_SHA: ${{ steps.subject.outputs.sha }}
+          SUBJECT_DIR: ${{ github.workspace }}/subject
+          AUTHORITY_DIR: ${{ github.workspace }}/authority
+          RECOVERY_OUTPUT: ${{ runner.temp }}/actions-lock-recovery
+        run: bash recovery-suite/scripts/generate-lock-recovery-candidate.sh
+      - name: Upload candidate or failure diagnostics
+        if: ${{ always() && steps.recovery.outcome != 'skipped' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: actions-lock-recovery-${{ steps.subject.outputs.sha }}
+          path: ${{ runner.temp }}/actions-lock-recovery/
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,67 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Actions lock recovery candidate runner
+
+This is a narrowly scoped maintenance runner, not a replacement governance
+gate. It creates a reviewable lock candidate for `hyperpolymath/hypatia` when
+an unreadable lock prevents that repository's own workflows from starting.
+It never commits, opens a pull request, changes Actions admission, changes a
+required check or alters a repository security setting.
+
+== Source and authority
+
+The first execution is limited to pushes on `repair/actions-lock-recovery`
+and subject commit `936196794e0266715e7b1902893cdcbca64ef73a`. Manual dispatch
+requires the exact repository and a full 40-hex commit. Repository scope is
+still only `hyperpolymath/hypatia`; branches and tags are refused. Subject
+code is checked out for inspection and is never executed.
+
+Policy remains in
+https://github.com/metadatastician/standards/tree/d3e4b485a2af90c92a8e18af0888cd19cb132cd9/scripts[the pinned standards scripts].
+The runner invokes their `regen_lock` function with official
+`github/gh-actions-lock` at `v0.2.0`, exactly the authority's tool pin. It does
+not call the authority's main loop, App applier, branch creation or commit
+functions. The only GitHub token has `contents: read`.
+
+The canonical order remains: official generation, restore original source
+and workflow bytes, `relock-sha-keys`, `complete-job-refs`, `close-lock` using
+the original prior, `prune-stale`, `update-actions-lock --verify-local`, and
+`check-lock-sync`. The runner sources that implementation instead of copying
+its policy or inventing its own lock entries.
+
+== Unreadable input
+
+https://github.com/github/gh-actions-lock/blob/v0.2.0/cmd/gh-actions-lock/lockrecovery.go[The official tool's recovery policy]
+instructs a CI session to delete unreadable input and recreate it. The adapter
+performs that operation only when the pinned tool returns its exact
+unreadable-input diagnostic and exit 2, an independent offline parser reports
+the same structural failure, the original digest remains unchanged, and the
+disposable checkout remains clean. Network, authentication and unexpected
+mutation failures do not trigger this operation.
+
+The original bytes remain in the artifact and in the canonical function's
+`--prior` snapshot. Only the disposable checkout's unreadable lock is removed;
+the official generator creates its replacement. No dependency record is
+hand-edited, no moved pin is implicitly waived, and failed closure or coverage
+verification produces no candidate.
+
+== Reading the artifact
+
+A successful run uploads `original-actions.lock`, `candidate-actions.lock`,
+`candidate.patch`, `receipt.json`, `SHA256SUMS` and diagnostic logs. The
+receipt records the exact subject and authority commits, official tool
+version, both lock digests, and the fact that every original workflow/source
+byte was preserved. The only changed path may be
+`.github/workflows/actions.lock`. A zero-change result is not reported as a
+repair. On failure, candidate files are removed and the job remains failing;
+the receipt and diagnostics explain the attempted operation.
+
+The candidate is not evidence that the submitted target repository already
+passes. Before applying it, verify its checksums and that the target head
+still equals the receipt's subject SHA. Use the existing authorised commit
+path, then require the target's actual startup and canonical governance
+checks on that new head. A moved subject requires a fresh candidate.
+
+The local boundary controls use a stand-in command only to prove that
+unreadable input is distinguishable from authentication, mutation and digest
+failures. They do not count as execution of the real official generator;
+that separate result comes from the hosted candidate step.

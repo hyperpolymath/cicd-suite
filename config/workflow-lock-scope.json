@@ -2,6 +2,11 @@
   "schema_version": 1,
   "workflows": [
     {
+      "path": ".github/workflows/actions-lock-recovery.yml",
+      "mode": "immutable",
+      "reason": "Bounded read-only recovery runner; full-SHA official actions, candidate artifacts only, no target writeback or policy changes."
+    },
+    {
       "path": ".github/workflows/code-hygiene-self-test.yml",
       "mode": "managed",
       "reason": "Existing actions.lock onboarding; preserve direct and declared composite closure."
