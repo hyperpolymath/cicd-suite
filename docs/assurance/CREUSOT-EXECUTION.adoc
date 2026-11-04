@@ -30,6 +30,10 @@ stale observations, empty target sets and inconsistent wrappers cannot pass.
 An executed nonzero caller command is `PolicyStepFailed`; its exit alone does
 not distinguish a translation/dependency/solver problem from an unproved goal.
 Only completed commands after both controls pass can produce `Verified`.
+The positive control and each successful caller invocation must also report
+Creusot v0.14's nonzero `Proved (N files)` denominator. Exit zero with no report
+or zero proved files remains unavailable and blocks the gate; source attributes
+alone cannot supply a proof-work denominator.
 An inapplicable scan says `NotApplicable`, without printing a proof-success
 claim. The required check still blocks whenever obligations exist and their
 execution is missing or incomplete.
@@ -69,17 +73,48 @@ compiler overrides, arbitrary Why3find arguments and Cargo passthrough are
 refused before caller execution. Controls show that the oracle can return both
 outcomes; they cannot establish coverage of obligations removed by those flags.
 
-The crate list is still discovered by the existing source/manifest scanner.
-This repair does not prove that its text matching captures Rust configuration,
-macro expansion or every active contract. `Verified` describes the scoped
+== Rust source admission
+
+The gate compiles its source reader from the pinned gate checkout and Cargo
+lockfile, using `syn` 2.0.119. Rust parsing binds supported `requires`/`ensures`
+attributes to functions and methods. Comments, doc examples, string literals
+and tokens inside unexpanded macros cannot supply a contract or trusted axiom.
+Qualified multiline attributes such as
+`#[cfg_attr(creusot, creusot_std::macros::ensures(...))]` are supported.
+The reader evaluates `creusot`, `test`, `not`, `all` and `any`, propagating
+conditions through every attributed node of the pinned syntax tree, including
+constant/static initializers, foreign blocks, local bindings and expressions.
+A proof declaration whose feature
+or target condition remains unknown is unavailable; it is never guessed active.
+Malformed Rust, unbound contract/trusted attributes and unavailable build tools
+also fail inspection. Facts are emitted only after every selected source file
+has been parsed, so a later failure cannot leave a partial count as evidence.
+
+This is bounded syntax admission, not a second Rust compiler. It does not
+expand macros, resolve cross-file module reachability, or prove that every
+source declaration contributes an obligation. Cargo manifests still select
+the crate list; the real compiler and prover determine executable obligations.
+The nonzero runtime denominator prevents a collection of source declarations
+with no proof work from becoming `Verified`. That result describes the scoped
 commands that ran; no repository-wide implementation proof is asserted.
+
+On IDApTIK's actual `crates/idaptik-kernel` source, the old textual detector
+reported zero contracts and three trusted occurrences, including prose. The
+reader reports 18 conditional function contracts and two trusted declarations
+(`src/rng.rs:78` and `src/trace.rs:114`), with enforcing hollow admission enabled.
+These are source facts, not a substitute for the separate actual Creusot run.
 
 == Validation and rollout
 
 Local orchestration tests use real Cargo dispatch with an explicitly labelled
-stand-in verifier: 78 gate assertions and 52 verdict cases. They test missing
+stand-in verifier: 88 gate assertions and 53 verdict cases, alongside six Rust
+source-reader tests, formatting and warning-free Clippy. They test missing
 setup, invalid controls, zero selected crates, stale revisions, omitted work,
-cancelled execution and conflicting outcomes. They are not Creusot proof runs.
+cancelled execution, conflicting outcomes, conditional attributes, comment and
+string lookalikes, unavailable source facts, and zero-work proof reports.
+The enclosing-scope regression exercises eleven item/expression shapes with
+active, inactive and unresolved conditions (33 observations).
+They are not Creusot proof runs.
 
 Before merging or propagating a changed gate, follow `GOVERNANCE.adoc`: obtain
 before/after results on at least two real repositories, with this exact gate

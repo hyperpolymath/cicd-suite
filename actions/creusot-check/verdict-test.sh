@@ -20,7 +20,7 @@ case_verdict() { # <label> <exit> <class> [overrides...]
     CONTROLS_PASSED=true PROOF_STARTED=true PROOF_COMPLETED=true \
     CRATES_EXPECTED=2 CRATES_ATTEMPTED=2 CRATES_COMPLETED=2 PROOF_EXIT_CODE=0 \
     "$@" bash --noprofile --norc -e -o pipefail "$here/verdict.sh" > "$work/log" 2>&1 || rc=$?
-  if [ "$rc" -ne "$want" ] || ! grep -qx "execution_class=$class" "$work/output"; then
+  if [[ "$rc" -ne "$want" ]] || ! grep -qx "execution_class=$class" "$work/output"; then
     printf 'FAIL: %s (exit %s, expected %s/%s)\n' "$label" "$rc" "$want" "$class" >&2
     cat "$work/log" "$work/output" >&2
     exit 1
@@ -54,6 +54,8 @@ case_verdict 'oracle failure is not a caller finding' 2 Unclassified \
   EXECUTION_OUTCOME=failed PROOF_STARTED=false PROOF_COMPLETED=false PROOF_EXIT_CODE=2
 case_verdict 'actual failed command stays red without guessing why' 1 PolicyStepFailed \
   R_PROVE=failure PROOF_STEP_OUTCOME=failure EXECUTION_OUTCOME=failed PROOF_EXIT_CODE=1
+case_verdict 'zero-work caller report cannot become a verified result' 2 Unclassified \
+  R_PROVE=failure PROOF_STEP_OUTCOME=failure EXECUTION_OUTCOME=unavailable PROOF_EXIT_CODE=2
 
 for field in SOURCE_REVISION SUITE_REVISION EXPECTED_SOURCE_REVISION EXPECTED_SUITE_REVISION; do
   case_verdict "absent $field" 2 Unclassified "$field="

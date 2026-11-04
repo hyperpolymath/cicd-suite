@@ -21,21 +21,23 @@
 #   CREUSOT_GATE_PHASE=theatre   (the anti-theatre tier, mirrors
 #                                 standards' SPARK Theatre Gate T1/T2)
 #       T1  a claim with no obligations behind it: hard failure, always.
-#       T2  a Creusot dependency with ZERO contract attributes anywhere: a
-#           hollow dependency proves nothing. Warning by default; a hard
-#           failure when ENFORCE_HOLLOW=true.
-#       T3  every `#[trusted]` is printed. `trusted` is an axiom the prover
-#           takes on faith; the gate never fails on it, but it never lets one
-#           pass unlisted either (the residue list of the proof).
+#       T2  a Creusot dependency without a supported function-bound contract:
+#           warning by default; a hard failure when ENFORCE_HOLLOW=true.
+#       T3  every supported source `#[trusted]` declaration is printed.
+#           `trusted` is an axiom the prover takes on faith. Source inspection
+#           is bounded; macro expansion and module reachability remain compiler
+#           responsibilities, not a claimed complete proof-residue ledger.
 #
 #   CREUSOT_GATE_PHASE=prove
 #       Requires `cargo creusot` on PATH (the workflow installs it, pinned).
 #       FIRST proves a planted known-failing contract and REQUIRES a non-zero
-#       exit; then a planted known-good one and requires zero. A prover that
+#       exit; then a planted known-good one and requires zero plus a nonzero
+#       proved-file denominator. A prover that
 #       cannot say no is not a prover, and the verdict over the caller's
 #       crate would be VOID — so the gate refuses (exit 2) rather than report
 #       green. Only then does it run `cargo creusot` in every crate
-#       directory that carries obligations, failing on any non-zero exit.
+#       directory that carries obligations, failing on any non-zero exit or
+#       missing/zero proved-file report.
 #
 # Exit codes: 0 silent, 1 defect found, 2 NO CHECK WAS PERFORMED (tool
 # missing, planted control misbehaved, unreadable tree). 2 is never a pass.
@@ -47,11 +49,13 @@
 set -uo pipefail
 
 phase="${CREUSOT_GATE_PHASE:?CREUSOT_GATE_PHASE is required: detect|theatre|prove}"
+reader_manifest="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/source-facts/Cargo.toml"
 dir="${WORKING_DIRECTORY:-.}"
 enforce_hollow="${ENFORCE_HOLLOW:-false}"
 prove_args="${PROVE_ARGS:-}"
 facts_dir="${CREUSOT_FACTS:-${RUNNER_TEMP:-/tmp}/creusot-facts}"
 mkdir -p "$facts_dir"
+facts_dir="$(cd "$facts_dir" && pwd)"
 
 # These are observations of this invocation, not an authenticated proof
 # certificate. The workflow also checks the actual step/job conclusions.
@@ -67,7 +71,7 @@ crates_completed=0
 source_revision=""
 record_execution() {
   local rc=$?
-  if [ "$phase" = prove ] && [ -n "${GITHUB_OUTPUT:-}" ]; then
+  if [[ "$phase" = prove ]] && [[ -n "${GITHUB_OUTPUT:-}" ]]; then
     # Fixed keys and validated scalar values only. In particular, no compiler
     # output is allowed to write additional GitHub Actions output records.
     [[ "$source_revision" =~ ^[0-9a-f]{40}$ ]] || source_revision=""
@@ -103,30 +107,46 @@ manifests="$(list_files '(^|/)Cargo\.toml$')"
 obligation_manifests=""
 creusot_version=""
 while IFS= read -r m; do
-  [ -n "$m" ] || continue
+  [[ -n "$m" ]] || continue
   # A dependency line for the proof library, under any dependency table.
   if grep -qE '^[[:space:]]*(creusot-std|creusot-contracts)[[:space:]]*=' "$m" \
      || grep -qE '^[[:space:]]*\[(workspace\.)?dependencies\.(creusot-std|creusot-contracts)\]' "$m"; then
     obligation_manifests="${obligation_manifests}${m}"$'\n'
-    if [ -z "$creusot_version" ]; then
+    if [[ -z "$creusot_version" ]]; then
       creusot_version="$(sed -nE 's/^[[:space:]]*(creusot-std|creusot-contracts)[[:space:]]*=[[:space:]]*(\{[^}]*version[[:space:]]*=[[:space:]]*)?"([^"]+)".*$/\3/p' "$m" | head -n 1 || true)"
     fi
   fi
 done <<< "$manifests"
 
-contract_re='#\[(requires|ensures|invariant|variant|logic|law|open|predicate|terminates|pure|trusted)(\(|\])|proof_assert!|#\[creusot::'
 rust_sources="$(list_files '\.rs$')"
 contract_files=""
 contract_count=0
 trusted_count=0
-if [ -n "$rust_sources" ]; then
-  contract_files="$(printf '%s\n' "$rust_sources" | xargs -r grep -lE "$contract_re" 2>/dev/null || true)"
-  contract_count="$({ printf '%s\n' "$rust_sources" | xargs -r grep -cE '#\[(requires|ensures)\(' 2>/dev/null || true; } | awk -F: '{s+=$NF} END {print s+0}')"
-  trusted_count="$({ printf '%s\n' "$rust_sources" | xargs -r grep -cE '#\[trusted\]' 2>/dev/null || true; } | awk -F: '{s+=$NF} END {print s+0}')"
+if [[ -n "$rust_sources" ]]; then
+  # Parse Rust attributes on function nodes instead of counting prose, string
+  # literals or tokens quoted inside macros. Build from the pinned gate source
+  # and Cargo.lock, outside the caller cwd so its Cargo config is not selected.
+  command -v cargo >/dev/null 2>&1 || {
+    echo "::error::creusot-check[$phase]: Cargo is required for the pinned Rust source reader. NO CHECK WAS PERFORMED." >&2
+    exit 2
+  }
+  if ! (cd "${RUNNER_TEMP:-/tmp}" && cargo build --quiet --locked \
+        --manifest-path "$reader_manifest" --target-dir "$facts_dir/source-target"); then
+    echo "::error::creusot-check[$phase]: the pinned Rust source reader could not be built. NO CHECK WAS PERFORMED." >&2
+    exit 2
+  fi
+  mapfile -t source_files <<< "$rust_sources"
+  if ! "$facts_dir/source-target/debug/creusot-source-facts" "${source_files[@]}" > "$facts_dir/source-facts.tsv"; then
+    echo "::error::creusot-check[$phase]: Rust source facts are unavailable. NO CHECK WAS PERFORMED." >&2
+    exit 2
+  fi
+  contract_files="$(cut -f2 "$facts_dir/source-facts.tsv" | sort -u)"
+  contract_count="$(awk -F '\t' '$1 == "contract" { count++ } END { print count+0 }' "$facts_dir/source-facts.tsv")"
+  trusted_count="$(awk -F '\t' '$1 == "trusted" { count++ } END { print count+0 }' "$facts_dir/source-facts.tsv")"
 fi
 
 obligations=false
-if [ -n "$obligation_manifests" ] || [ -n "$contract_files" ]; then obligations=true; fi
+if [[ -n "$obligation_manifests" ]] || [[ -n "$contract_files" ]]; then obligations=true; fi
 
 # A claim is a sentence in prose or a source HEADER that asserts the proof
 # exists. Scoped to README*/docs/** and to the leading comment block of a
@@ -139,15 +159,15 @@ plan_re='(planned|proposal|proposed|roadmap|not yet|would|future|todo|intend)'
 claim_sites=""
 prose="$(list_files '(^|/)(README[^/]*|[^/]*\.(adoc|md))$' | grep -vE '^(\.cicd-suite|target)/' || true)"
 while IFS= read -r f; do
-  [ -n "$f" ] || continue
+  [[ -n "$f" ]] || continue
   while IFS= read -r hit; do
-    [ -n "$hit" ] || continue
+    [[ -n "$hit" ]] || continue
     printf '%s' "$hit" | grep -qiE "$plan_re" && continue
     claim_sites="${claim_sites}${f}:${hit%%:*}"$'\n'
   done < <(grep -niE "$claim_re" "$f" 2>/dev/null || true)
 done <<< "$prose"
 while IFS= read -r f; do
-  [ -n "$f" ] || continue
+  [[ -n "$f" ]] || continue
   header="$(awk '/^[[:space:]]*(\/\/|\/\*|\*)/ || /^[[:space:]]*$/ { print; next } { exit }' "$f")"
   if printf '%s\n' "$header" | grep -qiE "$claim_re" \
      && ! printf '%s\n' "$header" | grep -qiE "$plan_re"; then
@@ -155,7 +175,7 @@ while IFS= read -r f; do
   fi
 done <<< "$rust_sources"
 claims=false
-[ -n "$claim_sites" ] && claims=true
+[[ -n "$claim_sites" ]] && claims=true
 
 crate_dirs="$(printf '%s' "$obligation_manifests" | sed -E 's#(^|/)Cargo\.toml$##; s#^$#.#' | sort -u)"
 printf '%s\n' "$crate_dirs" | sed '/^$/d' > "$facts_dir/crates"
@@ -174,35 +194,35 @@ case "$phase" in
 
   theatre)
     fail=0
-    if [ "$claims" = true ] && [ "$obligations" = false ]; then
+    if [[ "$claims" = true ]] && [[ "$obligations" = false ]]; then
       while IFS= read -r site; do
-        [ -n "$site" ] || continue
+        [[ -n "$site" ]] || continue
         echo "::error file=${site%%:*},line=${site##*:}::T1 Creusot theatre: this says the code is verified with Creusot, but no crate depends on creusot-std and no #[requires]/#[ensures] exists. Add the contracts and the dependency, or remove the claim (standards#692: Rust + Creusot, without proof theatre)."
       done <<< "$claim_sites"
       fail=1
     fi
-    if [ "$obligations" = true ] && [ "$contract_count" -eq 0 ]; then
-      msg="T2 hollow Creusot dependency: creusot-std/creusot-contracts is a dependency but no #[requires]/#[ensures] appears in any tracked .rs file, so 'cargo creusot' would discharge nothing. Write a contract on at least one function, or drop the dependency."
-      if [ "$enforce_hollow" = true ]; then
+    if [[ "$obligations" = true ]] && [[ "$contract_count" -eq 0 ]]; then
+      msg="T2 hollow Creusot dependency: no supported requires/ensures attribute is bound to a function in the tracked Rust source. Add a real contract or inspect unsupported macro/configuration forms; no proof coverage is established by a dependency alone."
+      if [[ "$enforce_hollow" = true ]]; then
         echo "::error::$msg"; fail=1
       else
         echo "::warning::$msg (escalates to a failure with enforce_hollow: true)"
       fi
     fi
-    if [ "$trusted_count" -gt 0 ]; then
-      echo "::notice::T3 residue: $trusted_count #[trusted] item(s) are taken as axioms by the prover. They are listed below; a proof is only as strong as its trusted set."
-      printf '%s\n' "$rust_sources" | xargs -r grep -nE '#\[trusted\]' 2>/dev/null | sed 's/^/  trusted: /' || true
+    if [[ "$trusted_count" -gt 0 ]]; then
+      echo "::notice::T3 residue: $trusted_count #[trusted] function declaration(s) found in the inspected source. These are assumptions, not discharged obligations; macro expansion and module reachability still belong to the compiler."
+      awk -F '\t' '$1 == "trusted" { printf "  trusted: %s:%s\n", $2, $3 }' "$facts_dir/source-facts.tsv"
     fi
-    if [ "$obligations" = false ] && [ "$claims" = false ]; then
+    if [[ "$obligations" = false ]] && [[ "$claims" = false ]]; then
       echo "::notice::creusot-check: no Creusot obligations and no verification claims in this tree. Nothing was proved and nothing claims to be — this gate is silent, not green-as-assurance."
     fi
-    [ "$fail" -eq 0 ] || { echo "::error::creusot-check[theatre]: FAILED — see annotations."; exit 1; }
+    [[ "$fail" -eq 0 ]] || { echo "::error::creusot-check[theatre]: FAILED — see annotations."; exit 1; }
     echo "creusot-check[theatre]: no theatre found (obligations=$obligations claims=$claims contracts=$contract_count trusted=$trusted_count)."
     exit 0
     ;;
 
   prove)
-    if [ "$obligations" = false ]; then
+    if [[ "$obligations" = false ]]; then
       echo "::error::creusot-check[prove]: no Creusot obligations in this tree — NO PROOF WAS PERFORMED. The prove job must only run when detect reported obligations=true." >&2
       exit 2
     fi
@@ -252,7 +272,7 @@ case "$phase" in
     source_root="$(cd "$source_root" && pwd -P)" || exit 2
     : > "$facts_dir/proof-plan"
     while IFS= read -r crate; do
-      [ -n "$crate" ] || continue
+      [[ -n "$crate" ]] || continue
       manifest_path="$(realpath -e -- "$crate/Cargo.toml")" || exit 2
       case "$manifest_path" in
         "$source_root"/*) ;;
@@ -272,7 +292,7 @@ case "$phase" in
         # A virtual workspace can declare creusot-std for its members, but is
         # not itself an executable package. Member manifests are selected by
         # the same detector; zero actual packages below remains unavailable.
-        if [ "$manifest_path" = "$workspace_root/Cargo.toml" ]; then
+        if [[ "$manifest_path" = "$workspace_root/Cargo.toml" ]]; then
           continue
         fi
         echo "::error file=$crate/Cargo.toml::creusot-check[prove]: no unique package matches the selected manifest. NO PROOF WAS PERFORMED." >&2
@@ -282,7 +302,7 @@ case "$phase" in
         echo "::error::creusot-check[prove]: unsupported package or manifest path. NO PROOF WAS PERFORMED." >&2
         exit 2
       fi
-      if [ ! -s "$workspace_root/why3find.json" ]; then
+      if [[ ! -s "$workspace_root/why3find.json" ]]; then
         echo "::error file=$workspace_root/why3find.json::creusot-check[prove]: missing Cargo workspace Why3find configuration. NO PROOF WAS PERFORMED." >&2
         exit 2
       fi
@@ -300,7 +320,7 @@ case "$phase" in
     done < "$facts_dir/crates"
     # Source-level attributes alone do not identify an executable Cargo target.
     # An empty crate list must not execute zero commands and still pass.
-    if [ "$crates_expected" -eq 0 ]; then
+    if [[ "$crates_expected" -eq 0 ]]; then
       echo "::error::creusot-check[prove]: obligations were detected but no Cargo package was selected. NO PROOF WAS PERFORMED." >&2
       exit 2
     fi
@@ -325,7 +345,7 @@ TOML
       printf '%s\n' "$2" > "$ctl/$1/src/lib.rs"
       # v0.14 init copies the installed Why3find configuration into this
       # private control crate. Never initialise or rewrite the caller's tree.
-      if ! (cd "$ctl/$1" && cargo creusot init "$1") || [ ! -s "$ctl/$1/why3find.json" ]; then
+      if ! (cd "$ctl/$1" && cargo creusot init "$1") || [[ ! -s "$ctl/$1/why3find.json" ]]; then
         echo "::error::creusot-check[prove]: control initialisation did not supply why3find.json. NO PROOF WAS PERFORMED." >&2
         rm -rf "$ctl"; exit 2
       fi
@@ -345,9 +365,16 @@ pub fn planted_must_pass() -> u32 { 2 }'
     echo "::endgroup::"
     echo "planted control: false contract refused — the oracle can say no."
     echo "::group::planted control: a true postcondition must prove"
-    if ! (cd "$ctl/creusot-control-passing" && cargo creusot "${prove_options[@]}"); then
+    if ! (cd "$ctl/creusot-control-passing" && cargo creusot "${prove_options[@]}") > "$facts_dir/positive-control.log" 2>&1; then
       echo "::endgroup::"
+      cat "$facts_dir/positive-control.log"
       echo "::error::creusot-check[prove]: the planted TRUE contract did not prove. The toolchain is broken (solver or prelude), so a red on the caller's crate would be misattributed. NO PROOF WAS PERFORMED." >&2
+      rm -rf "$ctl"; exit 2
+    fi
+    cat "$facts_dir/positive-control.log"
+    if ! grep -qE '^Proved \([1-9][0-9]* files\)' "$facts_dir/positive-control.log"; then
+      echo "::endgroup::"
+      echo "::error::creusot-check[prove]: the positive control reported no nonzero proved-file denominator. NO CALLER PROOF WAS PERFORMED." >&2
       rm -rf "$ctl"; exit 2
     fi
     echo "::endgroup::"
@@ -359,16 +386,25 @@ pub fn planted_must_pass() -> u32 { 2 }'
     execution_stage=substantive
     execution_outcome=unavailable
     fail=0
+    unavailable=0
     while IFS=$'\t' read -r crate package; do
-      [ -n "$crate" ] || continue
+      [[ -n "$crate" ]] || continue
       echo "::group::cargo creusot — $crate (package $package)"
       proof_started=true
       crates_attempted=$((crates_attempted + 1))
-      if (cd "$crate" && cargo creusot -p "$package" "${prove_options[@]}"); then
+      proof_log="$facts_dir/caller-$crates_attempted.log"
+      if (cd "$crate" && cargo creusot -p "$package" "${prove_options[@]}") > "$proof_log" 2>&1; then
+        cat "$proof_log"
         echo "::endgroup::"
-        echo "ok: $crate — cargo creusot completed successfully"
+        if grep -qE '^Proved \([1-9][0-9]* files\)' "$proof_log"; then
+          echo "ok: $crate — cargo creusot completed with a nonzero proved-file denominator"
+        else
+          echo "::error file=$crate/Cargo.toml::creusot-check[prove]: the command exited zero but reported no nonzero proved-file denominator; proof coverage is unavailable."
+          unavailable=1
+        fi
       else
         rc=$?
+        cat "$proof_log"
         echo "::endgroup::"
         echo "::error file=$crate/Cargo.toml::creusot-check[prove]: 'cargo creusot' exited $rc in $crate. The policy step ran; inspect its report to distinguish translation, dependency, solver and obligation failures. This exit alone does not show that a contract is false."
         fail=1
@@ -377,7 +413,9 @@ pub fn planted_must_pass() -> u32 { 2 }'
     done < "$facts_dir/proof-plan"
     proof_completed=true
     execution_outcome=failed
-    [ "$fail" -eq 0 ] || exit 1
+    [[ "$fail" -eq 0 ]] || exit 1
+    execution_outcome=unavailable
+    [[ "$unavailable" -eq 0 ]] || exit 2
     execution_outcome=passed
     echo "creusot-check[prove]: controls passed and all $crates_completed selected crate commands completed successfully (source-detected trusted axioms: $trusted_count)."
     exit 0
