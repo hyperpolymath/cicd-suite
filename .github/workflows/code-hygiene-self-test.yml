@@ -104,6 +104,11 @@
           run: "bash tests/pass-on-absence.sh",
         },
         {
+          # Exercise both exact suite names, stale pins, missing history and
+          # nonempty populations before checking the real imported source.
+          run: "bash tests/lock-self-source-controls.sh",
+        },
+        {
           run: "bash tests/lock-transitive-closure.sh",
         },
         {
