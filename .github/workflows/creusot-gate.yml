@@ -311,7 +311,7 @@ jobs:
           EXPECTED_REPOSITORY: ${{ steps.suite.outputs.repository }}
         run: bash .cicd-suite/scripts/verify-suite-checkout.sh
       - name: Install the nightly Creusot ${{ inputs.creusot_version }} is built against
-        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master 2026-08-04 (v1)
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master 2026-08-04 (v1)
         with:
           toolchain: ${{ inputs.rust_nightly }}
           components: rustfmt, rustc-dev, llvm-tools
