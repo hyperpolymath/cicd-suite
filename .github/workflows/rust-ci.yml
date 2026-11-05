@@ -342,7 +342,7 @@ jobs:
         with:
           version: ${{ inputs.zig_version }}
       - name: Cache cargo registry and build
-        uses: swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        uses: swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: ${{ inputs.working_directory }}
       - name: cargo check, cargo fmt --check, cargo clippy -D warnings (all --locked)
@@ -433,7 +433,7 @@ jobs:
         with:
           version: ${{ inputs.zig_version }}
       - name: Cache cargo registry and build
-        uses: swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        uses: swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: ${{ inputs.working_directory }}
       - name: cargo test (all targets) and cargo test --doc, --locked
@@ -524,7 +524,7 @@ jobs:
         with:
           version: ${{ inputs.zig_version }}
       - name: Cache cargo registry and build
-        uses: swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        uses: swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: ${{ inputs.working_directory }}
       - name: cargo doc --no-deps --document-private-items, RUSTDOCFLAGS -D warnings
@@ -613,7 +613,7 @@ jobs:
         with:
           version: ${{ inputs.zig_version }}
       - name: Cache cargo registry and build
-        uses: swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        uses: swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           workspaces: ${{ inputs.working_directory }}
           key: msrv-${{ needs.detect.outputs.msrv }}
