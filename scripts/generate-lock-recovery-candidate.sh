@@ -10,7 +10,7 @@ output=${RECOVERY_OUTPUT:?}
 authority_sha=d3e4b485a2af90c92a8e18af0888cd19cb132cd9
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 case "$repository" in
-  hyperpolymath/hypatia|hyperpolymath/boj-server-cartridges|hyperpolymath/echidna) ;;
+  hyperpolymath/hypatia|hyperpolymath/boj-server-cartridges|hyperpolymath/echidna|hyperpolymath/cicd-squabbler|hyperpolymath/panic-attack) ;;
   *) echo 'Recovery subject is outside the admitted repository scope'; exit 2 ;;
 esac
 [[ "$revision" =~ ^[0-9a-f]{40}$ ]] \

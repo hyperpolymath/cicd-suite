@@ -2,13 +2,16 @@
 = Actions lock recovery candidate runner
 
 This is a narrowly scoped maintenance runner, not a replacement governance
-gate. It creates a reviewable lock candidate for the three explicitly admitted
-repositories: `hyperpolymath/hypatia`, `hyperpolymath/boj-server-cartridges`
-and `hyperpolymath/echidna`. The initial Hypatia use addresses an
+gate. It creates a reviewable lock candidate for the five explicitly admitted
+repositories: `hyperpolymath/hypatia`, `hyperpolymath/boj-server-cartridges`,
+`hyperpolymath/echidna`, `hyperpolymath/cicd-squabbler` and
+`hyperpolymath/panic-attack`.
+The initial Hypatia use addresses an
 unreadable lock that prevents its own workflows from starting. BoJ uses the
 same canonical generation chain to reconcile its reviewed wrapper changes
 and existing dependency drift.
-Echidna uses the same chain for its reviewed reusable-workflow pin changes.
+Echidna, CI/CD Squabbler and panic-attack use the same chain for their reviewed
+reusable-workflow pin changes.
 Candidate generation runs outside the target so a lock-dependent startup
 failure cannot prevent inspection.
 It never commits, opens a pull request, changes Actions admission, changes a
@@ -18,7 +21,7 @@ required check or alters a repository security setting.
 
 The first execution is limited to pushes on `repair/actions-lock-recovery`
 and subject commit `936196794e0266715e7b1902893cdcbca64ef73a`. Manual dispatch
-requires one of those three repository choices and a full 40-hex commit.
+requires one of those five repository choices and a full 40-hex commit.
 The push subject and default choice remain Hypatia; branches, tags, other
 repositories and similarly named slugs are refused by both the workflow and
 the generator. Subject code is checked out for inspection and is never executed.
