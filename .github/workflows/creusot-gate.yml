@@ -54,7 +54,7 @@ on:
         required: false
         default: false
       prove_args:
-        description: Extra arguments for `cargo creusot`
+        description: 'Scope-preserving options only: --no-cache, --why3session, -j N (positive decimal)'
         type: string
         required: false
         default: ""
@@ -77,6 +77,7 @@ jobs:
     permissions:
       contents: read
     outputs:
+      suite_sha: ${{ steps.suite.outputs.sha }}
       obligations: ${{ steps.facts.outputs.obligations }}
       claims: ${{ steps.facts.outputs.claims }}
       creusot_version: ${{ steps.facts.outputs.creusot_version }}
@@ -235,6 +236,19 @@ jobs:
       contents: read
     env:
       CREUSOT_VERSION: ${{ inputs.creusot_version }}
+    outputs:
+      proof_step_outcome: ${{ steps.proof.outcome }}
+      execution_stage: ${{ steps.proof.outputs.execution_stage }}
+      execution_outcome: ${{ steps.proof.outputs.execution_outcome }}
+      controls_passed: ${{ steps.proof.outputs.controls_passed }}
+      proof_started: ${{ steps.proof.outputs.proof_started }}
+      proof_completed: ${{ steps.proof.outputs.proof_completed }}
+      crates_expected: ${{ steps.proof.outputs.crates_expected }}
+      crates_attempted: ${{ steps.proof.outputs.crates_attempted }}
+      crates_completed: ${{ steps.proof.outputs.crates_completed }}
+      source_revision: ${{ steps.proof.outputs.source_revision }}
+      suite_revision: ${{ steps.proof.outputs.suite_revision }}
+      proof_exit_code: ${{ steps.proof.outputs.proof_exit_code }}
     steps:
       - name: Check out the calling repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -337,8 +351,10 @@ jobs:
           cargo creusot --help >/dev/null
           cargo creusot version
       - name: Planted controls, then every crate with obligations
+        id: proof
         env:
           CREUSOT_GATE_PHASE: prove
+          CREUSOT_SUITE_REVISION: ${{ steps.suite.outputs.sha }}
           WORKING_DIRECTORY: ${{ inputs.working_directory }}
           PROVE_ARGS: ${{ inputs.prove_args }}
         run: bash .cicd-suite/actions/creusot-check/check.sh
@@ -358,23 +374,38 @@ jobs:
       R_DETECT: ${{ needs.detect.result }}
       R_THEATRE: ${{ needs.theatre.result }}
       R_PROVE: ${{ needs.prove.result }}
+      PROOF_STEP_OUTCOME: ${{ needs.prove.outputs.proof_step_outcome }}
+      EXECUTION_STAGE: ${{ needs.prove.outputs.execution_stage }}
+      EXECUTION_OUTCOME: ${{ needs.prove.outputs.execution_outcome }}
+      CONTROLS_PASSED: ${{ needs.prove.outputs.controls_passed }}
+      PROOF_STARTED: ${{ needs.prove.outputs.proof_started }}
+      PROOF_COMPLETED: ${{ needs.prove.outputs.proof_completed }}
+      CRATES_EXPECTED: ${{ needs.prove.outputs.crates_expected }}
+      CRATES_ATTEMPTED: ${{ needs.prove.outputs.crates_attempted }}
+      CRATES_COMPLETED: ${{ needs.prove.outputs.crates_completed }}
+      SOURCE_REVISION: ${{ needs.prove.outputs.source_revision }}
+      SUITE_REVISION: ${{ needs.prove.outputs.suite_revision }}
+      PROOF_EXIT_CODE: ${{ needs.prove.outputs.proof_exit_code }}
+      EXPECTED_SOURCE_REVISION: ${{ github.sha }}
+      EXPECTED_SUITE_REVISION: ${{ needs.detect.outputs.suite_sha }}
     steps:
-      - name: Adjudicate
+      - name: Require a resolved gate before reading its execution evidence
         run: |
           set -euo pipefail
-          fail=0
-          [ "$R_DETECT" = success ]  || { echo "::error::detect: $R_DETECT"; fail=1; }
-          [ "$R_THEATRE" = success ] || { echo "::error::theatre: $R_THEATRE"; fail=1; }
-          case "$R_PROVE" in
-            success) echo "  ok       prove (trusted axioms: ${TRUSTED:-?})" ;;
-            failure|cancelled) echo "::error::prove: $R_PROVE"; fail=1 ;;
-            skipped)
-              if [ "$OBLIGATIONS" = true ]; then
-                echo "::error::prove was SKIPPED although obligations exist — VOID, not green."; fail=1
-              else
-                echo "::notice::No Creusot obligations in this tree: nothing was proved. This verdict is silent, not green-as-assurance (claims=${CLAIMS:-false})."
-              fi ;;
-            *) echo "::error::prove: unknown result '$R_PROVE'"; fail=1 ;;
-          esac
-          [ "$fail" -eq 0 ] || { echo "::error::Creusot verdict: RED."; exit 1; }
-          echo "Creusot verdict: GREEN."
+          if [[ ! "$EXPECTED_SUITE_REVISION" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Creusot execution: PreflightFailed — the gate source was not resolved; no proof verdict is available."
+            exit 2
+          fi
+      - name: Check out the resolved verdict implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: hyperpolymath/cicd-suite
+          ref: ${{ needs.detect.outputs.suite_sha }}
+          path: .cicd-suite
+          persist-credentials: false
+      - name: Refuse an unverified verdict implementation
+        env:
+          EXPECTED: ${{ needs.detect.outputs.suite_sha }}
+        run: bash .cicd-suite/scripts/verify-suite-checkout.sh
+      - name: Adjudicate
+        run: bash .cicd-suite/actions/creusot-check/verdict.sh

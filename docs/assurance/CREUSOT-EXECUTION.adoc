@@ -1,0 +1,124 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
+= Creusot execution attribution
+
+== Defect and ownership
+
+`hyperpolymath/cicd-squabbler#148` exposed a shared-gate defect: a failed
+installer made the required `Creusot verdict` report a proof verdict without
+observing a caller proof. The installer prerequisites and v0.14 CLI repair
+already landed upstream, and the bounded live canary in PR #71 exercised the
+real false control, true control and identity fixture. Those receipts do not
+establish that another consumer's contracts ran.
+
+The repair stays in this repository's reusable workflow and action. Consumers
+pin it at one reviewed full SHA. It remains an enforcing gate, with the same
+required check names and no continue-on-error, skip exemption or ruleset bypass.
+
+== What is observed
+
+The proof step records setup, harness and substantive stages, control status,
+whether caller execution started and completed, and expected/attempted/completed
+crate-command counts. Its exit handler records the actual exit code and the
+checked-out source revision. The workflow separately supplies the GitHub step
+and job conclusions and the resolved gate revision.
+
+`verdict.sh` requires all of these to agree. Missing installer/configuration
+prerequisites produce `PrerequisiteMissing` and say that no caller proof was
+performed. A failed control is a harness outcome. Cancellation, incomplete or
+stale observations, empty target sets and inconsistent wrappers cannot pass.
+An executed nonzero caller command is `PolicyStepFailed`; its exit alone does
+not distinguish a translation/dependency/solver problem from an unproved goal.
+Only completed commands after both controls pass can produce `Verified`.
+The positive control and each successful caller invocation must also report
+Creusot v0.14's nonzero `Proved (N files)` denominator. Exit zero with no report
+or zero proved files remains unavailable and blocks the gate; source attributes
+alone cannot supply a proof-work denominator.
+An inapplicable scan says `NotApplicable`, without printing a proof-success
+claim. The required check still blocks whenever obligations exist and their
+execution is missing or incomplete.
+
+On `pull_request`, the default checkout and `github.sha` identify the synthetic
+merge revision. They are compared directly; a PR-head hash is not silently
+substituted for the tree actually tested.
+
+== Evidence contract and trust boundary
+
+The transport follows `ProvenTests.ExecutionTruth`'s setup/harness/substantive
+and passed/failed/unavailable distinctions in
+`hyperpolymath/proven-tests-and-benches` at
+`eafd9ad85b875e76ffd75ac3803be533364a0452`. These local job outputs are not an
+external execution-truth envelope and must not be ingested as an authenticated
+proof certificate. An external adapter still needs the canonical envelope,
+producer/receipt verification, obligation scope, attempt/delivery identity and
+retraction policy. Neural confidence and repeated delivery must not upgrade
+missing substantive execution into evidence.
+
+Cargo metadata resolves each selected manifest to an actual package and its
+workspace root. The caller command explicitly selects that package with `-p`;
+a virtual workspace is not counted as a proof package. Creusot v0.14 reads
+`why3find.json` at the Cargo workspace root, so a member working directory uses
+the repository's root configuration. The gate rejects missing/malformed config,
+workspaces outside the source repository and configuration symlinks that escape
+it; member-local and ambient parent configuration cannot supply a substitute.
+This follows the tagged upstream
+https://github.com/creusot-rs/creusot/blob/v0.14.0/cargo-creusot/src/main.rs[Cargo workspace resolver]
+and
+https://github.com/creusot-rs/creusot/blob/v0.14.0/cargo-creusot/src/why3find_wrapper.rs[Why3find invocation].
+
+Extra proof arguments are parsed into a quoted array and restricted to
+`--no-cache`, `--why3session` and `-j N` (a positive decimal, also written `-jN`).
+Package/workspace selectors, positional obligation filters, stage-only modes,
+compiler overrides, arbitrary Why3find arguments and Cargo passthrough are
+refused before caller execution. Controls show that the oracle can return both
+outcomes; they cannot establish coverage of obligations removed by those flags.
+
+== Rust source admission
+
+The gate compiles its source reader from the pinned gate checkout and Cargo
+lockfile, using `syn` 2.0.119. Rust parsing binds supported `requires`/`ensures`
+attributes to functions and methods. Comments, doc examples, string literals
+and tokens inside unexpanded macros cannot supply a contract or trusted axiom.
+Qualified multiline attributes such as
+`#[cfg_attr(creusot, creusot_std::macros::ensures(...))]` are supported.
+The reader evaluates `creusot`, `test`, `not`, `all` and `any`, propagating
+conditions through every attributed node of the pinned syntax tree, including
+constant/static initializers, foreign blocks, local bindings and expressions.
+A proof declaration whose feature
+or target condition remains unknown is unavailable; it is never guessed active.
+Malformed Rust, unbound contract/trusted attributes and unavailable build tools
+also fail inspection. Facts are emitted only after every selected source file
+has been parsed, so a later failure cannot leave a partial count as evidence.
+
+This is bounded syntax admission, not a second Rust compiler. It does not
+expand macros, resolve cross-file module reachability, or prove that every
+source declaration contributes an obligation. Cargo manifests still select
+the crate list; the real compiler and prover determine executable obligations.
+The nonzero runtime denominator prevents a collection of source declarations
+with no proof work from becoming `Verified`. That result describes the scoped
+commands that ran; no repository-wide implementation proof is asserted.
+
+On IDApTIK's actual `crates/idaptik-kernel` source, the old textual detector
+reported zero contracts and three trusted occurrences, including prose. The
+reader reports 18 conditional function contracts and two trusted declarations
+(`src/rng.rs:78` and `src/trace.rs:114`), with enforcing hollow admission enabled.
+These are source facts, not a substitute for the separate actual Creusot run.
+
+== Validation and rollout
+
+Local orchestration tests use real Cargo dispatch with an explicitly labelled
+stand-in verifier: 88 gate assertions and 53 verdict cases, alongside six Rust
+source-reader tests, formatting and warning-free Clippy. They test missing
+setup, invalid controls, zero selected crates, stale revisions, omitted work,
+cancelled execution, conflicting outcomes, conditional attributes, comment and
+string lookalikes, unavailable source facts, and zero-work proof reports.
+The enclosing-scope regression exercises eleven item/expression shapes with
+active, inactive and unresolved conditions (33 observations).
+They are not Creusot proof runs.
+
+Before merging or propagating a changed gate, follow `GOVERNANCE.adoc`: obtain
+before/after results on at least two real repositories, with this exact gate
+revision and each tested source revision recorded. The existing identity
+canary is an additional bounded control. No old successful receipt validates
+this changed implementation, and no consumer pin should be represented as
+verified before its own run completes.

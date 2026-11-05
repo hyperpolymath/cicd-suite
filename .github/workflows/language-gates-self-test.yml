@@ -4,14 +4,15 @@
 # language-gates-self-test.yml — the four language gates must be able to
 # FAIL, for each thing they claim to check, before any consumer calls them.
 #
-# This repository has no Rust, Ada or Scheme of its own, so a self-run of
-# the reusables would be silent and prove nothing. Instead each gate's
+# Gate fixtures establish that each reusable can reject its named defects;
+# a self-run cannot establish that its consumers were verified. Each gate's
 # test.sh builds a fixture, plants a defect, asserts the gate goes red for
 # that defect under the exact composite shell, and kills a mutant where one
 # exists (tests/composite-shell-contract.sh explains the -e trap that made
 # that necessary). The prover tiers run against stand-in oracles here; the
 # planted controls inside the check scripts exercise the real provers on
-# every live run.
+# every live run. The Creusot source reader also runs its real Rust unit,
+# formatting and Clippy checks before the stand-in prover controls.
 
 name: Language Gates Self-Test
 
