@@ -1,0 +1,50 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Pilot obligation reconnaissance
+:revdate: 2026-11-06
+
+This note records source-visible obligations for the first two documentation
+pilots. It is an input to plan resolution, not a policy decision or a
+replacement checklist. Required GitHub contexts and branch rules are still
+unresolved. Source snapshots are pinned in link:pilot.json[pilot.json].
+
+== awesome-coq
+
+At `84055bfa27f2ff98641b5c6b3b48da4d430fa9b3` the root contains
+`README.adoc` and no `README.md`. The six workflow files include
+https://github.com/stuff-of-awe/awesome-coq/blob/84055bfa27f2ff98641b5c6b3b48da4d430fa9b3/.github/workflows/awesome-bot.yml[Link check],
+https://github.com/stuff-of-awe/awesome-coq/blob/84055bfa27f2ff98641b5c6b3b48da4d430fa9b3/.github/workflows/deploy-pages.yml[Deploy to GitHub Pages],
+and https://github.com/stuff-of-awe/awesome-coq/blob/84055bfa27f2ff98641b5c6b3b48da4d430fa9b3/.github/workflows/secret-scanner.yml[Secret Scanner].
+
+The link job passes `README.md` to Lychee; Pages copies `README.md` to its
+build directory. Both refer to a file absent at this commit. That is a
+source-level mismatch, independent of whether the corresponding jobs were
+required or happened to run recently. The shared secret-scanner caller is a
+separate obligation. The new document-presence observation can check the
+actual `README.adoc`, but it cannot replace either link validation or Pages.
+The link-check exclusions and accepted HTTP status codes also need explicit
+disposition in any replacement.
+
+== awesome-idris2
+
+At `51ca1d36642dea0efe3faf251a2e3836b2e8bb0a`, `README.adoc` and
+`tests/README.adoc` are present. The latter explicitly says the list has no
+executable code and that link validation is handled by CI. The repository has
+14 workflow files, including separate quality, secret-scanner, governance,
+security, Pages and advisory workflows. A `tests` directory is therefore not
+evidence of a test runner. The documentation mother must preserve the actual
+link, security and publication obligations after reviewing their current
+configuration. Presence alone supplies no link-verification receipt.
+
+== Remaining candidates
+
+The November 5 inventory lists 36 workflows for Protoctist.jl, 38 for
+ZeroInflatedCounts.jl, 18 for plasma-parser-writer and 31 for cicd-squabbler.
+These are historical source-inventory counts, not current required-context or
+status counts. Their obligation maps still need source, workflow and protection
+inspection. ZeroInflatedCounts.jl has a newer default-head commit than the
+audit. Squabbler's SPARK obligations do not fit the provisional Rust mother.
+
+Before a shadow comparison, record each pilot's required checks, event and
+source bindings, publication privileges, lock closure and exemptions. Compare
+matched obligations and actual subject evidence; do not infer equivalence from
+passing colors or from a declared mother profile.

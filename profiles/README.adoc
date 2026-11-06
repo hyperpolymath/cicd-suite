@@ -81,6 +81,17 @@ They run as steps in the existing suite self-test workflow; no new workflow
 instance is added. These controls test the proposal validator, not GitHub
 execution, policy completeness or the six repositories' code.
 
+`bash scripts/check-docs-profile-subject.sh PROFILE.json REPOSITORY_DIR
+EXPECTED_COMMIT` makes a narrower executable observation for a `docs-data-v1`
+profile: it checks the checkout's GitHub origin and exact commit, rejects
+changed tracked files, and verifies each declared document is tracked,
+nonempty and stays inside the selected root after resolving symlinks. Its
+JSON output records the repository, commit and document hashes. This is a
+*document-presence observation*, not a green CI verdict. It does not parse
+links, validate external URLs, run a secret scanner or publish Pages. The
+mother remains unimplemented as a complete adapter. The fixture tests real
+Git checkouts, source mismatch, missing/empty files, dirty source and escapes.
+
 == Proposed pilots and evidence
 
 link:pilot.json[pilot.json] records six candidates and source snapshots inspected
