@@ -54,6 +54,10 @@ linked regression controls, explicit evidence gaps and consumer receipts, and
 the link:docs/assurance/SUITE-CLOSEOUT.adoc[suite-first completion ledger] for
 remaining shared work. These records do not certify every capability.
 
+The link:profiles/README.adoc[experimental CI profile contract] adds three
+proposed mother profiles, typed slots, validation controls and a bounded pilot
+manifest. It is non-enforcing and does not qualify consumer CI or add a workflow.
+
 == Estate-wide audit
 
 A subset of the suite is orchestrated by the reusable workflow

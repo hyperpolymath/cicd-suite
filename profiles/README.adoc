@@ -1,0 +1,131 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= CI Profile Contract — Proposal v1
+
+This is the first bounded implementation of the CI consolidation proposal:
+three mother profiles, typed repository slots, a read-only validator, regression
+fixtures and six proposed pilot candidates. It adds no consumer workflow,
+release, required check or protection change. It does not generate or execute CI.
+
+== Contract and authority
+
+link:mothers.json[mothers.json] defines the three provisional mother identities.
+link:../catalogue/capabilities.json[The existing capability catalogue] remains
+the identity source for actions and their eight clades. A mother selects
+capabilities; it does not duplicate their implementation or create a new clade.
+Flat composition is intentional: v1 has no inheritance chain or override DSL.
+
+Each profile has exactly these fields:
+
+[cols="1,3",options="header"]
+|===
+|Field |Meaning
+|`schema_version` |Exactly `1`; incompatible changes need a new version.
+|`stage` |Exactly `proposal`. This tool cannot promote a profile.
+|`repository` |An `owner/name` coordinate, not proof of ownership or authority.
+|`mother` |One versioned identity from the reviewed mother catalogue.
+|`lifecycles` |Exactly `validate` and `maintenance`, each once. These are proposed entry points, not generated workflows or scheduled tasks.
+|`capabilities` |Unique existing catalogue IDs with `required` or `advisory` obligations. Unknown/stub capabilities are rejected. Advisory actions cannot satisfy a required obligation.
+|`slots` |Only the selected mother's typed inputs, described below.
+|===
+
+The illustrative common minimum is `secret-scan` plus `spdx-license`; the Rust
+mother additionally requires `rust-ci`. Removing or demoting these capabilities
+fails validation. This minimum is *not* a complete estate policy and cannot
+replace a repository's existing obligations. K9, canon lockstep, Test/Aqua,
+SPARK, release gates and other actual obligations still require explicit mapping.
+
+[cols="1,2,3",options="header"]
+|===
+|Mother |Slots |Daughter adapter boundary
+|`docs-data-v1` |`root`, nonempty unique `documents` paths |`docs-data` is unimplemented. Document/link checking still needs an executable contract and positive/negative controls.
+|`julia-library-v1` |`root`, nonempty unique `julia_versions` |`julia-pkg` is unimplemented here. It is not a new capability ID and must preserve the actual Pkg/Test/Aqua obligations when implemented.
+|`rust-library-v1` |`root`, `msrv` |`rust-cargo` is unqualified. Existing `rust-ci` supplies implementation to reuse; a profile adapter and end-to-end qualification are still needed.
+|===
+
+Versions are explicit numeric major/minor or major/minor/patch strings. Floating
+labels and expressions are rejected. Paths use a deliberately narrow portable
+relative syntax; absolute paths, `..`, shell fragments and expressions fail.
+The fixtures are synthetic examples, not inferred toolchain requirements for
+the real pilots. There are no arbitrary command, permissions, secret, exemption
+or publication slots. Extend the contract and its controls when a real need
+cannot fit; do not hide executable policy in a string slot.
+
+The validator rejects duplicate JSON members (including escaped names and
+repeated containers), multiple documents, unknown fields and unsupported
+versions. It uses the repository's existing Bash/jq tooling, with no new service
+or runtime dependency. A successful exit means *structurally valid proposal*.
+
+The mother catalogue, capability catalogue and validator are reviewed local
+inputs; this command does not authenticate them. A PR could edit them, change
+its mother, or change its repository coordinate. Therefore this command must
+not decide whether a PR may weaken policy. A future resolver must load the
+trusted baseline independently of candidate changes, bind repository/profile
+identity to that baseline, reject requirement removal, and admit explicit
+policy changes through the owning authority. That mechanism is not implemented.
+Path validation is lexical: a future executor must additionally check resolved
+paths, symlinks, tool availability, actual versions and source identity.
+
+== Run the controls
+
+[source,shell]
+----
+bash scripts/validate-ci-profile.sh tests/fixtures/ci-profiles/rust.json
+bash tests/ci-profiles.sh
+bash tests/ci-pilot-manifest.sh
+----
+
+Controls cover all three mothers, an honest advisory extension, required
+capability removal/demotion, placeholders, unknown inputs, lifecycle changes,
+paths, versions, duplicate JSON members, malformed input and self-promotion.
+They run as steps in the existing suite self-test workflow; no new workflow
+instance is added. These controls test the proposal validator, not GitHub
+execution, policy completeness or the six repositories' code.
+
+== Proposed pilots and evidence
+
+link:pilot.json[pilot.json] records six candidates and source snapshots inspected
+on 6 November 2026. Their default-head commit IDs and listed root paths were
+read from GitHub. No profile has been installed or qualified. The manifest's
+`qualification: not-run` and open questions prevent its use as a promotion list.
+The candidate limit is six for this tranche, not an estate-wide contract limit.
+
+* https://github.com/stuff-of-awe/awesome-coq/tree/84055bfa27f2ff98641b5c6b3b48da4d430fa9b3[awesome-coq]: minimal documentation candidate.
+* https://github.com/stuff-of-awe/awesome-idris2/tree/51ca1d36642dea0efe3faf251a2e3836b2e8bb0a[awesome-idris2]: documentation plus existing test material; applicability unresolved.
+* https://github.com/hyperpolymath/Protoctist.jl/tree/bdf2c0f7abbca2a9ea955eb710c267c43ce90f21[Protoctist.jl]: Julia and the original recurring-failure case.
+* https://github.com/metadatastician/ZeroInflatedCounts.jl/tree/e1a9f7ed2a42470d29de5ade5b7662afaa154fc0[ZeroInflatedCounts.jl]: second Julia candidate across an organisation boundary; changed since the November 5 inventory.
+* https://github.com/hyperpolymath/plasma-parser-writer/tree/5737ce8343d9e4eb4384afe5bd9e96f5eebeb85f[plasma-parser-writer]: Rust manifest and lock; layout/MSRV still to derive.
+* https://github.com/hyperpolymath/cicd-squabbler/tree/79d7dbacc8a02b4a4388b4a36fe46893b5b7ce73[cicd-squabbler]: integration candidate with additional SPARK obligations. The proposed Rust mother alone is insufficient; extend composition or replace this candidate before qualification.
+
+Only file presence and snapshot identity are claimed here. A directory named
+`tests` does not establish what runs. Existing workflow runs and branch/ruleset
+obligations must be refreshed and bound to the chosen source before shadowing.
+
+== Dependencies and next bounded delivery
+
+[cols="1,3",options="header"]
+|===
+|Owner |Boundary to settle before enforcement
+|https://github.com/metadatastician/standards[standards] |Own policy and applicability, canonical identities, trusted baseline selection, version compatibility and legitimate exemptions. The example minima here have not been adopted as canon.
+|proven-cicd |Resolve admitted profiles into deterministic plans and thin immutable callers; retain native lock generation. Implement/qualify the three daughter adapters and two entry points with real positive and negative runs.
+|https://github.com/hyperpolymath/cicd-squabbler[cicd-squabbler] |Observe exact-source gates, dependencies and zero-job failures; map actual findings into the existing squabble/proven-tests contracts. Do not add an implicit dependency to the standalone engine or assume its unfinished webhook surface exists.
+|https://github.com/hyperpolymath/hypatia[hypatia] |Group confirmed shared causes and retain recipe/outcome provenance. Many affected consumers are one repair lineage. Confidence is not authority to reduce obligations.
+|===
+
+The existing link:../src/Assurance/Verdict.idr[Idris2 verdict kernel] remains
+experimental. This PR adds *no* formally verified CI implementation. Profile
+resolution, policy admission and the adapter-to-receipt mapping still need
+explicit properties and real boundary tests. JSON validation is not an Idris2
+proof and does not establish complete, authentic execution evidence.
+
+Next: derive pilot obligations and slots, reject or replace the unsuitable
+candidate, then implement one complete validation path before broadening it.
+Prove deterministic rendering, a real pass, a planted defect, missing-tool and
+zero-job detection, trusted-baseline downgrade rejection, native lock handling
+and rollback. Shadow old/new obligations on matching source for a bounded
+period. Promote only the inspected release and consumer set after review;
+remove superseded workflows only after the replacement qualifies.
+
+Do not change required contexts, auto-merge, repository protections, release
+credentials or consumer pins as part of this contract PR. Keep a short ledger
+of release/consumer states and unresolved incidents. Measure usage and runner
+cost during the pilot; repeat inventory only for changed sources/dependencies.
