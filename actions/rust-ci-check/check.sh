@@ -43,6 +43,7 @@ check_args="${CHECK_ARGS:---all-targets}"
 clippy_args="${CLIPPY_ARGS:---all-targets -- -D warnings}"
 test_args="${TEST_ARGS:---all-targets}"
 doctests="${DOCTESTS:-true}"
+doc_packages="${DOC_PACKAGES:---workspace}"
 deny_warnings="${DENY_WARNINGS:-true}"
 
 fail=0
@@ -94,9 +95,10 @@ case "$phase" in
     # shellcheck disable=SC2086
     run "cargo test" cargo test --locked $test_args
     if [ "$doctests" = true ]; then
-      echo "::group::cargo doctests — cargo test --locked --doc --workspace"
+      echo "::group::cargo doctests — cargo test --locked --doc $doc_packages"
       out="$(mktemp)"
-      if cargo test --locked --doc --workspace 2>&1 | tee "$out"; then
+      # shellcheck disable=SC2086 # Cargo package selectors are deliberately word-split
+      if cargo test --locked --doc $doc_packages 2>&1 | tee "$out"; then
         echo "::endgroup::"
         echo "ok: cargo doctests"
       else
@@ -107,7 +109,7 @@ case "$phase" in
            && [ "$(grep -cE '^error' "$out" || true)" -eq 1 ]; then
           echo "::notice::rust-ci-check[test]: no library target in the workspace, so there are no doctests to run (cargo: 'no library targets found'). This is a fact about the crate, not a skipped check."
         else
-          err "cargo doctests failed: cargo test --locked --doc --workspace"
+          err "cargo doctests failed: cargo test --locked --doc $doc_packages"
         fi
       fi
       rm -f "$out"
@@ -116,7 +118,8 @@ case "$phase" in
     fi
     ;;
   doc)
-    run "cargo doc" cargo doc --locked --no-deps --document-private-items --workspace
+    # shellcheck disable=SC2086
+    run "cargo doc" cargo doc --locked --no-deps --document-private-items $doc_packages
     ;;
   msrv)
     msrv="${MSRV:-}"

@@ -99,6 +99,11 @@ on:
         type: boolean
         required: false
         default: true
+      doc_packages:
+        description: Cargo package selection for docs and doctests; scope must match the declared consumer boundary
+        type: string
+        required: false
+        default: "--workspace"
       deny_warnings:
         description: Export RUSTFLAGS/RUSTDOCFLAGS "-D warnings" for every compile
         type: boolean
@@ -442,6 +447,7 @@ jobs:
           WORKING_DIRECTORY: ${{ inputs.working_directory }}
           TEST_ARGS: ${{ inputs.test_args }}
           DOCTESTS: ${{ inputs.doctests }}
+          DOC_PACKAGES: ${{ inputs.doc_packages }}
           DENY_WARNINGS: ${{ inputs.deny_warnings }}
         run: bash .cicd-suite/actions/rust-ci-check/check.sh
 
@@ -531,6 +537,7 @@ jobs:
         env:
           RUST_GATE_PHASE: doc
           WORKING_DIRECTORY: ${{ inputs.working_directory }}
+          DOC_PACKAGES: ${{ inputs.doc_packages }}
           DENY_WARNINGS: ${{ inputs.deny_warnings }}
         run: bash .cicd-suite/actions/rust-ci-check/check.sh
 

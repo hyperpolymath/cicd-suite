@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Workflows and CI/CD repository scope
+
+Recommendation: keep one versioned repository for reusable assurance workflows.
+CI/CD is a workflow category; maintenance, release, documentation synchronization
+and estate inventory can be additional categories in the catalogue.
+
+Retain the published `proven-cicd` repository coordinate during this rollout.
+A rename to `proven-cicd-and-workflows` conveys scope but lengthens every caller
+and requires an inventory of pinned consumers, protection contexts, permissions,
+mirrors and integrations. A separate repository is justified only by distinct
+ownership, access requirements or release cadence. Neither is established here.
+
+Any new workflow must name its inputs, side effects, permissions, applicable
+subjects, failure/refusal semantics, positive/negative controls and execution
+receipt. A green setup job is never evidence that its subject was checked.
+
+== Scoped Rust documentation
+
+`rust-ci.yml` and `rust-ci-check` accept `doc_packages`, defaulting to
+`--workspace` so existing consumers retain their coverage. A consumer with
+optional GUI or database packages can select explicit `-p package` arguments
+for its portable CLI boundary. The corresponding build, test and documentation
+scope must be documented; excluded packages are not qualified by that job.
+Doctests remain enabled and a selected package's failing documentation still fails.
