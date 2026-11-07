@@ -3,6 +3,9 @@
 *An atlas of composable repository assurance: security, governance, build hygiene,
 contracts, language verification and ecosystem integration.*
 
+The link:docs/WORKFLOW-SCOPE.adoc[workflow scope proposal] keeps CI/CD and broader
+repository workflows together while preserving the current published coordinate.
+
 == Canonical repository and migration status
 
 `hyperpolymath/proven-cicd` is the canonical destination for this suite.

@@ -1,25 +1,54 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
-= Workflows and CI/CD repository scope
+= Workflow scope and repository naming
+:status: Proposed organisation; no repository rename or consumer migration
 
-Recommendation: keep one versioned repository for reusable assurance workflows.
-CI/CD is a workflow category; maintenance, release, documentation synchronization
-and estate inventory can be additional categories in the catalogue.
+CI/CD is one use of repository workflows. Scheduled maintenance, documentation
+checks, dependency proposals, release preparation and estate audits share the
+same execution, permissions, provenance and failure-reporting machinery.
+Keeping these capabilities together avoids maintaining separate verification
+and distribution systems for overlapping kinds of work.
 
-Retain the published `proven-cicd` repository coordinate during this rollout.
-A rename to `proven-cicd-and-workflows` conveys scope but lengthens every caller
-and requires an inventory of pinned consumers, protection contexts, permissions,
-mirrors and integrations. A separate repository is justified only by distinct
-ownership, access requirements or release cadence. Neither is established here.
+== Recommended organisation
 
-Any new workflow must name its inputs, side effects, permissions, applicable
-subjects, failure/refusal semantics, positive/negative controls and execution
-receipt. A green setup job is never evidence that its subject was checked.
+Retain `hyperpolymath/proven-cicd` as the published source coordinate while
+existing consumers depend on it. Extend the capability catalogue with workflow
+purposes such as CI, delivery, release, maintenance, documentation and estate
+audit. These purposes complement the existing clades; they do not replace them
+or imply that every capability is implemented or qualified.
+
+Keep executable GitHub workflow entry points in `.github/workflows/`. Group
+supporting specifications, examples and controls by purpose, and keep generic
+actions reusable across groups. Put source-level test/benchmark evidence in
+`proven-tests-and-benches`, with this suite responsible for orchestrating it and
+checking its receipts. Consumers pin both dependencies explicitly.
+
+`proven-workflows` would be a clearer eventual umbrella name than
+`proven-cicd-and-workflows`, since the latter names a category alongside its
+superset. A rename remains a separate migration decision. First inventory
+full-SHA callers, forge mirrors, action allowlists, documentation links, package
+identities and required checks; replay representative callers before changing
+the advertised coordinate. A new name does not establish new assurance.
+
+== When a separate repository is justified
+
+Split only if a workflow family needs different maintainers, access controls,
+release cadence or execution infrastructure. The distinction between scheduled
+and event-triggered jobs alone is insufficient. Keep shared verdict logic and
+controls in one owner even if deployment-specific adapters later split.
+
+== Workflow acceptance contract
+
+Every new workflow names its inputs, side effects, permissions, applicable
+subjects, failure/refusal semantics, positive and negative controls, and
+execution receipt. A successful setup job does not establish that the intended
+subject was checked.
 
 == Scoped Rust documentation
 
 `rust-ci.yml` and `rust-ci-check` accept `doc_packages`, defaulting to
 `--workspace` so existing consumers retain their coverage. A consumer with
-optional GUI or database packages can select explicit `-p package` arguments
-for its portable CLI boundary. The corresponding build, test and documentation
-scope must be documented; excluded packages are not qualified by that job.
-Doctests remain enabled and a selected package's failing documentation still fails.
+optional GUI or database packages may select explicit `-p package` arguments
+for its portable CLI boundary. Document the matching build, test and
+documentation scope: excluded packages are not qualified by that job.
+Doctests remain enabled, and a selected package's failing documentation fails
+the gate.
