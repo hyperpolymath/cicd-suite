@@ -48,6 +48,12 @@
 #      /tmp).
 set -uo pipefail
 
+# Why3find command.ml reports a singleton by filename, not "1 files".
+# Both forms attest nonzero work; a bare success/zero report still cannot pass.
+has_proved_files() {
+  grep -qE '^Proved \([1-9][0-9]* files\)|^Proved \(verif/[^()[:cntrl:]]+\.coma\) ✔$' "$1"
+}
+
 phase="${CREUSOT_GATE_PHASE:?CREUSOT_GATE_PHASE is required: detect|theatre|prove}"
 reader_manifest="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/source-facts/Cargo.toml"
 dir="${WORKING_DIRECTORY:-.}"
@@ -372,7 +378,7 @@ pub fn planted_must_pass() -> u32 { 2 }'
       rm -rf "$ctl"; exit 2
     fi
     cat "$facts_dir/positive-control.log"
-    if ! grep -qE '^Proved \([1-9][0-9]* files\)' "$facts_dir/positive-control.log"; then
+    if ! has_proved_files "$facts_dir/positive-control.log"; then
       echo "::endgroup::"
       echo "::error::creusot-check[prove]: the positive control reported no nonzero proved-file denominator. NO CALLER PROOF WAS PERFORMED." >&2
       rm -rf "$ctl"; exit 2
@@ -396,7 +402,7 @@ pub fn planted_must_pass() -> u32 { 2 }'
       if (cd "$crate" && cargo creusot -p "$package" "${prove_options[@]}") > "$proof_log" 2>&1; then
         cat "$proof_log"
         echo "::endgroup::"
-        if grep -qE '^Proved \([1-9][0-9]* files\)' "$proof_log"; then
+        if has_proved_files "$proof_log"; then
           echo "ok: $crate — cargo creusot completed with a nonzero proved-file denominator"
         else
           echo "::error file=$crate/Cargo.toml::creusot-check[prove]: the command exited zero but reported no nonzero proved-file denominator; proof coverage is unavailable."
