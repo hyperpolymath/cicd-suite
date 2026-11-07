@@ -199,8 +199,16 @@ grep -q 'false contract refused' "$OUT" && ok "planted failing control was exerc
 grep -q 'true contract proved' "$OUT" && ok "planted passing control was exercised" || bad "passing control not run"
 echo "== exit zero without a proved-file denominator is not proof evidence =="
 cp "$STAND_IN/cargo-creusot" "$WORK/denominator-oracle"
-for output in 'Proved (0 files)' 'completed without a proof report'; do
-  sed "s/Proved (1 files) \[stand-in oracle\]/$output/" "$WORK/denominator-oracle" > "$STAND_IN/cargo-creusot"
+sed 's@Proved (1 files) \[stand-in oracle\]@Proved (verif/creusot_control_passing_rlib/planted_must_pass.coma) ✔@' \
+  "$WORK/denominator-oracle" > "$STAND_IN/cargo-creusot"
+run_phase prove PATH="$STAND_IN:$PATH"
+if [[ "$RC" -eq 0 ]] && grep -qx 'controls_passed=true' "$WORK/receipt" && grep -qx 'execution_outcome=passed' "$WORK/receipt"; then
+  ok "real Why3find singleton format accepted for control and caller"
+else
+  bad "singleton proof report refused (exit $RC)"; cat "$OUT"
+fi
+for output in 'Proved (0 files)' 'completed without a proof report' 'Proved () ✔' 'Proved (unrelated.txt) ✔' 'Proved (verif/missing.coma)' 'Proved (verif/failed.coma) ✘'; do
+  sed "s@Proved (1 files) \[stand-in oracle\]@$output@" "$WORK/denominator-oracle" > "$STAND_IN/cargo-creusot"
   run_phase prove PATH="$STAND_IN:$PATH"
   if [[ "$RC" -eq 2 ]] && grep -qx 'execution_stage=harness' "$WORK/receipt" && grep -qx 'proof_started=false' "$WORK/receipt"; then
     ok "positive control without work refuses caller execution: $output"
