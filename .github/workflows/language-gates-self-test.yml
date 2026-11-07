@@ -26,6 +26,8 @@ on:
       - "actions/kanren-check/**"
       - "scripts/verify-suite-checkout.sh"
       - "scripts/deonboard-workflow.sh"
+      - "actions/zig-unified-api-adapter-check/**"
+      - "tests/zig-ffi-scope.sh"
       - "tests/gate-action-owners.sh"
       - "tests/inspect-pr-ci.sh"
       - "tests/suite-source-compatibility.sh"
@@ -44,6 +46,8 @@ on:
       - "actions/kanren-check/**"
       - "scripts/verify-suite-checkout.sh"
       - "scripts/deonboard-workflow.sh"
+      - "actions/zig-unified-api-adapter-check/**"
+      - "tests/zig-ffi-scope.sh"
       - "tests/gate-action-owners.sh"
       - "tests/inspect-pr-ci.sh"
       - "tests/suite-source-compatibility.sh"
@@ -103,6 +107,8 @@ jobs:
         run: bash tests/inspect-pr-ci.sh
       - name: Suite source pins remain exact across repository naming compatibility
         run: bash tests/suite-source-compatibility.sh
+      - name: Zig FFI scope distinguishes CLI I/O and fails closed
+        run: bash tests/zig-ffi-scope.sh
       - name: Rust gate
         run: bash actions/rust-ci-check/test.sh
       - name: Creusot gate
