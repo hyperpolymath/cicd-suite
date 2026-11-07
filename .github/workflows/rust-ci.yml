@@ -651,7 +651,7 @@ jobs:
       # keeps every gate inside the owners the policy admits.
       # The pinned cargo-deny is the version that action shipped (0.20.2).
       - name: Install cargo-deny ${{ inputs.cargo_deny_version }} (prebuilt, pinned)
-        uses: taiki-e/install-action@1919c4a95903d2c33e4a221102edca87309fc14b # v2.89.0
+        uses: taiki-e/install-action@b80e2bb2635f28eb98b9fce1e2f0887e1535c6b2 # v2.90.0
         with:
           tool: cargo-deny@${{ inputs.cargo_deny_version }}
       - name: cargo-deny — advisories, bans, sources
@@ -709,7 +709,7 @@ jobs:
         with:
           version: ${{ inputs.zig_version }}
       - name: Install cargo-llvm-cov (prebuilt, pinned)
-        uses: taiki-e/install-action@1919c4a95903d2c33e4a221102edca87309fc14b # v2.89.0
+        uses: taiki-e/install-action@b80e2bb2635f28eb98b9fce1e2f0887e1535c6b2 # v2.90.0
         with:
           tool: cargo-llvm-cov
       - name: Measure line coverage
