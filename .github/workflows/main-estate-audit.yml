@@ -61,6 +61,11 @@ on:
     branches: [ "main" ]
   workflow_call:
     inputs:
+      zig-ffi-paths:
+        description: 'Newline-separated literal tracked Zig FFI roots, including local imports. Empty scans every tracked Zig file.'
+        type: string
+        required: false
+        default: ''
       # Forwarded to manifest-check. For files that carry a manifest extension
       # but are not manifests (panic-attack's suppression registry at
       # audits/assail-classifications.a2ml, for one). A value REPLACES that
@@ -161,7 +166,9 @@ jobs:
         uses: hyperpolymath/cicd-suite/actions/idris2-abi-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
       - name: Zig UnifiedApiAdapter API Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/zig-unified-api-adapter-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/cicd-suite/actions/zig-unified-api-adapter-check@3c2d4028d7203097f3c54106556e20947f9e04ef
+        with:
+          paths: ${{ inputs.zig-ffi-paths }}
       - name: BoJ Cartridge Validation Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
         uses: hyperpolymath/cicd-suite/actions/boj-cartridge-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
