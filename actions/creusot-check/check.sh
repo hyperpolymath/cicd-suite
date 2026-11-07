@@ -102,6 +102,13 @@ list_files() { # <ere on path>
   fi
 }
 
+# Why3find reports one file by its path, and multiple files by their count.
+# Both are nonzero work reports. Bare exit zero and "Proved (0 files)" remain
+# unavailable evidence. The process status and planted controls are also required.
+has_proof_report() {
+  grep -qE '^Proved \(([1-9][0-9]* files|verif/[A-Za-z0-9_./-]+\.coma)\)' "$1"
+}
+
 # ---------------------------------------------------------------- facts ----
 manifests="$(list_files '(^|/)Cargo\.toml$')"
 obligation_manifests=""
@@ -372,7 +379,7 @@ pub fn planted_must_pass() -> u32 { 2 }'
       rm -rf "$ctl"; exit 2
     fi
     cat "$facts_dir/positive-control.log"
-    if ! grep -qE '^Proved \([1-9][0-9]* files\)' "$facts_dir/positive-control.log"; then
+    if ! has_proof_report "$facts_dir/positive-control.log"; then
       echo "::endgroup::"
       echo "::error::creusot-check[prove]: the positive control reported no nonzero proved-file denominator. NO CALLER PROOF WAS PERFORMED." >&2
       rm -rf "$ctl"; exit 2
@@ -396,7 +403,7 @@ pub fn planted_must_pass() -> u32 { 2 }'
       if (cd "$crate" && cargo creusot -p "$package" "${prove_options[@]}") > "$proof_log" 2>&1; then
         cat "$proof_log"
         echo "::endgroup::"
-        if grep -qE '^Proved \([1-9][0-9]* files\)' "$proof_log"; then
+        if has_proof_report "$proof_log"; then
           echo "ok: $crate — cargo creusot completed with a nonzero proved-file denominator"
         else
           echo "::error file=$crate/Cargo.toml::creusot-check[prove]: the command exited zero but reported no nonzero proved-file denominator; proof coverage is unavailable."

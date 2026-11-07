@@ -21,6 +21,7 @@ on:
     branches: [main]
     paths:
       - "actions/rust-ci-check/**"
+      - "actions/verus-check/**"
       - "actions/creusot-check/**"
       - "actions/spark-check/**"
       - "actions/kanren-check/**"
@@ -28,6 +29,7 @@ on:
       - "scripts/deonboard-workflow.sh"
       - "tests/gate-action-owners.sh"
       - "tests/inspect-pr-ci.sh"
+      - "tests/rust-doc-package-scope.sh"
       - "tests/suite-source-compatibility.sh"
       - "scripts/inspect-pr-ci.sh"
       - ".github/workflows/rust-ci.yml"
@@ -39,6 +41,7 @@ on:
   pull_request:
     paths:
       - "actions/rust-ci-check/**"
+      - "actions/verus-check/**"
       - "actions/creusot-check/**"
       - "actions/spark-check/**"
       - "actions/kanren-check/**"
@@ -46,6 +49,7 @@ on:
       - "scripts/deonboard-workflow.sh"
       - "tests/gate-action-owners.sh"
       - "tests/inspect-pr-ci.sh"
+      - "tests/rust-doc-package-scope.sh"
       - "tests/suite-source-compatibility.sh"
       - "scripts/inspect-pr-ci.sh"
       - ".github/workflows/rust-ci.yml"
@@ -105,8 +109,12 @@ jobs:
         run: bash tests/suite-source-compatibility.sh
       - name: Rust gate
         run: bash actions/rust-ci-check/test.sh
+      - name: Scoped Rust documentation still rejects broken doctests
+        run: bash tests/rust-doc-package-scope.sh
       - name: Creusot gate
         run: bash actions/creusot-check/test.sh
+      - name: Verus execution gate controls
+        run: bash actions/verus-check/test.sh
       - name: SPARK gate
         run: bash actions/spark-check/test.sh
       - name: miniKanren gate

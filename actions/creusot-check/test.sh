@@ -41,13 +41,16 @@ fresh_fixture() {
     git -C "$FIX" init -q
     git -C "$FIX" config user.email t@example.invalid
     git -C "$FIX" config user.name t
+    # These temporary fixture commits are not published. A developer's locked
+    # signing key must not turn fixture creation into missing source evidence.
+    git -C "$FIX" config commit.gpgsign false
     printf '[package]\nname = "fx"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\n' > "$FIX/Cargo.toml"
     printf '//! fixture\npub fn id(x: u32) -> u32 { x }\n' > "$FIX/src/lib.rs"
     printf '= fx\n\nA small crate.\n' > "$FIX/README.adoc"
     printf '{"packages":["creusot"],"provers":["z3"]}\n' > "$FIX/why3find.json"
-    git -C "$FIX" add -A && git -C "$FIX" commit -qm fixture
+    git -C "$FIX" add -A && git -C "$FIX" commit -qm fixture || exit 2
 }
-commit() { git -C "$FIX" add -A && git -C "$FIX" commit -qm change >/dev/null; }
+commit() { git -C "$FIX" add -A && git -C "$FIX" commit -qm change >/dev/null || exit 2; }
 run_phase() { # <phase> [env...]
     local phase="$1"; shift
     : > "$WORK/receipt"
@@ -199,6 +202,9 @@ grep -q 'false contract refused' "$OUT" && ok "planted failing control was exerc
 grep -q 'true contract proved' "$OUT" && ok "planted passing control was exercised" || bad "passing control not run"
 echo "== exit zero without a proved-file denominator is not proof evidence =="
 cp "$STAND_IN/cargo-creusot" "$WORK/denominator-oracle"
+sed 's@Proved (1 files) \[stand-in oracle\]@Proved (verif/example_rlib/lemma.coma)@' "$WORK/denominator-oracle" > "$STAND_IN/cargo-creusot"
+run_phase prove PATH="$STAND_IN:$PATH"
+[[ "$RC" -eq 0 ]] && ok "single-file Why3find report counts one proved file" || { bad "single-file report exits $RC"; cat "$OUT"; }
 for output in 'Proved (0 files)' 'completed without a proof report'; do
   sed "s/Proved (1 files) \[stand-in oracle\]/$output/" "$WORK/denominator-oracle" > "$STAND_IN/cargo-creusot"
   run_phase prove PATH="$STAND_IN:$PATH"
