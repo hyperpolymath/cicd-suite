@@ -1,21 +1,17 @@
 name: 'Zig UnifiedApiAdapter Check'
 description: 'Checks that Zig FFI implementations adhere to the unified-api-adapter and are pure.'
+inputs:
+  paths:
+    description: 'Newline-separated tracked FFI source directories/files, including their local import closure. Empty retains the repository-wide Zig scan.'
+    required: false
+    default: ''
 runs:
   using: 'composite'
   steps:
     - name: Run Zig UnifiedApiAdapter Check
       shell: bash
-      run: |
-        echo "Validating the Zig unified-api-adapter..."
-        if find . -name "*.zig" | grep -q .; then
-          # Ensure it doesn't use standard library io or std.fs directly for FFI
-          if git grep -E 'std\.fs|std\.io' -- '*.zig'; then
-            echo "::error::Zig FFI modules contain prohibited side-effects (std.fs/std.io). Must use the unified-api-adapter."
-            exit 1
-          fi
-          echo "Zig unified-api-adapter check passed."
-        else
-          echo "No Zig files found. Skipping check."
-        fi
+      env:
+        FFI_PATHS: ${{ inputs.paths }}
+      run: bash "$GITHUB_ACTION_PATH/check.sh"
 
 # 2026-09-21: cache-bust touch — negative resolution cache for this path poisoned since merge (run 35548451498 "Can't find action.yml").
