@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "inspected_source": "cd313201ee1e3a73ce9c32d155690c082a94eda6",
+  "inspected_source": "d7ee6733289091b2aadbc57a12b4ae692da6ec10",
   "capabilities": [
     {
       "id": "secret-scan",
@@ -259,16 +259,20 @@
     },
     {
       "id": "prat",
-      "test_paths": [],
-      "coverage": "placeholder",
-      "evidence_note": "Not implemented assurance; no adoption recommendation.",
+      "test_paths": [
+        "actions/prat-check/test.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Fixture suite plants one defect per claim (declared-but-missing properties, require_properties off, run_tests failure and missing runner) and asserts the exact composite exit codes; linked, not a claim of fresh execution evidence in this pass.",
       "consumer_receipts": []
     },
     {
       "id": "semantic-audit",
-      "test_paths": [],
-      "coverage": "placeholder",
-      "evidence_note": "Not implemented assurance; no adoption recommendation.",
+      "test_paths": [
+        "actions/semantic-audit-check/test.sh"
+      ],
+      "coverage": "controls-linked",
+      "evidence_note": "Fixture suite plants one defect per claim (missing/empty/contradictory descriptiles, verbatim policy restatement, incomplete K9 contract, malformed CLAUDE.md) and asserts the exact composite exit codes; linked, not a claim of fresh execution evidence in this pass.",
       "consumer_receipts": []
     }
   ]

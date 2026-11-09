@@ -5,7 +5,7 @@
 
 Evidence and limits for all 32 existing actions. No new runtime policy is introduced.
 
-Inspected source: `cd313201ee1e3a73ce9c32d155690c082a94eda6`. This inventory links control sources, not fresh execution results. A file existing does not prove its tests passed or cover every claim. Unlisted evidence means not assessed here, not that evidence cannot exist.
+Inspected source: `d7ee6733289091b2aadbc57a12b4ae692da6ec10`. This inventory links control sources, not fresh execution results. A file existing does not prove its tests passed or cover every claim. Unlisted evidence means not assessed here, not that evidence cannot exist.
 
 * controls-linked: a specific regression/control source was inspected and linked; no blanket execution claim.
 * not-assessed: no specific control source was established in this pass.
@@ -220,6 +220,20 @@ Linked suite exercises detection/absence paths, not the complete remote validato
 
 *Consumer proof:* no receipt indexed here.
 
+=== Semantic audit of repository metadata
+
+*enforcing · validator · controls-linked*
+
+*Claim:* Deterministic audit of repository descriptiles: STATE/META/ECOSYSTEM exist and are non-empty; contradictions and verbatim policy restatement across descriptiles and K9 contracts; *.k9.ncl carries the K9 contract v1.0.0 required fields; root CLAUDE.md is non-empty, headed, fence-balanced, marker-free and placeholder-free.
+
+*Prerequisites / boundary:* Not an AI audit and not natural-language understanding. Grammar/typechecking stay with the deed-lint and k9-validate lanes; bot_directives and anchors are presence-reported only. Absent subject is not_applicable; missing toolchain is not_run (exit 2). Not referenced by main-estate-audit.
+
+*Control evidence:* link:../actions/semantic-audit-check/test.sh[actions/semantic-audit-check/test.sh]
+
+Fixture suite plants one defect per claim (missing/empty/contradictory descriptiles, verbatim policy restatement, incomplete K9 contract, malformed CLAUDE.md) and asserts the exact composite exit codes; linked, not a claim of fresh execution evidence in this pass.
+
+*Consumer proof:* no receipt indexed here.
+
 == Proof — languages & verification
 
 === Strict Rust CI
@@ -317,6 +331,20 @@ Test source linked, not a claim that it was freshly executed or provides complet
 *Control evidence:* Not established in this pass.
 
 Test source linked, not a claim that it was freshly executed or provides complete coverage.
+
+*Consumer proof:* no receipt indexed here.
+
+=== PRAT property-testing gate
+
+*enforcing · policy-gate · controls-linked*
+
+*Claim:* Detects property-testing frameworks declared in manifests (proptest, QuickCheck/Hedgehog, hypothesis, fast-check, jqwik, gopter/rapid, qcheck, stream_data, proper, rantly, SwiftCheck, ScalaCheck, FsCheck) and property-test markers in source; fails when a declared framework has no property tests, and with require_properties when no PBT evidence exists at all. With run_tests it executes one conventional command per detected ecosystem.
+
+*Prerequisites / boundary:* Detection is marker-based and cannot prove property quality or coverage; run_tests executes the repository's own test command and missing runners are not_run (exit 2), never a pass. Not referenced by main-estate-audit; the repository's own CI owns test execution.
+
+*Control evidence:* link:../actions/prat-check/test.sh[actions/prat-check/test.sh]
+
+Fixture suite plants one defect per claim (declared-but-missing properties, require_properties off, run_tests failure and missing runner) and asserts the exact composite exit codes; linked, not a claim of fresh execution evidence in this pass.
 
 *Consumer proof:* no receipt indexed here.
 
@@ -447,35 +475,5 @@ No independent assurance verdict; retain the catalogue limitation.
 *Control evidence:* Not established in this pass.
 
 No independent assurance verdict; retain the catalogue limitation.
-
-*Consumer proof:* no receipt indexed here.
-
-== Frontier — unfinished capabilities
-
-=== PRAT testing placeholder
-
-*stub · placeholder · placeholder*
-
-*Claim:* Heuristic presence/mention detection for prospective property-testing integration.
-
-*Prerequisites / boundary:* Does not execute property tests or prove PRAT coverage; excluded from default audit.
-
-*Control evidence:* Not established in this pass.
-
-Not implemented assurance; no adoption recommendation.
-
-*Consumer proof:* no receipt indexed here.
-
-=== Semantic audit placeholder
-
-*stub · placeholder · placeholder*
-
-*Claim:* Reserved integration point for future semantic analysis.
-
-*Prerequisites / boundary:* Current action prints a success message without invoking the proposed analyser. Not assurance; excluded from default audit.
-
-*Control evidence:* Not established in this pass.
-
-Not implemented assurance; no adoption recommendation.
 
 *Consumer proof:* no receipt indexed here.
