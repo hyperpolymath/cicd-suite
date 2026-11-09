@@ -6,7 +6,7 @@
 
 *Repository assurance, organised by purpose. Discover by clade; choose by nature; adopt with evidence.*
 
-*32 composite actions · 8 clades · two independent discovery axes.*
+*32 composite actions · 7 clades · two independent discovery axes.*
 
 This is a visitor-facing product catalogue, not a repo-chora file, a BoJ cartridge implementation, or a certification scheme. Inspired by BoJ's separation of capability domain from interface/type, it groups existing CI/CD building blocks without moving their paths or changing their behaviour.
 
@@ -16,7 +16,7 @@ This is a visitor-facing product catalogue, not a repo-chora file, a BoJ cartrid
 * *Establish repository policy:* <<covenant,Covenant>>, <<forge,Forge>> and <<schema,Schema>>.
 * *Compile, test or prove:* <<proof,Proof>> — language-specific execution and explicitly labelled source checks.
 * *Integrate the ecosystem:* <<bridge,Bridge>> — BoJ applicability, Pons and Panic Attack.
-* *Explore signals and future work:* <<observatory,Observatory>> and <<frontier,Frontier>> — no inflated assurance claims.
+* *Explore signals without assurance claims:* <<observatory,Observatory>> — advisory signals with explicit limits.
 
 == The clade matrix
 
@@ -26,19 +26,18 @@ This is a visitor-facing product catalogue, not a repo-chora file, a BoJ cartrid
 |<<sentinel,Sentinel — security & trusted results>> |Find exposed credentials and verify authoritative analysis without manufacturing a green result. |4 |4 |0 |0 |0
 |<<covenant,Covenant — governance & provenance>> |Establish repository identity, policy documents, attribution and licensing. |4 |4 |0 |0 |0
 |<<forge,Forge — source & build hygiene>> |Control source debt, document formats, language policy and task-runner syntax. |4 |4 |0 |0 |0
-|<<schema,Schema — manifests & contracts>> |Validate structured manifests and executable contract declarations. |2 |1 |1 |0 |0
-|<<proof,Proof — languages & verification>> |Compile, test, inspect interfaces and execute proof tools where applicable. |7 |6 |1 |0 |0
+|<<schema,Schema — manifests & contracts>> |Validate structured manifests and executable contract declarations. |3 |2 |1 |0 |0
+|<<proof,Proof — languages & verification>> |Compile, test, inspect interfaces and execute proof tools where applicable. |8 |7 |1 |0 |0
 |<<bridge,Bridge — ecosystem integration>> |Connect BoJ capabilities and external analysis tools to repository checks. |2 |1 |1 |0 |0
 |<<observatory,Observatory — advisory signals>> |Discover useful signals without presenting warnings or heuristics as certification. |7 |0 |0 |7 |0
-|<<frontier,Frontier — unfinished capabilities>> |Visible roadmap boundaries: not implemented assurance and not recommended gates. |2 |0 |0 |0 |2
 |===
 
 == Read the assurance labels
 
-* *Enforcing (20):* can reject a subject. This is not a guarantee of completeness, applicability, production readiness or formal verification.
+* *Enforcing (22):* can reject a subject. This is not a guarantee of completeness, applicability, production readiness or formal verification.
 * *Tool-dependent (3):* requires explicitly supplied validators/toolchains; inspect applicability and not-run behaviour before adoption.
 * *Advisory (7):* signals and warnings, not an assurance verdict. Some current outputs are simulated or heuristic; each card names the boundary.
-* *Stub (2):* unfinished integration or placeholder. Do not deploy as evidence of a completed check.
+* *Stub (0):* unfinished integration or placeholder. Do not deploy as evidence of a completed check.
 
 Nature is a separate axis: a policy-pattern scan is not a compiler, a receipt verifier is not an analyser, and a proof executor is not a proof that every program is correct. These labels are reviewed inventory metadata; tests enforce coverage and consistency, not semantic correctness of every gate.
 
@@ -50,12 +49,11 @@ Nature is a separate axis: a policy-pattern scan is not a compiler, a receipt ve
 |advisory |7 |link:actions/badges-check/action.yml[Accreditations & badges] · link:actions/gitsea-check/action.yml[Analytics declarations] · link:actions/hosting-check/action.yml[Hosting configuration] · link:actions/metrics-check/action.yml[Metrics & proof indicators] · link:actions/tests-benches-check/action.yml[Test & benchmark discoverability] · link:actions/trust-humans-check/action.yml[Human trust declarations] · link:actions/www-compliance-check/action.yml[Web & well-known conventions]
 |build-test |2 |link:actions/rust-ci-check/action.yml[Strict Rust CI] · link:actions/kanren-check/action.yml[Relational-code checks]
 |integration |2 |link:actions/boj-cartridge-check/action.yml[BoJ cartridge applicability] · link:actions/custom-tools-check/action.yml[Pons & Panic Attack]
-|placeholder |2 |link:actions/prat-check/action.yml[PRAT testing placeholder] · link:actions/semantic-audit-check/action.yml[Semantic audit placeholder]
-|policy-gate |10 |link:actions/secrets-check/action.yml[Private-key material] · link:actions/vaulted-tokens-check/action.yml[Vaulted token format] · link:actions/required-files-check/action.yml[Repository foundations] · link:actions/spdx-license-check/action.yml[Licensing & SPDX] · link:actions/affirmation-check/action.yml[Affirmation snapshots] · link:actions/code-hygiene-check/action.yml[Source debt & proof escapes] · link:actions/formatting-check/action.yml[Document format policy] · link:actions/linguist-check/action.yml[Language inventory policy] · link:actions/idris2-abi-check/action.yml[Idris2 ABI source policy] · link:actions/zig-unified-api-adapter-check/action.yml[Zig adapter source policy]
+|policy-gate |11 |link:actions/secrets-check/action.yml[Private-key material] · link:actions/vaulted-tokens-check/action.yml[Vaulted token format] · link:actions/required-files-check/action.yml[Repository foundations] · link:actions/spdx-license-check/action.yml[Licensing & SPDX] · link:actions/affirmation-check/action.yml[Affirmation snapshots] · link:actions/code-hygiene-check/action.yml[Source debt & proof escapes] · link:actions/formatting-check/action.yml[Document format policy] · link:actions/linguist-check/action.yml[Language inventory policy] · link:actions/idris2-abi-check/action.yml[Idris2 ABI source policy] · link:actions/zig-unified-api-adapter-check/action.yml[Zig adapter source policy] · link:actions/prat-check/action.yml[PRAT property-testing gate]
 |proof-executor |3 |link:actions/creusot-check/action.yml[Rust deductive verification] · link:actions/spark-check/action.yml[Ada/SPARK proof] · link:actions/proof-runner-check/action.yml[Idris2 & Lean proof runner]
 |receipt-verifier |1 |link:actions/sonarcloud-result-check/action.yml[Authoritative SonarCloud receipt]
 |scanner |1 |link:actions/secret-scan-check/action.yml[Bounded secret scanning]
-|validator |4 |link:actions/referencing-check/action.yml[Citation metadata] · link:actions/recipes-set-check/action.yml[Task-runner syntax] · link:actions/manifest-check/action.yml[DEED & K9 manifests] · link:actions/contractile-validation-check/action.yml[Contractile declarations]
+|validator |5 |link:actions/referencing-check/action.yml[Citation metadata] · link:actions/recipes-set-check/action.yml[Task-runner syntax] · link:actions/manifest-check/action.yml[DEED & K9 manifests] · link:actions/contractile-validation-check/action.yml[Contractile declarations] · link:actions/semantic-audit-check/action.yml[Semantic audit of repository metadata]
 |===
 
 [[sentinel]]
@@ -111,13 +109,14 @@ link:catalogue/clades/forge.adoc[Explore this clade — 4 capabilities]
 
 Validate structured manifests and executable contract declarations.
 
-link:catalogue/clades/schema.adoc[Explore this clade — 2 capabilities]
+link:catalogue/clades/schema.adoc[Explore this clade — 3 capabilities]
 
 [cols="2,2,2,5",options="header"]
 |===
 |Capability |Nature |Status |What it does
 |link:actions/manifest-check/action.yml[DEED & K9 manifests] |validator |enforcing |Use maintained format validators for manifest structure.
 |link:actions/contractile-validation-check/action.yml[Contractile declarations] |validator |tool-dependent |Validate applicable DEED contract declarations with maintained tooling.
+|link:actions/semantic-audit-check/action.yml[Semantic audit of repository metadata] |validator |enforcing |Deterministic audit of repository descriptiles: STATE/META/ECOSYSTEM exist and are non-empty; contradictions and verbatim policy restatement across descriptiles and K9 contracts; *.k9.ncl carries the K9 contract v1.0.0 required fields; root CLAUDE.md is non-empty, headed, fence-balanced, marker-free and placeholder-free.
 |===
 
 [[proof]]
@@ -125,7 +124,7 @@ link:catalogue/clades/schema.adoc[Explore this clade — 2 capabilities]
 
 Compile, test, inspect interfaces and execute proof tools where applicable.
 
-link:catalogue/clades/proof.adoc[Explore this clade — 7 capabilities]
+link:catalogue/clades/proof.adoc[Explore this clade — 8 capabilities]
 
 [cols="2,2,2,5",options="header"]
 |===
@@ -137,6 +136,7 @@ link:catalogue/clades/proof.adoc[Explore this clade — 7 capabilities]
 |link:actions/proof-runner-check/action.yml[Idris2 & Lean proof runner] |proof-executor |tool-dependent |Run applicable Idris2 project typechecks and Lean lake builds.
 |link:actions/idris2-abi-check/action.yml[Idris2 ABI source policy] |policy-gate |enforcing |When abi.ipkg exists, scan selected ABI source paths for prohibited IO/unsafe patterns.
 |link:actions/zig-unified-api-adapter-check/action.yml[Zig adapter source policy] |policy-gate |enforcing |Scan Zig files for direct std.fs/std.io usage prohibited by estate adapter policy.
+|link:actions/prat-check/action.yml[PRAT property-testing gate] |policy-gate |enforcing |Detects property-testing frameworks declared in manifests (proptest, QuickCheck/Hedgehog, hypothesis, fast-check, jqwik, gopter/rapid, qcheck, stream_data, proper, rantly, SwiftCheck, ScalaCheck, FsCheck) and property-test markers in source; fails when a declared framework has no property tests, and with require_properties when no PBT evidence exists at all. With run_tests it executes one conventional command per detected ecosystem.
 |===
 
 [[bridge]]
@@ -170,20 +170,6 @@ link:catalogue/clades/observatory.adoc[Explore this clade — 7 capabilities]
 |link:actions/tests-benches-check/action.yml[Test & benchmark discoverability] |advisory |advisory |Look for benchmark mentions and test/benchmark dashboards.
 |link:actions/trust-humans-check/action.yml[Human trust declarations] |advisory |advisory |Inspect trust.txt/humans.txt and association conventions.
 |link:actions/www-compliance-check/action.yml[Web & well-known conventions] |advisory |advisory |Inspect website and well-known/resource conventions.
-|===
-
-[[frontier]]
-== Frontier — unfinished capabilities
-
-Visible roadmap boundaries: not implemented assurance and not recommended gates.
-
-link:catalogue/clades/frontier.adoc[Explore this clade — 2 capabilities]
-
-[cols="2,2,2,5",options="header"]
-|===
-|Capability |Nature |Status |What it does
-|link:actions/prat-check/action.yml[PRAT testing placeholder] |placeholder |stub |Heuristic presence/mention detection for prospective property-testing integration.
-|link:actions/semantic-audit-check/action.yml[Semantic audit placeholder] |placeholder |stub |Reserved integration point for future semantic analysis.
 |===
 
 == Adopt deliberately

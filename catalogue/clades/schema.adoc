@@ -28,3 +28,14 @@ Validate applicable DEED contract declarations with maintained tooling.
 *Assurance boundary:* Not in the default estate audit; applicability and validator prerequisites apply.
 
 * link:../../actions/contractile-validation-check/action.yml[Action definition and inputs]
+
+[[semantic-audit]]
+== Semantic audit of repository metadata
+
+*`semantic-audit` · validator · enforcing*
+
+Deterministic audit of repository descriptiles: STATE/META/ECOSYSTEM exist and are non-empty; contradictions and verbatim policy restatement across descriptiles and K9 contracts; *.k9.ncl carries the K9 contract v1.0.0 required fields; root CLAUDE.md is non-empty, headed, fence-balanced, marker-free and placeholder-free.
+
+*Assurance boundary:* Not an AI audit and not natural-language understanding. Grammar/typechecking stay with the deed-lint and k9-validate lanes; bot_directives and anchors are presence-reported only. Absent subject is not_applicable; missing toolchain is not_run (exit 2). Not referenced by main-estate-audit.
+
+* link:../../actions/semantic-audit-check/action.yml[Action definition and inputs]

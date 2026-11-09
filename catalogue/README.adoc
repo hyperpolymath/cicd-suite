@@ -8,10 +8,10 @@ packages, a repo-chora file or a new required governance document for consumers.
 == Two axes, one primary home
 
 * *Clade:* the capability's primary purpose. Sentinel, Covenant, Forge, Schema,
-  Proof, Bridge, Observatory and Frontier are discoverable families.
+  Proof, Bridge and Observatory are discoverable families.
 * *Nature:* what the capability actually does: scanner, receipt verifier,
   policy gate, validator, build/test executor, proof executor, integration,
-  advisory signal or placeholder.
+  advisory signal.
 * *Status:* its enforcement boundary, independent of the two discovery axes.
   An enforcing source-pattern check is still not a compiler or formal proof.
 
@@ -27,8 +27,10 @@ Workflow wrappers and caller templates are entry points, not additional actions.
 . Add its single entry to link:capabilities.json[capabilities.json]. Use a stable
   ID matching `actions/<id>-check/action.yml` and an existing primary clade.
 . Describe actual behaviour, not aspirational marketing. Record prerequisites,
-  skipped/not-applicable behaviour and important assurance limitations. Put
-  unfinished integrations in Frontier with stub/placeholder classification.
+  skipped/not-applicable behaviour and important assurance limitations.
+. There is no Frontier clade: an unfinished capability is not deployable
+  assurance, so it is either implemented and classified by its actual
+  behaviour, or it does not ship.
 . Link the reusable workflow and caller template when these exist. Do not copy
   runtime code into clade directories or change public action paths to match names.
 . Run the renderer, update the README's headline counts when the inventory grows,

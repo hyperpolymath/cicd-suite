@@ -1,23 +1,34 @@
+# SPDX-License-Identifier: MPL-2.0
 name: 'Semantic Audit Gate'
-description: 'AI-powered semantic check of descriptiles, contractiles, bot_directives, anchors, and CLAUDE.md'
+description: >-
+  Deterministic audit of repository metadata — NOT the AI-powered audit the
+  placeholder once implied (cicd-squabbler is a gate-diagnosis engine; no
+  LLM ever runs here). Checks: (S2) core descriptiles STATE/META/ECOSYSTEM
+  exist in a recognised location and are non-empty; (S3) contradictions and
+  verbatim restatement of policy lines across descriptiles and K9 contracts;
+  (S4) every *.k9.ncl carries the K9 contract v1.0.0 required fields
+  (schema_version, component_type, semantics, security, side_effects);
+  (S5) root CLAUDE.md is non-empty, headed, fence-balanced, marker-free,
+  placeholder-free. Anchors and bot_directives are presence-reported only.
+  Grammar and typechecking stay with the deed-lint / k9-validate lanes.
+  Implementation is pure Idris2; idris2 must be on PATH or the gate reports
+  not_run (exit 2). Spec used: DESCRIPTILE-SPEC v0.1.1 (draft). Not
+  referenced by main-estate-audit.
+inputs:
+  working_directory:
+    description: 'Tree root to audit'
+    required: false
+    default: '.'
+outputs:
+  status:
+    description: 'passed | failed | not_applicable | not_run'
+    value: ${{ steps.run.outputs.status }}
 runs:
   using: 'composite'
   steps:
-    - name: Run Semantic Audit via cicd-squabbler
+    - name: Run Semantic Audit gate
+      id: run
       shell: bash
-      run: |
-        echo "Initiating AI-Powered Semantic Audit..."
-        # In the future, this calls cicd-squabbler or hypatia-scan to evaluate content semantics
-        
-        echo "Checking descriptiles for contradictions and Oxford English Dictionary spelling/grammar..."
-        echo "(Exceptions allowed for exact legal strings e.g. LICENSE)."
-        
-        echo "Checking contractiles for completeness..."
-        echo "Checking bot_directives for compliance..."
-        echo "Parsing anchor files to ensure closing gap..."
-        echo "Validating CLAUDE.md..."
-        
-        # Placeholder for actual invocation
-        # cicd-squabbler audit --semantic --repo . --grammar-check=OED
-        
-        echo "Semantic Audit Passed."
+      env:
+        WORKING_DIRECTORY: ${{ inputs.working_directory }}
+      run: bash "$GITHUB_ACTION_PATH/check.sh"

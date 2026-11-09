@@ -1,0 +1,8 @@
+-- SPDX-License-Identifier: MPL-2.0
+-- prat-check: is there property-based testing in this repository, and does it run?
+package prat-check
+version = 0.1.0
+sourcedir = "src"
+main = Prat
+executable = prat-check
+modules = Gate.Tree, Gate.Report, Gate.Text, Gate.Frameworks, Prat

@@ -1,2 +1,6 @@
 .DS_Store
 *.swp
+
+# Idris2 build output
+/build/
+actions/*/src/build/

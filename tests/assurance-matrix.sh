@@ -28,7 +28,7 @@ mutate 'nonexistent control path' '.capabilities[0].test_paths=["tests/absent.sh
 mutate 'path traversal' '.capabilities[0].test_paths=["tests/../../outside"]'
 mutate 'false receipt identity' '.capabilities[0].consumer_receipts[0].subject_sha="main"'
 mutate 'empty coverage with linked tests' '.capabilities[0].coverage="not-assessed"'
-mutate 'placeholder promoted to evidence' '(.capabilities[]|select(.coverage=="placeholder"))|=(.coverage="controls-linked"|.test_paths=["tests/pass-on-absence.sh"])'
+mutate 'advisory-only promoted to evidence' '(.capabilities[]|select(.coverage=="advisory-only"))|=(.coverage="controls-linked"|.test_paths=["tests/pass-on-absence.sh"])'
 mutate 'unknown schema' '.schema_version=9'
 printf 'stale\n' > "$fixture/docs/CAPABILITY-ASSURANCE.adoc"
 reject 'stale generated matrix'

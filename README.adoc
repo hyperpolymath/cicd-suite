@@ -6,9 +6,9 @@ contracts, language verification and ecosystem integration.*
 == Discover the suite
 
 Start with the link:CATALOGUE.adoc[*CI/CD Capability Atlas*]: *32 composite actions
-in 8 clades*, organised by both purpose and nature. Each capability has a source
-link, an assurance boundary and a status: enforcing, tool-dependent, advisory or
-unfinished. Reusable workflows and caller templates are linked where provided.
+in 7 clades*, organised by both purpose and nature. Each capability has a source
+link, an assurance boundary and a status: enforcing, tool-dependent or
+advisory. Reusable workflows and caller templates are linked where provided.
 This is the visitor catalogue, not repository-chora metadata.
 
 [cols="1,3",options="header"]
@@ -21,7 +21,6 @@ This is the visitor catalogue, not repository-chora metadata.
 |link:catalogue/clades/proof.adoc[Proof] |Language CI, proof execution & interface policy
 |link:catalogue/clades/bridge.adoc[Bridge] |BoJ applicability & external analysis tools
 |link:catalogue/clades/observatory.adoc[Observatory] |Advisory signals, with limitations made explicit
-|link:catalogue/clades/frontier.adoc[Frontier] |Unfinished capabilities, not deployable assurance
 |===
 
 Clades are a discovery taxonomy, not new runtime packages or a claim that every
@@ -62,12 +61,14 @@ after 8s".
 === Status
 
 Published 2026-08-07. Defects (1)–(3) are *fixed and verified against two
-live estate repositories*; (4) is partly fixed; (5) is closed by removing
-the stubs from the workflow; (6) is open; (7) is fixed by making an
-absent tool a `not_run`/exit 2 instead of a pass.
+live estate repositories*; (4) is partly fixed; (5) is implemented — both
+former stubs are now standalone Idris2 gates; (6) is open; (7) is fixed by
+making an absent tool a `not_run`/exit 2 instead of a pass.
+Fixed narratives live in link:FIX-LOG.adoc[FIX-LOG.adoc]; the outstanding
+and partially fixed items stay below, up front.
 
 Before wiring this into a repository, read _Known defects_ and _Consuming
-it_.
+it_ (fixed narratives: link:FIX-LOG.adoc[FIX-LOG.adoc]).
 
 === What actually enforces in the original audit inventory
 
@@ -75,11 +76,12 @@ The following 26-action baseline is not the total suite inventory. The current
 link:CATALOGUE.adoc[catalogue] includes the four later language gates, bounded
 secret scanner and official SonarCloud receipt verifier as well.
 
-Of the original 26 actions, *17 can fail a build and 9 cannot* — and neither group
-is one kind of thing: the 17 split into 14 always-in-the-audit enforcing
-gates and 3 tool-dependent gates that also refuse (`not_run`, exit 2)
-when their tool is absent, while the 9 split into 7 advisory gates and
-2 unimplemented stubs. Conflating them was the original error.
+Of the original 26 actions, *19 can fail a build and 7 cannot* — and neither group
+is one kind of thing: the 19 split into 14 always-in-the-audit enforcing
+gates, 3 tool-dependent gates that also refuse (`not_run`, exit 2)
+when their tool is absent, and the 2 former stubs (prat · semantic-audit),
+now enforcing standalone gates outside the audit; the 7 cannot-fail gates
+are the advisory seven. Conflating them was the original error.
 
 [width="100%",cols="34%,33%,33%",options="header",]
 |===
@@ -101,8 +103,10 @@ they report `status=not_run` and exit 2, _NO CHECK WAS PERFORMED_.
 `main-estate-audit` installs none of those tools, so it no longer runs
 them; callers that install the tools may call them directly. See (7).
 
-|*Unimplemented* (2) |prat · semantic-audit |Stubs. Not referenced by the
-audit workflow. See (5).
+|*Enforcing, not in the audit* (2) |prat · semantic-audit |Implemented
+standalone Idris2 gates: property-testing detection with exit 0/1/2, and a
+deterministic repository-metadata audit (descriptiles, K9 contracts,
+CLAUDE.md). Not referenced by the audit workflow. See FIX-LOG.adoc (5).
 |===
 
 The four language gates added 2026-10-14 (Rust CI, Creusot, SPARK, miniKanren)
@@ -138,33 +142,9 @@ nobody reads their green tick as a guarantee.
 
 === Known defects
 
-*1. FIXED — `+code-hygiene-check+` scanned for the word, not the
-marker.* It ran one case-insensitive, unanchored `+git grep+` over the
-whole tree, so "`admit`" matched "`admitted`", "`sorry`" matched
-ordinary English, any document _discussing_ a marker failed, and
-`+believe_me+` failed repos whose sanctioned axioms are their declared
-trusted base. Measured *112* matching files in one repo and *313* in
-another. Now two scans with different semantics — debt markers
-case-sensitive and whole-word in source only; circumventions in proof
-languages only, with comments filtered. Repos may exempt paths via
-`+.cicd-hygiene-allow+`. Result: *112 → 2* and *313 → 3*, all true
-positives.
-
-*2. FIXED — `+required-files-check+` manufactured filler.* Presence-only
-checking meant the cheapest way to pass was template boilerplate, and
-that is exactly what happened in the estate. It now checks presence,
-then format, then substance: documents need real content and no
-placeholders, `+ARCHITECTURE+` must name a directory that actually
-exists, and `+MAINTAINERS+` must mention the repository owner — which
-catches a template shipping its author’s handle. `+CODEOWNERS+` is
-judged on whether it assigns an owner, not on length.
-
-*3. FIXED — the suite contradicted itself.* `+required-files-check+`
-hard-failed a repo for lacking `+GOVERNANCE.md+` while
-`+formatting-check+` warned that same file should be `+.adoc+`.
-Required-files now accepts every policy-legal form, and formatting-check
-owns the preference. Verified: a repo passes both gates with `+.adoc+`
-(silently) or with `+.md+` (with a nudge).
+_Outstanding and partially fixed items stay here, up front. Fixed-defect
+narratives live in link:FIX-LOG.adoc[FIX-LOG.adoc]. Defect numbering is
+stable across both files and is never reused._
 
 *4. PARTLY FIXED — the toothless column is down from 13 to 7, and now
 triaged (the three tool-dependent gates it also held are defect (7)).* `+recipes-set+` was a stub that printed "`Checking Justfile
@@ -174,75 +154,17 @@ not parse. `+formatting+` gained teeth in (3). The seven remaining
 advisories are advisory by design and defensible; the honest fix for
 them is a rename to `+*-advisory+`, not teeth.
 
-*5. CLOSED — two actions are unimplemented stubs, and the workflow no
-longer runs them.*
-
-* `+semantic-audit+` is pure `+echo+` with "`Placeholder for actual
-invocation`". `+cicd-squabbler+` now exists, but is a gate diagnosis
-and legitimate-remediation engine, not evidence of the imagined
-`+audit --semantic+` interface. Keep this stub out of enforcement; do not
-confuse pipeline diagnosis with semantic verification.
-* `+prat+` claims to validate "`PRAT testing`", but *PRAT is defined
-nowhere in the estate* — a search of every repository turns up only
-further copies of the workflow that calls it. Its current check passes
-any repository that has a `+tests/+` directory _or_ contains the letters
-"`prat`" anywhere. It cannot be honestly implemented until somebody says
-what PRAT is.
-
-A stub that prints success cannot be credited as assurance, so neither
-step is in `+main-estate-audit.yml+` any more. The two directories stay
-under `+actions/+` for now, for two reasons. Repositories still running a
-pre-caller copy of the workflow reference them by path. And
-`+tests/lock-transitive-closure.sh+` requires that the SHA the workflow
-pins serves the whole `+actions/+` tree at HEAD. Move them to `+draft/+`
-once the estate runs the caller (see _Consuming it_).
-
 *6. OPEN — six actions use bare `+git grep+`* with no path restriction
 (`+idris2-abi+`, `+metrics+`, `+secrets+`, `+spdx-license+`,
 `+vaulted-tokens+`, `+zig-unified-api-adapter+`) and may inherit a milder form of
 defect (1).
 
-*7. FIXED — pass-on-absence: a gate certifying a scan that never ran.*
-`+custom-tools-check+` ("Panic Attack & Pons Gate") printed "`Custom
-tools validation passed`" when neither `+pons+` nor `+panic-attack+`
-was on PATH — the normal case on GitHub runners — so every consumer
-of `+main-estate-audit+` was certifying scans that never ran. It now
-lives in `+check.sh+` (estate convention: exit 1 = ran and failed,
-exit 2 = _NO CHECK WAS PERFORMED_) with a `+status+` output
-(`+passed+`/`+failed+`/`+not_run+`), and is out of
-`+main-estate-audit+`, which installs neither tool; panic-attack/pons
-evidence comes from the standards Hypatia lane's envelopes.
-
-The sibling audit of every `+*-check+` composite found the same shape
-twice more, both fixed the same way and both removed from the audit
-for the same reason: `+contractile-validation-check+` echoed
-"`Invoking … runner…`" in front of a commented-out command and
-printed "`Contractile Validation Passed.`" unconditionally (now: a
-detection step finds the declarations — with the canonical
-`+Intentfile+` stem, not `+Intendfile+` — and the estate DEED
-validator, the `+deed-ecosystem/validate-action+` `+manifest-check+`
-already pins, runs only when they exist; no declarations ⇒ explicit
-`+not_applicable+`, never a pass; there is no `+deed-lint+` CLI and an
-earlier draft of this fix invented one from the placeholder comment), and
-`+proof-runner-check+` had its only invocation commented out and
-printed "`All detected proofs executed successfully.`" regardless
-(now: proof project present + `+idris2+`/`+lake+` absent ⇒
-`+not_run+`/exit 2; no project ⇒ `+not_applicable+`).
-
-Audited and _not_ the same defect: `+recipes-set+` already exits 1
-when its tool is missing and a recipe file is present (the model for
-this fix); the language gates (rust-ci/creusot/spark/kanren) already
-exit 2 on a missing tool; `+idris2-abi+`, `+zig-unified-api-adapter+`,
-`+boj-cartridge+`, `+affirmation+` and `+referencing+` say
-"`Skipping`"/`+::notice::+` and exit 0 only when their _subject_ is
-absent — not applicable, not a scan that failed to run — and
-`+manifest+` delegates to real validator actions. The remaining
-advisory gates invoke no external tool, so absence-of-tool cannot
-arise; two of them (`+vaulted-tokens+`, `+www-compliance+`) did print
-"`Passing…`"/"`…passed`" for the no-subject case and now say
-`+not applicable … (this is not a pass)+` instead. `+tests/pass-on-absence.sh+`
-holds the controls: tool-absent ⇒ exit 2 with no success line,
-stand-in tools ⇒ invoked for real, failing stand-in ⇒ exit 1.
+Fixed and verified: (1) code-hygiene marker matching; (2) required-files
+manufacturing filler; (3) the suite contradicting itself over
+`+GOVERNANCE+` forms; (5) the two unimplemented stubs — now standalone,
+enforcing Idris2 gates that still stay out of `+main-estate-audit.yml+`;
+(7) pass-on-absence — a gate certifying a scan that never ran. Full
+narratives, measurements and controls: link:FIX-LOG.adoc[FIX-LOG.adoc].
 
 === Blast radius
 

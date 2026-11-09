@@ -91,3 +91,14 @@ Scan Zig files for direct std.fs/std.io usage prohibited by estate adapter polic
 *Assurance boundary:* Pattern check, not a Zig compiler invocation or proof of adapter correctness.
 
 * link:../../actions/zig-unified-api-adapter-check/action.yml[Action definition and inputs]
+
+[[prat]]
+== PRAT property-testing gate
+
+*`prat` · policy-gate · enforcing*
+
+Detects property-testing frameworks declared in manifests (proptest, QuickCheck/Hedgehog, hypothesis, fast-check, jqwik, gopter/rapid, qcheck, stream_data, proper, rantly, SwiftCheck, ScalaCheck, FsCheck) and property-test markers in source; fails when a declared framework has no property tests, and with require_properties when no PBT evidence exists at all. With run_tests it executes one conventional command per detected ecosystem.
+
+*Assurance boundary:* Detection is marker-based and cannot prove property quality or coverage; run_tests executes the repository's own test command and missing runners are not_run (exit 2), never a pass. Not referenced by main-estate-audit; the repository's own CI owns test execution.
+
+* link:../../actions/prat-check/action.yml[Action definition and inputs]

@@ -1,0 +1,132 @@
+= Fix log
+// SPDX-License-Identifier: CC-BY-SA-4.0
+// Copyright (c) 2026 Jonathan D.A. Jewell (hyperpolymath) <j.d.a.jewell@open.ac.uk>
+:toc:
+
+*Fixed-defect narratives for the suite, kept out of the README so the
+front page stays about what is outstanding. Defect numbering is stable
+across link:README.adoc[README] and this file, and is never reused.
+Outstanding and partially fixed items remain in the README's _Known
+defects_ section.*
+
+== 1. FIXED — `+code-hygiene-check+` scanned for the word, not the marker
+
+It ran one case-insensitive, unanchored `+git grep+` over the whole tree,
+so "`admit`" matched "`admitted`", "`sorry`" matched ordinary English,
+any document _discussing_ a marker failed, and
+`+believe_me+` failed repos whose sanctioned axioms are their declared
+trusted base. Measured *112* matching files in one repo and *313* in
+another. Now two scans with different semantics — debt markers
+case-sensitive and whole-word in source only; circumventions in proof
+languages only, with comments filtered. Repos may exempt paths via
+`+.cicd-hygiene-allow+`. Result: *112 → 2* and *313 → 3*, all true
+positives.
+
+== 2. FIXED — `+required-files-check+` manufactured filler
+
+Presence-only checking meant the cheapest way to pass was template
+boilerplate, and that is exactly what happened in the estate. It now
+checks presence, then format, then substance: documents need real content
+and no placeholders, `+ARCHITECTURE+` must name a directory that actually
+exists, and `+MAINTAINERS+` must mention the repository owner — which
+catches a template shipping its author's handle. `+CODEOWNERS+` is judged
+on whether it assigns an owner, not on length.
+
+== 3. FIXED — the suite contradicted itself
+
+`+required-files-check+` hard-failed a repo for lacking `+GOVERNANCE.md+`
+while `+formatting-check+` warned that same file should be `+.adoc+`.
+Required-files now accepts every policy-legal form, and formatting-check
+owns the preference. Verified: a repo passes both gates with `+.adoc+`
+(silently) or with `+.md+` (with a nudge).
+
+== 5. IMPLEMENTED — the two unimplemented stubs are now real gates
+
+Both actions were pure `+echo+` that printed success unconditionally, and
+were removed from `+main-estate-audit.yml+` (README, _Known defect 5_).
+They have since been reimplemented; what they check and how they fail is
+defined by the fixture suites in each action directory, which are the
+living contract.
+
+* `+actions/semantic-audit-check/+` — _Semantic Audit Gate_. A
+  deterministic audit of repository metadata (NOT an AI audit; cicd-squabbler
+  remains a gate-diagnosis and legitimate-remediation engine, not evidence
+  of any `+audit --semantic+` interface — do not confuse the two). Checks:
+  (S2) core descriptiles STATE/META/ECOSYSTEM exist in a recognised
+  location and are non-empty; (S3) contradictions and verbatim restatement
+  of policy lines across descriptiles and K9 contracts; (S4) every
+  `+*.k9.ncl+` carries the K9 contract v1.0.0 required fields
+  (`+schema_version+`, `+component_type+`, `+semantics+`, `+security+`,
+  `+side_effects+`); (S5) root `+CLAUDE.md+` is non-empty, headed,
+  fence-balanced, marker-free and placeholder-free. Anchors and
+  `+bot_directives+` are presence-reported only; grammar and
+  typechecking stay with the deed-lint and k9-validate lanes. Spec used:
+  DESCRIPTILE-SPEC v0.1.1 (draft).
+* `+actions/prat-check/+` — _PRAT Gate_. Property-based testing:
+  detects PBT frameworks declared in manifests (proptest, QuickCheck/
+  Hedgehog, hypothesis, fast-check, jqwik, gopter/rapid, qcheck,
+  stream_data, proper, rantly, SwiftCheck, ScalaCheck, FsCheck) and
+  property-test markers in source. Fails when a framework is declared but
+  no properties were written, and — with `+require_properties+` (default
+  true) — when no PBT evidence exists at all. With `+run_tests: true+` it
+  executes one conventional test command per detected ecosystem (missing
+  runner = `not_run`/exit 2, never a pass; failing suite = exit 1).
+
+Implementation is pure Idris2 (no FFI); both gates exit *0* (passed or
+not_applicable), *1* (defect) or *2* (NOT RUN — idris2 missing or, for
+prat, a missing ecosystem test runner). Each ships a fixture-driven
+`+test.sh+`: 20 cases for semantic-audit-check, 12 for prat-check, one
+planted defect per claimed check, plus the not_run and tool-absence
+contracts. Both are standalone gates and are deliberately *not* in
+`+main-estate-audit.yml+`: repositories calling the audit get no
+property-testing or metadata audit coverage from it, and each gate's
+absence-of-subject leg reports `not_applicable`, never a pass.
+
+The directories remain under `+actions/+` because
+`+tests/lock-transitive-closure.sh+` requires that the SHA the workflow
+pins serves the whole `+actions/+` tree at HEAD, and repositories still
+running a pre-caller copy of the workflow reference them by path. Move
+them to `+draft/+` once the estate runs the caller (see README, _Consuming it_).
+
+== 7. FIXED — pass-on-absence: a gate certifying a scan that never ran
+
+`+custom-tools-check+` ("Panic Attack & Pons Gate") printed "`Custom
+tools validation passed`" when neither `+pons+` nor `+panic-attack+`
+was on PATH — the normal case on GitHub runners — so every consumer
+of `+main-estate-audit+` was certifying scans that never ran. It now
+lives in `+check.sh+` (estate convention: exit 1 = ran and failed,
+exit 2 = _NO CHECK WAS PERFORMED_) with a `+status+` output
+(`+passed+`/`+failed+`/`+not_run+`), and is out of
+`+main-estate-audit+`, which installs neither tool; panic-attack/pons
+evidence comes from the standards Hypatia lane's envelopes.
+
+The sibling audit of every `+*-check+` composite found the same shape
+twice more, both fixed the same way and both removed from the audit
+for the same reason: `+contractile-validation-check+` echoed
+"`Invoking … runner…`" in front of a commented-out command and
+printed "`Contractile Validation Passed.`" unconditionally (now: a
+detection step finds the declarations — with the canonical
+`+Intentfile+` stem, not `+Intendfile+` — and the estate DEED
+validator, the `+deed-ecosystem/validate-action+` `+manifest-check+`
+already pins, runs only when they exist; no declarations ⇒ explicit
+`+not_applicable+`, never a pass; there is no `+deed-lint+` CLI and an
+earlier draft of this fix invented one from the placeholder comment), and
+`+proof-runner-check+` had its only invocation commented out and
+printed "`All detected proofs executed successfully.`" regardless
+(now: proof project present + `+idris2+`/`+lake+` absent ⇒
+`+not_run+`/exit 2; no project ⇒ `+not_applicable+`).
+
+Audited and _not_ the same defect: `+recipes-set+` already exits 1
+when its tool is missing and a recipe file is present (the model for
+this fix); the language gates (rust-ci/creusot/spark/kanren) already
+exit 2 on a missing tool; `+idris2-abi+`, `+zig-unified-api-adapter+`,
+`+boj-cartridge+`, `+affirmation+` and `+referencing+` say
+"`Skipping`"/`+::notice::+` and exit 0 only when their _subject_ is
+absent — not applicable, not a scan that failed to run — and
+`+manifest+` delegates to real validator actions. The remaining
+advisory gates invoke no external tool, so absence-of-tool cannot
+arise; two of them (`+vaulted-tokens+`, `+www-compliance+`) did print
+"`Passing…`"/"`…passed`" for the no-subject case and now say
+`+not applicable … (this is not a pass)+` instead. `+tests/pass-on-absence.sh+`
+holds the controls: tool-absent ⇒ exit 2 with no success line,
+stand-in tools ⇒ invoked for real, failing stand-in ⇒ exit 1.

@@ -18,7 +18,7 @@ name: Central Estate CI/CD Audit
 #   advisory    seven gates that cannot fail BY DESIGN (README: "What actually
 #               enforces"); a green tick here is information, not assurance.
 #
-# Removed for pass-on-absence (README, Known defect 7): custom-tools,
+# Removed for pass-on-absence (FIX-LOG.adoc, defect 7): custom-tools,
 # contractile-validation and proof-runner. Each claimed a pass when the
 # tool it exists to run was absent -- custom-tools printed "Custom tools
 # validation passed" with neither pons nor panic-attack on PATH, the
@@ -32,9 +32,10 @@ name: Central Estate CI/CD Audit
 # Removed: prat and semantic-audit. They were stubs (README, Known defect 5):
 # semantic-audit printed "Semantic Audit Passed." unconditionally and prat
 # passed any repo with a tests/ directory, so a green tick credited assurance
-# that nothing checked. Their directories stay under actions/ only so that
-# not-yet-migrated copies of the old 26-step workflow still start; delete them
-# once every consumer calls this reusable workflow.
+# that nothing checked. Both are now standalone enforcing Idris2 gates, still
+# out of this workflow by design (see FIX-LOG.adoc, defect 5); their
+# directories stay under actions/ only so that not-yet-migrated copies of
+# the old 26-step workflow still start.
 #
 # Consumers call this workflow; they do not copy it (see README, "Consuming
 # it"). The caller pins this file at a full SHA and is de-onboarded from its

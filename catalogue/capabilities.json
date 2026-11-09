@@ -35,11 +35,6 @@
       "id": "observatory",
       "title": "Observatory — advisory signals",
       "summary": "Discover useful signals without presenting warnings or heuristics as certification."
-    },
-    {
-      "id": "frontier",
-      "title": "Frontier — unfinished capabilities",
-      "summary": "Visible roadmap boundaries: not implemented assurance and not recommended gates."
     }
   ],
   "capabilities": [
@@ -355,22 +350,22 @@
     },
     {
       "id": "prat",
-      "clade": "frontier",
-      "status": "stub",
-      "nature": "placeholder",
-      "title": "PRAT testing placeholder",
-      "summary": "Heuristic presence/mention detection for prospective property-testing integration.",
-      "limitations": "Does not execute property tests or prove PRAT coverage; excluded from default audit.",
+      "clade": "proof",
+      "status": "enforcing",
+      "nature": "policy-gate",
+      "title": "PRAT property-testing gate",
+      "summary": "Detects property-testing frameworks declared in manifests (proptest, QuickCheck/Hedgehog, hypothesis, fast-check, jqwik, gopter/rapid, qcheck, stream_data, proper, rantly, SwiftCheck, ScalaCheck, FsCheck) and property-test markers in source; fails when a declared framework has no property tests, and with require_properties when no PBT evidence exists at all. With run_tests it executes one conventional command per detected ecosystem.",
+      "limitations": "Detection is marker-based and cannot prove property quality or coverage; run_tests executes the repository's own test command and missing runners are not_run (exit 2), never a pass. Not referenced by main-estate-audit; the repository's own CI owns test execution.",
       "path": "actions/prat-check/action.yml"
     },
     {
       "id": "semantic-audit",
-      "clade": "frontier",
-      "status": "stub",
-      "nature": "placeholder",
-      "title": "Semantic audit placeholder",
-      "summary": "Reserved integration point for future semantic analysis.",
-      "limitations": "Current action prints a success message without invoking the proposed analyser. Not assurance; excluded from default audit.",
+      "clade": "schema",
+      "status": "enforcing",
+      "nature": "validator",
+      "title": "Semantic audit of repository metadata",
+      "summary": "Deterministic audit of repository descriptiles: STATE/META/ECOSYSTEM exist and are non-empty; contradictions and verbatim policy restatement across descriptiles and K9 contracts; *.k9.ncl carries the K9 contract v1.0.0 required fields; root CLAUDE.md is non-empty, headed, fence-balanced, marker-free and placeholder-free.",
+      "limitations": "Not an AI audit and not natural-language understanding. Grammar/typechecking stay with the deed-lint and k9-validate lanes; bot_directives and anchors are presence-reported only. Absent subject is not_applicable; missing toolchain is not_run (exit 2). Not referenced by main-estate-audit.",
       "path": "actions/semantic-audit-check/action.yml"
     }
   ]

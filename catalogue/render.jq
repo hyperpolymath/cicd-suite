@@ -32,7 +32,7 @@ def card($e; $page): [
       "* *Establish repository policy:* <<covenant,Covenant>>, <<forge,Forge>> and <<schema,Schema>>.",
       "* *Compile, test or prove:* <<proof,Proof>> — language-specific execution and explicitly labelled source checks.",
       "* *Integrate the ecosystem:* <<bridge,Bridge>> — BoJ applicability, Pons and Panic Attack.",
-      "* *Explore signals and future work:* <<observatory,Observatory>> and <<frontier,Frontier>> — no inflated assurance claims.", "",
+      "* *Explore signals without assurance claims:* <<observatory,Observatory>> — advisory signals with explicit limits.", "",
       "== The clade matrix", "", "[cols=\"2,4,1,1,1,1,1\",options=\"header\"]", "|===",
       "|Clade |Purpose |Total |Enforcing |Tool-dependent |Advisory |Stub"
     ] + [

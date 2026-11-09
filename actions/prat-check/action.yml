@@ -1,16 +1,41 @@
-name: 'PRAT Testing Gate'
-description: 'Validates that code receives PRAT testing.'
+# SPDX-License-Identifier: MPL-2.0
+name: 'PRAT Gate'
+description: >-
+  Property-based testing gate. Detects property-testing frameworks declared in
+  manifests (proptest, QuickCheck/Hedgehog, hypothesis, fast-check, jqwik,
+  gopter/rapid, qcheck, stream_data, proper, rantly, SwiftCheck, ScalaCheck,
+  FsCheck) and property-test markers in source files. Fails when a framework
+  is declared but no properties were written, and — with require_properties
+  (default true) — when no PBT evidence exists at all. With run_tests: true,
+  executes one conventional test command per detected ecosystem (missing
+  runner = not_run/exit 2, never a pass; failing suite = exit 1).
+  Implementation is pure Idris2; idris2 must be on PATH or the gate reports
+  not_run (exit 2). Not referenced by main-estate-audit.
+inputs:
+  working_directory:
+    description: 'Tree root to audit'
+    required: false
+    default: '.'
+  require_properties:
+    description: 'Fail when no property-based testing is detected anywhere (true|false)'
+    required: false
+    default: 'true'
+  run_tests:
+    description: 'Execute each detected ecosystem test command after detection (true|false). Default false: the repository own test CI owns execution.'
+    required: false
+    default: 'false'
+outputs:
+  status:
+    description: 'passed | failed | not_run'
+    value: ${{ steps.run.outputs.status }}
 runs:
   using: 'composite'
   steps:
-    - name: Run PRAT Testing Check
+    - name: Run PRAT gate
+      id: run
       shell: bash
-      run: |
-        echo "Validating PRAT Testing inclusion..."
-        # Check if tests directory or test files mention PRAT/property testing
-        if [ -d "test" ] || [ -d "tests" ] || grep -Ril "prat" . 2>/dev/null | grep -q .; then
-          echo "PRAT testing vectors detected."
-        else
-          echo "::warning::No PRAT testing detected for this codebase. Code should all receive PRAT testing."
-          # Not failing the build immediately, but flagging it.
-        fi
+      env:
+        WORKING_DIRECTORY: ${{ inputs.working_directory }}
+        REQUIRE_PROPERTIES: ${{ inputs.require_properties }}
+        RUN_TESTS: ${{ inputs.run_tests }}
+      run: bash "$GITHUB_ACTION_PATH/check.sh"

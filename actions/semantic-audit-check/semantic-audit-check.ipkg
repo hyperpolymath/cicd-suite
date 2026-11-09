@@ -1,0 +1,8 @@
+-- SPDX-License-Identifier: MPL-2.0
+-- semantic-audit-check: deterministic audit of repository metadata artefacts.
+package semantic-audit-check
+version = 0.1.0
+sourcedir = "src"
+main = SemanticAudit
+executable = semantic-audit-check
+modules = Gate.Tree, Gate.Report, Gate.Text, Gate.A2ml, SemanticAudit
