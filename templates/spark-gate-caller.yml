@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MPL-2.0
 # SPARK Gate — thin caller of the estate's Ada/SPARK verification gate in
-# hyperpolymath/cicd-suite. Two halves: the claims side is
+# hyperpolymath/proven-cicd-and-workflows. Two halves: the claims side is
 # hyperpolymath/standards' SPARK Theatre Gate (a "formally verified" banner
 # with no prover is a failure); the oracle side runs GNATprove — this caller
 # is where gnatprove runs for this repository — at pinned GNAT/GNATprove
@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   spark:
-    uses: hyperpolymath/cicd-suite/.github/workflows/spark-gate.yml@__CICD_SUITE_SHA__ # cicd-suite main
+    uses: hyperpolymath/proven-cicd-and-workflows/.github/workflows/spark-gate.yml@__CICD_SUITE_SHA__ # cicd-suite main
     # Inputs (optional):
     #   gpr: spark/squabble_gate.gpr     # required when several .gpr files exist
     #   level: "2"                       # gnatprove --level

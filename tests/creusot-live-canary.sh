@@ -7,7 +7,7 @@ command -v cargo >/dev/null || { echo 'real Cargo required' >&2; exit 2; }
 yq --version | grep -q 'mikefarah/yq' || { echo 'mikefarah yq required' >&2; exit 2; }
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-pin=hyperpolymath/cicd-suite/.github/workflows/creusot-gate.yml@6c6d772ebe82605ba22254db528faf54faec9f49
+pin=hyperpolymath/proven-cicd-and-workflows/.github/workflows/creusot-gate.yml@6c6d772ebe82605ba22254db528faf54faec9f49
 
 # Validate the bounded input and call contract. Every failure propagates even
 # when this function is called in an `if` (where Bash suppresses errexit).

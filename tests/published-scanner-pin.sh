@@ -15,7 +15,7 @@ chmod +x "$tmp/gh"
 export PATH="$tmp:$PATH"
 pin=0123456789abcdef0123456789abcdef01234567
 export EXPECTED_PIN=$pin PROBE_LOG="$tmp/probe-log"
-for repository in hyperpolymath/cicd-suite hyperpolymath/proven-cicd; do
+for repository in hyperpolymath/cicd-suite hyperpolymath/proven-cicd hyperpolymath/proven-cicd-and-workflows; do
   export EXPECTED_REPOSITORY=$repository
   for status in identical ahead behind diverged null unknown ''; do
     rc=0

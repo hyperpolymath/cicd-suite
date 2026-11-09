@@ -100,16 +100,16 @@ jobs:
           persist-credentials: false
       - name: Required Files Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/required-files-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/required-files-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
       - name: SPDX License Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/spdx-license-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/spdx-license-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
       - name: Affirmation Document Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/affirmation-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/affirmation-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
       - name: Academic Referencing Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/referencing-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/referencing-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
 
   hygiene:
     name: hygiene
@@ -121,19 +121,19 @@ jobs:
           persist-credentials: false
       - name: Code Hygiene Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/code-hygiene-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/code-hygiene-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
       - name: Formatting Validation Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/formatting-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/formatting-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
       - name: Linguist & Banned Languages Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/linguist-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/linguist-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
       - name: Are We UnAPI Gate (Secret Scanning)
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/secrets-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/secrets-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
       - name: Reasonably Good Token Validation Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/vaulted-tokens-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/vaulted-tokens-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
 
   manifests:
     name: manifests
@@ -145,13 +145,13 @@ jobs:
           persist-credentials: false
       - name: Manifest Validation Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/manifest-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/manifest-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
         with:
           deed-paths-ignore: ${{ inputs.manifest-deed-paths-ignore }}
           k9-paths-ignore: ${{ inputs.manifest-k9-paths-ignore }}
       - name: Recipes Set Validation Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/recipes-set-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/recipes-set-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
 
   languages:
     name: languages
@@ -163,15 +163,15 @@ jobs:
           persist-credentials: false
       - name: Idris2 ABI Purity Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/idris2-abi-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/idris2-abi-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
       - name: Zig UnifiedApiAdapter API Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/zig-unified-api-adapter-check@3c2d4028d7203097f3c54106556e20947f9e04ef
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/zig-unified-api-adapter-check@3c2d4028d7203097f3c54106556e20947f9e04ef
         with:
           paths: ${{ inputs.zig-ffi-paths }}
       - name: BoJ Cartridge Validation Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/boj-cartridge-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/boj-cartridge-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
 
   advisory:
     name: advisory
@@ -183,22 +183,22 @@ jobs:
           persist-credentials: false
       - name: WWW & Well-Known Compliance Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/www-compliance-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/www-compliance-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
       - name: Accreditations & Badges Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/badges-check@35868f090e4e42b142374d156f2d49a22ad577fd # distinguish missing wording from read errors, 2026-11-03
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/badges-check@35868f090e4e42b142374d156f2d49a22ad577fd # distinguish missing wording from read errors, 2026-11-03
       - name: Metrics Extraction Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/metrics-check@88c55e28f37b8dfc5a435e86f548737997746cc9 # advisory evidence repair, 2026-11-03
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/metrics-check@88c55e28f37b8dfc5a435e86f548737997746cc9 # advisory evidence repair, 2026-11-03
       - name: Test & Benchmarks Dashboard Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/tests-benches-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/tests-benches-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
       - name: Hosting & Site Status Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/hosting-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/hosting-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
       - name: Git-Sea Analytics Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/gitsea-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/gitsea-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
       - name: Trust & Humans Validation Gate
         if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
-        uses: hyperpolymath/cicd-suite/actions/trust-humans-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)
+        uses: hyperpolymath/proven-cicd-and-workflows/actions/trust-humans-check@c519c4520afbfe48f16aceb0706d7cfb1d649994 # 2026-10-14 (#54)

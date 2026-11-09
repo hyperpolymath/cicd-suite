@@ -269,7 +269,7 @@ replaced by a full cicd-suite commit SHA:
 ----
 jobs:
   estate:
-    uses: hyperpolymath/cicd-suite/.github/workflows/main-estate-audit.yml@<40-hex sha> # cicd-suite main
+    uses: hyperpolymath/proven-cicd-and-workflows/.github/workflows/main-estate-audit.yml@<40-hex sha> # cicd-suite main
 ----
 +
 Pin a full SHA, never `+@main+` or a tag: the account enforces
@@ -429,7 +429,7 @@ this repository's own CI can witness them; both are now guarded here.
   transitively closed `dependencies:` section (cicd-squabbler's
   `scripts/check-lock-sync.sh`) cannot de-onboard the caller as the
   templates assume. Such a repository onboards instead: one
-  `hyperpolymath/cicd-suite@<sha>` record whose `uses:` is the union of
+  `hyperpolymath/proven-cicd-and-workflows@<sha>` record whose `uses:` is the union of
   what the called gates use at that SHA, plus a record for each of those
   copied from a lock GitHub accepts, with the tag — never the SHA — as
   `ref:`. cicd-squabbler#135 is the worked example (for its standards

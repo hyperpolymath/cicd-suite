@@ -114,7 +114,7 @@ jobs:
             # Other reusable workflows do not select this gate's source.
             [[ "$ref" == */.github/workflows/"$SUITE_WORKFLOW"* ]] || continue
             case "$ref" in
-              hyperpolymath/cicd-suite/.github/workflows/"$SUITE_WORKFLOW"@*|hyperpolymath/proven-cicd/.github/workflows/"$SUITE_WORKFLOW"@*)
+              hyperpolymath/cicd-suite/.github/workflows/"$SUITE_WORKFLOW"@*|hyperpolymath/proven-cicd/.github/workflows/"$SUITE_WORKFLOW"@*|hyperpolymath/proven-cicd-and-workflows/.github/workflows/"$SUITE_WORKFLOW"@*)
                 repository=${ref%%/.github/workflows/*}
                 sha=${ref##*@}
                 [[ "$sha" =~ ^[0-9a-f]{40}$ && "$ref" == "$repository/.github/workflows/$SUITE_WORKFLOW@$sha" ]] \
@@ -189,7 +189,7 @@ jobs:
             # Other reusable workflows do not select this gate's source.
             [[ "$ref" == */.github/workflows/"$SUITE_WORKFLOW"* ]] || continue
             case "$ref" in
-              hyperpolymath/cicd-suite/.github/workflows/"$SUITE_WORKFLOW"@*|hyperpolymath/proven-cicd/.github/workflows/"$SUITE_WORKFLOW"@*)
+              hyperpolymath/cicd-suite/.github/workflows/"$SUITE_WORKFLOW"@*|hyperpolymath/proven-cicd/.github/workflows/"$SUITE_WORKFLOW"@*|hyperpolymath/proven-cicd-and-workflows/.github/workflows/"$SUITE_WORKFLOW"@*)
                 repository=${ref%%/.github/workflows/*}
                 sha=${ref##*@}
                 [[ "$sha" =~ ^[0-9a-f]{40}$ && "$ref" == "$repository/.github/workflows/$SUITE_WORKFLOW@$sha" ]] \
@@ -280,7 +280,7 @@ jobs:
             # Other reusable workflows do not select this gate's source.
             [[ "$ref" == */.github/workflows/"$SUITE_WORKFLOW"* ]] || continue
             case "$ref" in
-              hyperpolymath/cicd-suite/.github/workflows/"$SUITE_WORKFLOW"@*|hyperpolymath/proven-cicd/.github/workflows/"$SUITE_WORKFLOW"@*)
+              hyperpolymath/cicd-suite/.github/workflows/"$SUITE_WORKFLOW"@*|hyperpolymath/proven-cicd/.github/workflows/"$SUITE_WORKFLOW"@*|hyperpolymath/proven-cicd-and-workflows/.github/workflows/"$SUITE_WORKFLOW"@*)
                 repository=${ref%%/.github/workflows/*}
                 sha=${ref##*@}
                 [[ "$sha" =~ ^[0-9a-f]{40}$ && "$ref" == "$repository/.github/workflows/$SUITE_WORKFLOW@$sha" ]] \
@@ -399,7 +399,7 @@ jobs:
       - name: Check out the resolved verdict implementation
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: hyperpolymath/cicd-suite
+          repository: hyperpolymath/proven-cicd-and-workflows
           ref: ${{ needs.detect.outputs.suite_sha }}
           path: .cicd-suite
           persist-credentials: false

@@ -69,12 +69,12 @@ jobs:
           cd repo
 
           # Every caller of a cicd-suite reusable, with the SHA it pins.
-          mapfile -t callers < <(grep -lE 'uses:[[:space:]]*hyperpolymath/cicd-suite/\.github/workflows/[A-Za-z0-9_.-]+\.yml@[0-9a-f]{40}' .github/workflows/*.yml 2>/dev/null || true)
+          mapfile -t callers < <(grep -lE 'uses:[[:space:]]*hyperpolymath/(cicd-suite|proven-cicd-and-workflows)/\.github/workflows/[A-Za-z0-9_.-]+\.yml@[0-9a-f]{40}' .github/workflows/*.yml 2>/dev/null || true)
           if [ "${#callers[@]}" -eq 0 ]; then
             echo "::error::no workflow here calls a cicd-suite reusable at a full SHA."
             exit 1
           fi
-          head=$(git ls-remote https://github.com/hyperpolymath/cicd-suite.git HEAD | cut -f1)
+          head=$(git ls-remote https://github.com/hyperpolymath/proven-cicd-and-workflows.git HEAD | cut -f1)
           # A lookup that succeeds but returns no HEAD leaves $head empty, and
           # the sed below would then strip every pin. Refuse anything that is
           # not a full SHA.
@@ -93,7 +93,15 @@ jobs:
               echo "$caller: ${pinned:0:7} -> ${head:0:7}"
               sed -i "s/$pinned/$head/g" "$caller"
               changed=1
-            done < <(grep -oE 'cicd-suite/\.github/workflows/[A-Za-z0-9_.-]+\.yml@[0-9a-f]{40}' "$caller" | sed 's/.*@//' | sort -u)
+            done < <(grep -oE '(cicd-suite|proven-cicd-and-workflows)/\.github/workflows/[A-Za-z0-9_.-]+\.yml@[0-9a-f]{40}' "$caller" | sed 's/.*@//' | sort -u)
+            # The suite was renamed from cicd-suite on 2026-11-09. A uses: line
+            # naming the old repository startup-fails (Actions does not follow
+            # renames), so move the coordinate along with the SHA.
+            if grep -qE 'uses:[[:space:]]*hyperpolymath/cicd-suite/\.github/workflows/' "$caller"; then
+              echo "$caller: hyperpolymath/cicd-suite -> hyperpolymath/proven-cicd-and-workflows"
+              sed -i -E 's#(uses:[[:space:]]*)hyperpolymath/cicd-suite/\.github/workflows/#\1hyperpolymath/proven-cicd-and-workflows/.github/workflows/#' "$caller"
+              changed=1
+            fi
           done
           if [ "$changed" -eq 0 ]; then
             echo "Every cicd-suite pin is at HEAD."
@@ -125,7 +133,7 @@ jobs:
             echo "::error::Push refused: writing under .github/workflows/ needs the AUTOMATION_TOKEN secret described above."
             exit 1
           fi
-          body="Moves every cicd-suite reusable this repository calls to cicd-suite \`${head:0:7}\`: https://github.com/hyperpolymath/cicd-suite/commit/$head. This PR's own gate runs are the check. Opened by \`track-estate-audit.yml\`."
+          body="Moves every cicd-suite reusable this repository calls to cicd-suite \`${head:0:7}\`: https://github.com/hyperpolymath/proven-cicd-and-workflows/commit/$head. This PR's own gate runs are the check. Opened by \`track-estate-audit.yml\`."
           if [ -n "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]; then
             gh pr edit "$BRANCH" --title "ci(cicd-suite): track cicd-suite ${head:0:7}" --body "$body"
           else

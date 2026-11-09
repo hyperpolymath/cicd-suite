@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MPL-2.0
 name: Central Estate CI/CD Audit
 
-# Thin caller of the estate audit, which lives in hyperpolymath/cicd-suite as
+# Thin caller of the estate audit, which lives in hyperpolymath/proven-cicd-and-workflows as
 # a reusable workflow and reports five component checks: governance,
 # hygiene, manifests, languages, advisory. Do not copy the audit's steps in
 # here. A copy freezes this repository at whatever cicd-suite commit its
@@ -28,4 +28,4 @@ permissions:
 
 jobs:
   estate:
-    uses: hyperpolymath/cicd-suite/.github/workflows/main-estate-audit.yml@__CICD_SUITE_SHA__ # cicd-suite main
+    uses: hyperpolymath/proven-cicd-and-workflows/.github/workflows/main-estate-audit.yml@__CICD_SUITE_SHA__ # cicd-suite main

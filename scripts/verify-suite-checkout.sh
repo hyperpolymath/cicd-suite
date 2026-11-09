@@ -23,7 +23,7 @@ suite="${SUITE_DIR:-.cicd-suite}"
 repository="${EXPECTED_REPOSITORY-hyperpolymath/cicd-suite}"
 
 case "$repository" in
-  hyperpolymath/cicd-suite|hyperpolymath/proven-cicd) ;;
+  hyperpolymath/cicd-suite|hyperpolymath/proven-cicd|hyperpolymath/proven-cicd-and-workflows) ;;
   *) echo '::error::suite repository is not admitted. NO CHECK WAS PERFORMED.' >&2; exit 2 ;;
 esac
 
