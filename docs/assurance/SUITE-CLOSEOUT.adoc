@@ -24,6 +24,15 @@ completion criteria. Observing a gap does not silently approve a new product.
 * First scanner consumer: unified-dataset-vocab PR81 merged at
   `4921ac0d161d5619c3186b2e916ed3f6e2c8c89f`; PR run 41198606402 and main
   run 41199623322 passed all three scanner contexts.
+* Gates and atlas — 2026-11-09: the two placeholder actions (`prat`,
+  `semantic-audit`) are reimplemented as standalone, enforcing Idris2
+  gates with fixture suites green locally (12 and 20 cases), classified
+  in the catalogue as enforcing (Frontier clade removed; the atlas now
+  has 32 actions in 7 clades), and NOT referenced by
+  `main-estate-audit.yml`. Landed on the session branch in `d7ee673`
+  (gates, catalogue, README/FIX-LOG split) and `fe1b98e` (assurance
+  matrix inspection source). Local verification only; no consumer or
+  hosted-run evidence is claimed.
 
 Verified scanner consumer deployments remain *one*. Passing open consumer PR
 checks do not count as merged/main-verified deployments.
