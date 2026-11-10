@@ -8,6 +8,16 @@ repository workflows together while preserving the current published coordinate.
 
 == Canonical repository and migration status
 
+[NOTE]
+====
+This section came from `hyperpolymath/proven-cicd` when its history was merged
+into this repository on 2026-11-10. It describes that repository as of
+2026-11-07. This repository is `hyperpolymath/proven-cicd-and-workflows`, the
+renamed `cicd-suite`. The owner has stated that the two repositories are to be
+one, under this name. The text below is kept as a dated record until the
+migration status is rewritten.
+====
+
 `hyperpolymath/proven-cicd` is the canonical destination for this suite.
 The GitHub import retained the existing Git history and both advertised branch
 heads, including the open Creusot execution-evidence work. The import checkpoint
