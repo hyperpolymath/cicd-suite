@@ -122,13 +122,16 @@ echo "== a self-referencing pin serves the CURRENT composites =="
 # In Actions $GITHUB_REPOSITORY is authoritative; the remote is the local path.
 selfrepo="${GITHUB_REPOSITORY:-$(git -C "$ROOT" remote get-url origin 2>/dev/null \
     | sed -E 's#\.git$##; s#^.*[:/]([^/]+/[^/]+)$#\1#')}"
-# The history-preserving canonical import retains reviewed legacy pins. Both
-# exact names denote this suite only when the checkout itself is one of them;
+# The history-preserving canonical import retains reviewed legacy pins. The
+# suite has three exact names: cicd-suite (the name before the rename),
+# proven-cicd (the separate import) and proven-cicd-and-workflows (the name
+# now). They denote this suite only when the checkout itself is one of them;
 # a fork or a similarly named repository does not inherit this admission.
 self_repositories=("$selfrepo")
 case "$selfrepo" in
-    hyperpolymath/cicd-suite|hyperpolymath/proven-cicd)
-        self_repositories=(hyperpolymath/cicd-suite hyperpolymath/proven-cicd)
+    hyperpolymath/cicd-suite|hyperpolymath/proven-cicd|hyperpolymath/proven-cicd-and-workflows)
+        self_repositories=(hyperpolymath/cicd-suite hyperpolymath/proven-cicd
+            hyperpolymath/proven-cicd-and-workflows)
         ;;
     *) ;;
 esac

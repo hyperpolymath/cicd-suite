@@ -242,11 +242,25 @@ before that merge.
   `hyperpolymath/proven-cicd/.github/workflows/secret-scanner-reusable.yml@a12b2b4644db1a1250bc50b58fd24c99f89f564e`,
   as `proven-cicd` `main` does.
 * Not changed by the merge: the 21 composite pins in `main-estate-audit.yml`
-  and the caller in `creusot-live-canary.yml` still name `cicd-suite`. The
-  self-pin section of `tests/lock-transitive-closure.sh` admits `cicd-suite`
-  and `proven-cicd` as this suite's names, not `proven-cicd-and-workflows`.
-  Pull request 94 addresses these names. It was written against `main`
-  without the merge and needs an update after either one lands.
+  and the caller in `creusot-live-canary.yml` still name `cicd-suite`.
+  Pull request 94 renames them. It was written against `main` without the
+  merge and needs an update after either one lands.
+* The merged self-pin section of `tests/lock-transitive-closure.sh` admitted
+  `cicd-suite` and `proven-cicd` as this suite's names, not
+  `proven-cicd-and-workflows`. Hosted run 42846788461 (job 129936292444, head
+  `20f086acbfae00cd8cff534b3337e03021b284b5`) failed there with
+  `no self-referencing pin examined`.
+* The test on `main` accepts only the name of the checkout, and the pins name
+  `cicd-suite`. By that source, `main` has the same condition after the
+  rename. No hosted run shows it: the last `main` run of the job
+  (42408029359, 2026-11-07) passed under the former name.
+* A later commit in the same pull request admits
+  `proven-cicd-and-workflows` as the third exact name and adds 5 controls to
+  `tests/lock-self-source-controls.sh` (25 in total). A fork or a similar
+  name stays refused. Read with Git at the merged head: each of the 21 pinned
+  composites equals the current composite
+  (`git rev-parse <pin>:actions/<name>` against `HEAD:actions/<name>`).
+  The checks of the pull request record the hosted result of that commit.
 
 == Suite lock-map finding — investigation, not a completed fix
 

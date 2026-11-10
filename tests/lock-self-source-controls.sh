@@ -11,6 +11,7 @@ tmp=$(mktemp -d)
 trap 'rm -rf -- "$tmp"' EXIT
 canonical=hyperpolymath/proven-cicd
 legacy=hyperpolymath/cicd-suite
+renamed=hyperpolymath/proven-cicd-and-workflows
 remote=actions/checkout@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 missing=0000000000000000000000000000000000000000
 cases=0
@@ -93,9 +94,9 @@ expect() {
     printf 'ok: %s\n' "$label"
 }
 
-# Each checkout name must inspect both exact source coordinates.
-for checkout in "$canonical" "$legacy"; do
-    for source in "$canonical" "$legacy"; do
+# Each checkout name must inspect every exact source coordinate.
+for checkout in "$canonical" "$legacy" "$renamed"; do
+    for source in "$canonical" "$legacy" "$renamed"; do
         new_fixture
         literal_pin "$source" "$pin"
         expect 0 "$checkout" "$checkout checks literal $source" \
@@ -185,5 +186,5 @@ ref="$remote" yq -i 'del(.dependencies[strenv(ref)])' \
 expect 1 "$canonical" 'alias admission does not waive dependency entries' \
     'but dependencies: has no such key'
 
-[[ "$cases" -eq 20 ]] || { echo "Expected 20 controls, got $cases" >&2; exit 1; }
+[[ "$cases" -eq 25 ]] || { echo "Expected 25 controls, got $cases" >&2; exit 1; }
 printf 'lock self-source controls: %s passed\n' "$cases"
