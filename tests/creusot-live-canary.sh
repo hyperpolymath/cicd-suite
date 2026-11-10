@@ -7,7 +7,7 @@ command -v cargo >/dev/null || { echo 'real Cargo required' >&2; exit 2; }
 yq --version | grep -q 'mikefarah/yq' || { echo 'mikefarah yq required' >&2; exit 2; }
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
-pin=hyperpolymath/proven-cicd-and-workflows/.github/workflows/creusot-gate.yml@6c6d772ebe82605ba22254db528faf54faec9f49
+pin=hyperpolymath/proven-cicd-and-workflows/.github/workflows/creusot-gate.yml@1fd5e6371a50f0fc3687206a5adca0cdf7b39aa6
 
 # Validate the bounded input and call contract. Every failure propagates even
 # when this function is called in an `if` (where Bash suppresses errexit).
@@ -73,7 +73,7 @@ stage
 rm "$tmp/tree/tests/fixtures/creusot-live/Cargo.lock"
 reject 'missing Cargo.lock'
 stage
-sed -i 's/6c6d772ebe82605ba22254db528faf54faec9f49/main/g' "$tmp/tree/.github/workflows/creusot-live-canary.yml"
+sed -i 's/1fd5e6371a50f0fc3687206a5adca0cdf7b39aa6/main/g' "$tmp/tree/.github/workflows/creusot-live-canary.yml"
 reject 'floating gate pin'
 stage
 sed -i 's/creusot-std = "=0.14.0"/creusot-std = "=0.13.0"/' "$tmp/tree/tests/fixtures/creusot-live/Cargo.toml"
