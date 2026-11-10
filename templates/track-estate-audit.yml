@@ -91,9 +91,12 @@ jobs:
                 continue
               fi
               echo "$caller: ${pinned:0:7} -> ${head:0:7}"
-              sed -i "s/$pinned/$head/g" "$caller"
+              # Move the SHA only in a complete uses: reference to this
+              # suite under hyperpolymath. The same SHA in a reference to
+              # another owner (a fork) stays as it is.
+              sed -i -E "s#(uses:[[:space:]]*[\"']?hyperpolymath/(cicd-suite|proven-cicd-and-workflows)/\.github/workflows/[A-Za-z0-9_.-]+\.yml@)$pinned#\1$head#g" "$caller"
               changed=1
-            done < <(grep -oE '(cicd-suite|proven-cicd-and-workflows)/\.github/workflows/[A-Za-z0-9_.-]+\.yml@[0-9a-f]{40}' "$caller" | sed 's/.*@//' | sort -u)
+            done < <(grep -oE 'uses:[[:space:]]*["'"'"']?hyperpolymath/(cicd-suite|proven-cicd-and-workflows)/\.github/workflows/[A-Za-z0-9_.-]+\.yml@[0-9a-f]{40}' "$caller" | sed 's/.*@//' | sort -u)
             # The suite was renamed from cicd-suite on 2026-11-09. A uses: line
             # naming the old repository startup-fails (Actions does not follow
             # renames), so move the coordinate along with the SHA.

@@ -27,7 +27,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git merge-base --is-ancestor 6c6d772ebe82605ba22254db528faf54faec9f49 origin/main
+          git merge-base --is-ancestor 1fd5e6371a50f0fc3687206a5adca0cdf7b39aa6 origin/main
       - name: Fixture prerequisites and missing-prerequisite mutants (not proof)
         shell: bash
         run: |
@@ -38,7 +38,7 @@ jobs:
           git diff --exit-code -- tests/fixtures/creusot-live
   creusot:
     needs: fixture
-    uses: hyperpolymath/proven-cicd-and-workflows/.github/workflows/creusot-gate.yml@6c6d772ebe82605ba22254db528faf54faec9f49 # published PR70 repair
+    uses: hyperpolymath/proven-cicd-and-workflows/.github/workflows/creusot-gate.yml@1fd5e6371a50f0fc3687206a5adca0cdf7b39aa6 # published PR 94 merge: admits this repository name
     with:
       working_directory: tests/fixtures/creusot-live
       creusot_version: '0.14.0'

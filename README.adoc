@@ -312,6 +312,9 @@ jobs:
 Pin a full SHA, never `+@main+` or a tag: the account enforces
 `+sha_pinning_required+`, and `+@main+` would silently change the gate in
 every consuming repository at once.
+Pin a commit that contains the migrated `+main-estate-audit.yml+`
+(`+1fd5e63+` or later). An earlier commit still names
+`+hyperpolymath/cicd-suite+` in its steps.
 . The caller must be *de-onboarded* from the repository's
 `+actions.lock+`. Onboarded, a cross-repository reusable-workflow call
 startup-fails with zero jobs. `+scripts/deonboard-estate-audit.sh <repo>+`
