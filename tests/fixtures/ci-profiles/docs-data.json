@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "stage": "proposal",
+  "repository": "example/documentation",
+  "mother": "docs-data-v1",
+  "lifecycles": ["validate", "maintenance"],
+  "capabilities": [
+    {"id": "secret-scan", "obligation": "required"},
+    {"id": "spdx-license", "obligation": "required"}
+  ],
+  "slots": {"root": ".", "documents": ["README.adoc", "docs/index.adoc"]}
+}

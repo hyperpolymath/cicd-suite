@@ -1,0 +1,8 @@
+-- SPDX-License-Identifier: MPL-2.0
+package assurance-github
+version = 0.1.0
+depends = contrib
+sourcedir = "src"
+modules = Assurance.Verdict, Assurance.GitHub
+main = Assurance.GitHubMain
+executable = assurance-github

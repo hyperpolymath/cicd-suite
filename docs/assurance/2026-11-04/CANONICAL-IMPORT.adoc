@@ -1,0 +1,114 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Canonical history and staged rollout: 2026-11-04
+
+== Imported history
+
+The public legacy repository `hyperpolymath/cicd-suite` (repository ID
+1326697643) was imported into `hyperpolymath/proven-cicd` (ID 1446155688).
+Both repositories remain available. The import preserved these exact heads:
+
+[cols="2,3",options="header"]
+|===
+|Branch |Commit
+|main |b931e8e126644516e292601bc644f480a7b2a5a0
+|fix/148-creusot-execution-evidence |e7f2dc171fbe7a078c0a89809da914cc0fb1d9f2
+|===
+
+The main tree is `85a65319b595fbe5e1657c1b0eebb3d142400715`. There were
+no advertised tags. A full mirror clone passed `git fsck --full --strict`.
+The two branch heads reach 141 distinct commits; all imported refs reach 277,
+including importer-retained historical pull-request refs. The common root is
+`11b5ab51a1600b7b798572200094e611ae0654c2`. These historical refs were retained.
+This was a history-preserving import, not a new root with copied files.
+
+The legacy review and Actions records remain authoritative evidence at their
+original URLs, including https://github.com/hyperpolymath/cicd-suite/pull/80[the
+open Creusot execution-evidence PR]. Importing Git objects does not transfer
+GitHub review approvals, repository settings or service attestations.
+
+== Protection and caller admission
+
+The target's active Branch-Floor ruleset was observed through GitHub's API
+as rule 26564812 on 2026-11-04. Tag protection is not yet established: the target ruleset inventory contains
+only that branch rule, while the legacy repository retains Immutable-Tags rule
+22941142. The remaining service settings still require verification. The settings interface requested
+GitHub reauthentication, and the browser subsequently required an extension
+update. These access boundaries were retained. Do not infer full protection
+parity from repository creation or the branch floor alone.
+
+The self scanner caller moves only its coordinate to
+`hyperpolymath/proven-cicd`, retaining full source commit
+`a12b2b4644db1a1250bc50b58fd24c99f89f564e`, all three scanner contexts,
+read-only contents permission and full-history coverage. Its local qualification
+passed 14 identity controls, 21 receipt controls, 15 publication guards and 17
+real Gitleaks controls, plus workflow syntax and declared lock-scope checks.
+The source exists in the imported history and the pinned resolver returned the
+canonical coordinate. Hosted qualification subsequently passed at source
+`5f2fd18c3ec710db00486b9985d0cbb242803463` in
+https://github.com/hyperpolymath/proven-cicd/actions/runs/41910602874[run 41910602874].
+The actual controls jobs 126856829043 and 126856747131 each confirmed the 14,
+21, 15 and 17 control counts. Scanner job 126856830383 resolved canonical
+`a12b2b4`, verified its checkout and reported successful tree, history and
+composite scan verdicts. This is evidence for that exact head, not a claim that
+future revisions are already qualified.
+
+Echidna's matching coordinate-only canary is commit
+`b8dc7fa90f82ab124b6af18398999ef6a9724e32` on
+https://github.com/hyperpolymath/echidna/pull/455[PR 455]. Its transferred
+`standards` mirror caller was independently moved to the canonical owner at
+the same source SHA. The native Actions lock must then be regenerated from that
+complete immutable source, not edited manually. That pending lock gate is not
+part of the scanner equivalence claim. The three canonical scanner jobs passed
+in https://github.com/hyperpolymath/echidna/actions/runs/41909747996[run 41909747996],
+with whole-job elapsed times of 43 seconds for Gitleaks, three for Rust and four
+for shell. Full-history coverage remains configured.
+
+The suite's existing native `--verify-local` result remains nonzero for its
+declared immutable workflow scope (13 of 17 workflows, 43 not-pinned findings).
+The scanner caller is outside the managed native workflow map. This canary
+neither edits that map nor represents repository-wide native verification as a
+pass. The separate explicit workflow-scope check remains required.
+
+== Dependabot configuration repair
+
+The imported file contained an empty `package-ecosystem`, causing Dependabot
+configuration failure. It now proposes weekly `github-actions` updates at
+`/`, using GitHub's documented schema. There is no automatic-merge grant.
+Action pin changes still need native recovery where applicable and exact-source
+CI qualification. This repair does not dismiss any security alert.
+
+== Idris2 operational adapter: not yet qualified for publication
+
+The total verdict model and its three deliberately contradictory proof controls
+are retained unchanged. A frozen experimental adapter had passed 49 host
+collector controls and eight executable wire controls with source-built Idris2
+0.7.0. Subsequent review reproduced a false `PASSED` when the GitHub response
+contained duplicate fields with different JSON value shapes. That discovery
+invalidates promotion of the frozen candidate; earlier passing controls are
+not a substitute for the missing negative case.
+
+The local repair checks streamed object-field entries across scalar, array and
+object values. Four new end-to-end controls were observed returning `UNKNOWN`
+through the actual compiled verdict executable. The expanded full run was still
+in flight when the shared execution workspace became unavailable. Completion,
+source-hash refresh, policy-digest refresh and the final patch remain unverified.
+No adapter source from that interrupted round is published in this change.
+
+Before promotion, finish the 53 host and eight wire controls, retain the three
+negative proofs, independently review the exact refreshed source and policy,
+and run real successful and defective consumers. Only direct exact-head
+`push` and `workflow_dispatch` observations were in the candidate boundary;
+PR merge-context and reusable-workflow provenance remain unsupported. The
+adapter does not grant merge authority or training admission.
+
+== Rollout completion conditions
+
+. Verify branch and tag protections plus applicable Actions admission settings.
+. Retain hosted receipts for both canonical scanner canaries at their exact heads.
+. Finish and review the adapter correction before operational qualification.
+. Migrate the inventoried consumers through reviewed full-SHA caller changes,
+  regenerate managed native locks with the official process and verify required
+  contexts at each resulting head.
+. Preserve legacy source, issue, review and run links until every remaining
+  consumer has an explicit disposition. No estate-wide cutover or retirement
+  is claimed by this checkpoint.

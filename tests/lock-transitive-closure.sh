@@ -122,6 +122,23 @@ echo "== a self-referencing pin serves the CURRENT composites =="
 # In Actions $GITHUB_REPOSITORY is authoritative; the remote is the local path.
 selfrepo="${GITHUB_REPOSITORY:-$(git -C "$ROOT" remote get-url origin 2>/dev/null \
     | sed -E 's#\.git$##; s#^.*[:/]([^/]+/[^/]+)$#\1#')}"
+# The history-preserving canonical import retains reviewed legacy pins. Both
+# exact names denote this suite only when the checkout itself is one of them;
+# a fork or a similarly named repository does not inherit this admission.
+self_repositories=("$selfrepo")
+case "$selfrepo" in
+    hyperpolymath/cicd-suite|hyperpolymath/proven-cicd)
+        self_repositories=(hyperpolymath/cicd-suite hyperpolymath/proven-cicd)
+        ;;
+    *) ;;
+esac
+is_self_repository() {
+    local candidate="$1" repository
+    for repository in "${self_repositories[@]}"; do
+        [ "$candidate" = "$repository" ] && return 0
+    done
+    return 1
+}
 selfchecked=0
 
 # serves_current <label> <commit>: is <commit>'s actions/ tree HEAD's?
@@ -148,7 +165,7 @@ serves_current() {
 # Population 1: a branch pin in the lock, resolved to the commit the lock names.
 while IFS= read -r ref; do
     [ -n "$ref" ] || continue
-    case "$ref" in "$selfrepo@"*) ;; *) continue ;; esac
+    is_self_repository "${ref%%@*}" || continue
     case "${ref#*@}" in *[!0-9a-f]*) ;; *) continue ;; esac   # SHA keys: population 2
     locked="$(r="$ref" yqr '.dependencies[strenv(r)].commit' "$LOCK" | sed 's/^sha1-//')"
     serves_current "$ref" "$locked"
@@ -187,10 +204,11 @@ serves_current_composite() { # <workflow> <composite name> <commit>
 while IFS= read -r line; do
     [ -n "$line" ] || continue
     wf="${line%%:*}"; ref="${line#*:}"
+    is_self_repository "${ref%%/actions/*}" || continue
     name="$(printf '%s' "$ref" | sed -E 's#^.*/actions/([A-Za-z0-9_.-]+)@.*$#\1#')"
     pinned="${ref##*@}"
     serves_current_composite "${wf#"$ROOT/.github/workflows/"}" "$name" "$pinned"
-done < <(grep -roE "uses:[[:space:]]*$selfrepo/actions/[A-Za-z0-9_.-]+@[0-9a-f]{40}" \
+done < <(grep -roE 'uses:[[:space:]]*[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/actions/[A-Za-z0-9_.-]+@[0-9a-f]{40}' \
             "$ROOT/.github/workflows" 2>/dev/null | sed -E 's/:uses:[[:space:]]*/:/' | sort -u)
 
 # This block printed its header and checked NOTHING on its first run — a broken

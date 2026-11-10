@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Verus execution boundary
+
+actions/verus-check/check.sh consumes an already installed, independently pinned
+Verus binary through VERUS and one or more explicit Rust proof paths. It first
+requires a false contract to fail and a true contract to produce a nonzero
+verified count. Every caller source must then succeed with a nonzero report.
+
+Exit 0 means these selected sources verified; 1 is a failed caller invocation;
+2 means prerequisites, controls or proof coverage are unavailable. No report
+establishes refinement between a model and production code, soundness of trusted
+dependencies or completeness of a parser. --no-cheating is always supplied.
+
+actions/verus-check/test.sh exercises accepted, rejected, empty, missing-scope
+and deliberately misleading oracle controls. These stand-ins test the gate;
+live positive/negative controls test the installed verifier on each invocation.

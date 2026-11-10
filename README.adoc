@@ -3,6 +3,29 @@
 *An atlas of composable repository assurance: security, governance, build hygiene,
 contracts, language verification and ecosystem integration.*
 
+The link:docs/WORKFLOW-SCOPE.adoc[workflow scope proposal] keeps CI/CD and broader
+repository workflows together while preserving the current published coordinate.
+
+== Canonical repository and migration status
+
+`hyperpolymath/proven-cicd` is the canonical destination for this suite.
+The GitHub import retained the existing Git history and both advertised branch
+heads, including the open Creusot execution-evidence work. The import checkpoint
+is recorded in link:docs/assurance/2026-11-04/CANONICAL-IMPORT.adoc[the canonical
+history and rollout record]. The legacy `hyperpolymath/cicd-suite` repository
+remains available for existing full-SHA callers and its review/run evidence.
+
+Migration is staged: repository protections, two real caller canaries and the
+remaining caller inventory must qualify before an estate-wide cutover. Existing
+full-SHA pins keep their source identity; this repository's scanner caller is a
+coordinate-only canary at the already published `a12b2b4` source. No release or
+gate is certified merely by the new repository name.
+
+The Idris2 verdict kernel is present. Its operational GitHub adapter remains
+unpromoted: review reproduced an invalid duplicate-field response becoming a
+false passed verdict, and the repair must complete its expanded controls before
+publication. See the checkpoint for the exact remaining boundary.
+
 == Discover the suite
 
 Start with the link:CATALOGUE.adoc[*CI/CD Capability Atlas*]: *32 composite actions
@@ -33,6 +56,10 @@ See the link:docs/CAPABILITY-ASSURANCE.adoc[capability assurance matrix] for
 linked regression controls, explicit evidence gaps and consumer receipts, and
 the link:docs/assurance/SUITE-CLOSEOUT.adoc[suite-first completion ledger] for
 remaining shared work. These records do not certify every capability.
+
+The link:profiles/README.adoc[experimental CI profile contract] adds three
+proposed mother profiles, typed slots, validation controls and a bounded pilot
+manifest. It is non-enforcing and does not qualify consumer CI or add a workflow.
 
 == Estate-wide audit
 
@@ -454,7 +481,20 @@ No logs, artifacts, secrets, policy edits, reruns or merges are requested.
 
 See link:docs/CI-TRIAGE-2026-10-30.adoc[the sampled estate diagnosis] and
 link:docs/SECRET-SCAN-PERFORMANCE.adoc[the secret-scan latency investigation
-and implementation handoff]. No replacement scanner has been deployed.
+and implementation handoff]. The bounded scanner is deployed to the suite and
+Echidna canaries. The earlier paired full-history receipts are retained in
+https://github.com/hyperpolymath/cicd-suite/pull/84[suite PR 84]. Canonical-name
+hosted canaries subsequently passed in
+https://github.com/hyperpolymath/proven-cicd/actions/runs/41910602874[Proven CI/CD run 41910602874]
+at subject `5f2fd18c3ec710db00486b9985d0cbb242803463` and
+https://github.com/hyperpolymath/echidna/actions/runs/41909747996[Echidna run 41909747996]
+at subject `b8dc7fa90f82ab124b6af18398999ef6a9724e32`.
+Both runs used scanner source `a12b2b4644db1a1250bc50b58fd24c99f89f564e`.
+These receipts qualify those historical heads only; later heads require their
+own hosted receipts before promotion. See
+link:docs/assurance/2026-11-04/CANONICAL-IMPORT.adoc[the canonical import checkpoint]
+for the retained evidence and remaining rollout conditions. An estate-wide
+replacement has not completed.
 
 === Bounded secret scanner (canary, not estate-deployed)
 
@@ -485,21 +525,19 @@ production rollout; see link:docs/SECRET-SCANNER-ROLLOUT.adoc[rollout status].
 
 ==== Post-merge startup repair and supplemental detector ports
 
-The follow-up described in
+The dated checkpoint in
 link:docs/SCANNER-STARTUP-AND-PARITY.adoc[Startup and supplemental coverage]
-repins this repository to the published #62 merge commit. The initial
-pre-merge pin failed resolution after merge; the canonical legacy dependency
-was then explicitly refused by the caller's Actions admission policy.
-Rather than broadening permissions, the suite now carries Rust/shell ports
-and 26 differential fixtures against frozen legacy run bodies, plus five
-hardening controls. The former legacy comparison workflow runs these local
-checks; it no longer invokes standards or repeats full-history Gitleaks.
+records the earlier pre-merge pin and admission failures. Its deployment status
+is historical. The integrated source was subsequently published and qualified
+with the suite and Echidna callers; the current full source pin is
+`a12b2b4644db1a1250bc50b58fd24c99f89f564e`.
 
-The new scanner source includes both ports in its composite verdict. Publish
-that implementation before advancing consumer pins: the currently deployed
-suite pin still selects the previously published scanner, while separate
-local supplement jobs preserve this repository's supplementary checking.
-No estate-wide rollout or whole-corpus equivalence is claimed by the fixtures.
+The reusable scanner now provides all three original contexts: Gitleaks, Rust
+secrets and shell secrets. Both canonical-name caller runs linked above executed
+that exact published source. The separate local supplemental workflow remains
+a regression control; it does not supply a missing port in the deployed source.
+The 26 differential fixtures and five hardening controls retain their finite
+coverage boundary. No estate-wide rollout or whole-corpus equivalence is claimed.
 
 == Strict scanner coverage and audit checkpoint
 
@@ -512,6 +550,6 @@ interpret an exit-zero partial scan as assurance. panic-attack assail findings
 remain report-only; strict coverage is not a security verdict.
 
 See link:docs/assurance/AUDIT-2026-11-04.adoc[the adversarial audit checkpoint]
-for executed controls, coverage gaps, proof boundaries and the pending
-`proven-cicd` rename. Reproduce bounded scanner controls with
+for executed controls, coverage gaps and proof boundaries. The canonical
+repository now exists; protection and consumer migration are still in progress. Reproduce bounded scanner controls with
 `bash tests/scanner-adversarial.sh /path/to/pons /path/to/panic-attack`.

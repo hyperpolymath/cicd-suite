@@ -8,12 +8,18 @@ on:
     paths:
       - "src/Assurance/**"
       - "assurance-kernel.ipkg"
+      - "assurance-github.ipkg"
+      - "scripts/assurance-github.*"
+      - "tests/assurance-github.sh"
+      - "tests/assurance-real-canaries.sh"
+      - "config/assurance-canaries/**"
       - "tests/assurance-kernel.sh"
       - ".github/workflows/assurance-kernel.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: read
 
 # PR updates supersede previous costly compiler boots; manual dispatches are unique.
 concurrency:
@@ -42,7 +48,14 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends chezscheme libgmp-dev git make gcc ca-certificates
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends chezscheme libgmp-dev git make gcc ca-certificates jq gh
+      - name: Validate bridge shell and qualifier syntax
+        run: |
+          set -euo pipefail
+          for script in scripts/assurance-github.sh tests/assurance-github.sh tests/assurance-real-canaries.sh; do
+            bash -n "$script"
+          done
+          jq -n -L scripts 'include "assurance-github"; true' >/dev/null
       - name: Bootstrap pinned Idris2 0.7.0 source
         env:
           IDRIS2_SOURCE_SHA: 27780073c8631826d846499840b3857d9b9a4fd5
@@ -61,3 +74,20 @@ jobs:
           echo "$HOME/.idris2/bin" >> "$GITHUB_PATH"
       - name: Compile model and reject contradictory proof
         run: bash tests/assurance-kernel.sh
+      - name: Compile and exercise the new finite GitHub bridge
+        run: bash tests/assurance-github.sh
+      - name: Observe passing and defective real consumers
+        id: real_canaries
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_PROMPT_DISABLED: "1"
+        run: bash tests/assurance-real-canaries.sh "$RUNNER_TEMP/assurance-real-consumers"
+      - name: Retain separate real consumer verdicts
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && steps.real_canaries.outcome != 'skipped' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: assurance-real-consumers-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/assurance-real-consumers/
+          if-no-files-found: error
+          retention-days: 14

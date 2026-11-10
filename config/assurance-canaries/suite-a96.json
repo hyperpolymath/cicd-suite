@@ -1,0 +1,50 @@
+{
+  "schema": "proven-cicd/github-execution/v1",
+  "category": "experimental",
+  "route": "direct-head",
+  "repository": {
+    "full_name": "hyperpolymath/proven-cicd",
+    "id": 1446155688,
+    "owner_id": 6759885
+  },
+  "subject_sha": "a96b85e9d869142757adb9f6a2eb2d40c423d850",
+  "issued_at": "2026-11-04T22:55:11Z",
+  "expires_at": "2026-11-05T22:55:11Z",
+  "max_age_seconds": 86400,
+  "runs": [
+    {
+      "id": 41924671510,
+      "attempt": 1,
+      "workflow_id": 407365438,
+      "path": ".github/workflows/secret-scanner-self-test.yml",
+      "workflow_blob_sha": "9c1ae3a84c1a8bfab0a2f8d68a36e64b7271d1ff",
+      "event": "push",
+      "head_branch": "fix/canonical-history-and-scanner-canary-20261104",
+      "jobs": [
+        {
+          "name": "controls",
+          "steps": [
+            "Set up job",
+            "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "Shell and YAML syntax",
+            "Capability atlas inventory, navigation and negative controls",
+            "Explicit workflow lock scope and omitted-key controls",
+            "Governance pin representation regressions (not full lock verification)",
+            "Official SonarCloud receipt regressions",
+            "Shell/control-flow fixtures and vacuous-scanner mutant",
+            "Compatibility contexts require real SHA-bound detector receipts",
+            "Both suite coordinates retain strict source pins and checkouts",
+            "Preserve pinned legacy Rust and shell detection without leaking values",
+            "Install the pinned real scanner",
+            "Repeat fixtures against the real detector (not a stand-in)",
+            "Exact curl placeholder and same-path credential controls",
+            "Production caller pin is already published on suite main",
+            "Evidence collector controls",
+            "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "Complete job"
+          ]
+        }
+      ]
+    }
+  ]
+}
