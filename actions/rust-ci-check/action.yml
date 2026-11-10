@@ -30,6 +30,10 @@ inputs:
     description: 'Run cargo test --doc as well (true|false)'
     required: false
     default: 'true'
+  doc_packages:
+    description: 'Cargo package selection for docs and doctests; default covers the whole workspace'
+    required: false
+    default: '--workspace'
   deny_warnings:
     description: 'Export RUSTFLAGS/RUSTDOCFLAGS=-D warnings for every compile'
     required: false
@@ -50,6 +54,7 @@ runs:
         CLIPPY_ARGS: ${{ inputs.clippy_args }}
         TEST_ARGS: ${{ inputs.test_args }}
         DOCTESTS: ${{ inputs.doctests }}
+        DOC_PACKAGES: ${{ inputs.doc_packages }}
         DENY_WARNINGS: ${{ inputs.deny_warnings }}
         MSRV: ${{ inputs.msrv }}
       run: bash "$GITHUB_ACTION_PATH/check.sh"

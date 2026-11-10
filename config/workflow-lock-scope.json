@@ -9,7 +9,7 @@
     {
       "path": ".github/workflows/assurance-kernel.yml",
       "mode": "immutable",
-      "reason": "Isolated experimental Idris2 compiler canary; SHA-pinned checkout, no lock-map onboarding or consumer enforcement."
+      "reason": "Experimental Idris2 kernel and read-only execution bridge canary; full-SHA actions, no lock-map onboarding or consumer enforcement."
     },
     {
       "path": ".github/workflows/code-hygiene-self-test.yml",

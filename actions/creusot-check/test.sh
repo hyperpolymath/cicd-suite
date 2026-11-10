@@ -41,13 +41,16 @@ fresh_fixture() {
     git -C "$FIX" init -q
     git -C "$FIX" config user.email t@example.invalid
     git -C "$FIX" config user.name t
+    # These temporary fixture commits are not published. A developer's locked
+    # signing key must not turn fixture creation into missing source evidence.
+    git -C "$FIX" config commit.gpgsign false
     printf '[package]\nname = "fx"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\n' > "$FIX/Cargo.toml"
     printf '//! fixture\npub fn id(x: u32) -> u32 { x }\n' > "$FIX/src/lib.rs"
     printf '= fx\n\nA small crate.\n' > "$FIX/README.adoc"
     printf '{"packages":["creusot"],"provers":["z3"]}\n' > "$FIX/why3find.json"
-    git -C "$FIX" add -A && git -C "$FIX" commit -qm fixture
+    git -C "$FIX" add -A && git -C "$FIX" commit -qm fixture || exit 2
 }
-commit() { git -C "$FIX" add -A && git -C "$FIX" commit -qm change >/dev/null; }
+commit() { git -C "$FIX" add -A && git -C "$FIX" commit -qm change >/dev/null || exit 2; }
 run_phase() { # <phase> [env...]
     local phase="$1"; shift
     : > "$WORK/receipt"

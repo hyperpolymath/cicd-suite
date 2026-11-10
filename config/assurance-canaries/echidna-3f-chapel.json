@@ -1,0 +1,90 @@
+{
+  "schema": "proven-cicd/github-execution/v1",
+  "category": "experimental",
+  "route": "direct-head",
+  "repository": {
+    "full_name": "hyperpolymath/echidna",
+    "id": 1101572347,
+    "owner_id": 6759885
+  },
+  "subject_sha": "3f475120eaefffec9c964f433e26d9f6a85bb526",
+  "issued_at": "2026-11-04T22:55:11Z",
+  "expires_at": "2026-11-05T22:55:11Z",
+  "max_age_seconds": 86400,
+  "runs": [
+    {
+      "id": 41927253291,
+      "attempt": 1,
+      "workflow_id": 249130639,
+      "path": ".github/workflows/chapel-ci.yml",
+      "workflow_blob_sha": "41d6048e0c1ba2c6933e4836759343829f547eb9",
+      "event": "push",
+      "head_branch": "arena/4853aec5-echidna",
+      "jobs": [
+        {
+          "name": "Compile Chapel Metalayer",
+          "steps": [
+            "Set up job",
+            "Run actions/checkout@v7.0.1",
+            "Install Chapel 2.8.0 (SHA-pinned .deb)",
+            "Compile Chapel proof search library (static)",
+            "Compile + run smoke target",
+            "Upload Chapel library artifact",
+            "Post Run actions/checkout@v7.0.1",
+            "Complete job"
+          ]
+        },
+        {
+          "name": "Build & Test Zig FFI Bridge",
+          "steps": [
+            "Set up job",
+            "Run actions/checkout@v7.0.1",
+            "Install Zig",
+            "Build Zig FFI library (with Chapel stubs)",
+            "Run Zig FFI tests (stub mode)",
+            "Upload FFI library artifact",
+            "Post Install Zig",
+            "Post Run actions/checkout@v7.0.1",
+            "Complete job"
+          ]
+        },
+        {
+          "name": "Rust Build with Chapel Feature",
+          "steps": [
+            "Set up job",
+            "Run actions/checkout@v7.0.1",
+            "Install Rust toolchain",
+            "Rust cache",
+            "Download FFI library",
+            "Build with chapel feature",
+            "Test with chapel feature",
+            "Post Rust cache",
+            "Post Run actions/checkout@v7.0.1",
+            "Complete job"
+          ]
+        },
+        {
+          "name": "Rust Build — Real Chapel Library (allow-fail, L2.3+ gate)",
+          "steps": [
+            "Set up job",
+            "Run actions/checkout@v7.0.1",
+            "Install Chapel 2.8.0 (SHA-pinned .deb)",
+            "Install Zig",
+            "Install Rust",
+            "Rust cache",
+            "Download real Chapel library",
+            "Verify real archive exports",
+            "Check native link contract controls",
+            "Build real static Zig bridge (Chapel linked by Cargo)",
+            "Build Rust with real Chapel library",
+            "Test Rust with real Chapel library",
+            "Post Rust cache",
+            "Post Install Zig",
+            "Post Run actions/checkout@v7.0.1",
+            "Complete job"
+          ]
+        }
+      ]
+    }
+  ]
+}

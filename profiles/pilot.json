@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "stage": "proposal",
+  "inspected_on": "2026-11-06",
+  "qualification": "not-run",
+  "candidates": [
+    {
+      "repository": "stuff-of-awe/awesome-coq",
+      "mother": "docs-data-v1",
+      "snapshot_commit": "84055bfa27f2ff98641b5c6b3b48da4d430fa9b3",
+      "evidence_paths": ["README.adoc"],
+      "reason": "Small documentation candidate for the minimal profile.",
+      "open_questions": ["Derive current required checks and document/link-check scope."]
+    },
+    {
+      "repository": "stuff-of-awe/awesome-idris2",
+      "mother": "docs-data-v1",
+      "snapshot_commit": "51ca1d36642dea0efe3faf251a2e3836b2e8bb0a",
+      "evidence_paths": ["README.adoc", "TEST-NEEDS.adoc", "tests"],
+      "reason": "Documentation candidate with an existing tests directory; compare against the minimal case.",
+      "open_questions": ["Inspect test contents before deciding documentation-only applicability."]
+    },
+    {
+      "repository": "hyperpolymath/Protoctist.jl",
+      "mother": "julia-library-v1",
+      "snapshot_commit": "bdf2c0f7abbca2a9ea955eb710c267c43ce90f21",
+      "evidence_paths": ["Project.toml", "test", "tests"],
+      "reason": "Julia candidate from the original recurring-CI incident.",
+      "open_questions": ["Preserve Test/Aqua, version matrix, K9 and canon obligations; derive them from current source and protection settings."]
+    },
+    {
+      "repository": "metadatastician/ZeroInflatedCounts.jl",
+      "mother": "julia-library-v1",
+      "snapshot_commit": "e1a9f7ed2a42470d29de5ade5b7662afaa154fc0",
+      "evidence_paths": ["Project.toml", "test", "tests"],
+      "reason": "Second Julia candidate across an organisation boundary.",
+      "open_questions": ["Head changed after the November 5 inventory; refresh source-bound evidence and requirements before deriving slots."]
+    },
+    {
+      "repository": "hyperpolymath/plasma-parser-writer",
+      "mother": "rust-library-v1",
+      "snapshot_commit": "5737ce8343d9e4eb4384afe5bd9e96f5eebeb85f",
+      "evidence_paths": ["Cargo.toml", "Cargo.lock", "tests"],
+      "reason": "Rust candidate with a checked-in Cargo manifest and lock.",
+      "open_questions": ["Inspect workspace layout, MSRV, feature flags and required checks before selecting slots."]
+    },
+    {
+      "repository": "hyperpolymath/cicd-squabbler",
+      "mother": "rust-library-v1",
+      "snapshot_commit": "79d7dbacc8a02b4a4388b4a36fe46893b5b7ce73",
+      "evidence_paths": ["Cargo.toml", "Cargo.lock", "tests"],
+      "reason": "Rust integration candidate that also exercises the diagnostic tool's own requirements.",
+      "open_questions": ["A Rust profile is insufficient for its SPARK obligations: extend composition or replace this candidate before qualification.", "Keep repair execution outside shadow validation."]
+    }
+  ]
+}

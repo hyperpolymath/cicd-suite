@@ -1,0 +1,241 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= New finite GitHub execution bridge
+:status: Experimental source candidate; not an enforcing estate gate
+
+== New source, retained kernel
+
+This is a new implementation. The interrupted earlier collector was never
+published, and its repaired source and complete qualification were not
+recovered. Its reported 49/53 host controls and eight wire controls do not
+qualify these files.
+
+Assurance.Verdict and assurance-kernel.ipkg remain unchanged. The new
+assurance-github.ipkg builds an executable that imports the actual total
+kernel. Successful host acquisition is translated to typed observations and
+decided by Assurance.Verdict.decide. The CLI builds this executable in a fresh
+directory from immutable Git blob bytes after comparing the worktree source
+against that commit. Compiler inputs and the jq module are staged from the
+verified blob bytes, not reread later from the worktree. It accepts no
+outside verdict executable or pre-admitted receipt.
+
+The existing compiler lane still builds the kernel and requires all three
+contradictory theorems to be rejected with named compiler diagnostics.
+The operational I/O entry point is explicitly covering; it is not described
+as a proof that an operating system, network or GitHub response is total.
+
+== Raw JSON boundary
+
+Every policy and API body passes the new Idris validator before jq may
+materialize an object. The pinned Idris2 contrib JSON representation retains
+JObject fields as a list. The validator recursively rejects repeated keys,
+including object/array values followed by a valid-looking scalar, empty
+containers, nested fields, and repeated objects with disjoint child fields.
+It also requires one complete JSON document.
+
+This first schema supports only unescaped ASCII object keys. Escaped or
+non-ASCII keys are UNKNOWN, even if a different parser would accept them.
+Raw lexer tokens are checked before decoded field equality; this avoids
+assuming that the pinned contrib string decoder and jq normalize alternate
+escapes identically. Unicode string values are not used as object-key
+authority. jq independently checks the JSON it subsequently consumes.
+
+Primary implementation references for the pinned compiler are:
+
+* https://github.com/idris-lang/Idris2/blob/27780073c8631826d846499840b3857d9b9a4fd5/libs/contrib/Language/JSON/Data.idr[JSON data representation]
+* https://github.com/idris-lang/Idris2/blob/27780073c8631826d846499840b3857d9b9a4fd5/libs/contrib/Language/JSON/Parser.idr[complete-document parser]
+* https://github.com/idris-lang/Idris2/blob/27780073c8631826d846499840b3857d9b9a4fd5/libs/contrib/Text/Token.idr[raw token text]
+
+No compiler execution is inferred from source inspection or from a parser
+test implemented in another language.
+
+== One supported policy route
+
+The schema is proven-cicd/github-execution/v1, category experimental,
+route direct-head. Each policy describes exactly one complete workflow at
+one exact subject commit, with one to sixteen mandatory jobs. It admits only
+direct push or workflow_dispatch events with an empty, present
+referenced_workflows array. PR merge contexts, reusable workflows, advisory
+admission, conditional exemptions and automatic policy discovery are absent.
+
+The initial public repository identities are:
+
+[cols="3,2,2",options="header"]
+|===
+| Coordinate | Repository ID | Owner ID
+| hyperpolymath/proven-cicd | 1446155688 | 6759885
+| hyperpolymath/echidna | 1101572347 | 6759885
+|===
+
+A policy carries the full subject SHA, numeric run ID and attempt, workflow
+ID and path, reviewed workflow Git blob SHA, event and branch, all job names,
+and the exact ordered step-name list for each job. Empty, duplicate or
+unsupported policy members refuse. The raw policy bytes must match a separate
+SHA256 supplied by the trusted caller. The caller must independently approve
+the policy and its source contract; computing a digest of arbitrary input does
+not establish authority or completeness.
+
+The collector checks current repository/owner identities, exact commit and
+complete Git tree, ordinary workflow file and parent-tree entries, source blob,
+same-repository run/head identity, attempt, event and branch. The run inventory
+must be complete within the declared limit of 100 entries. The selected run
+must remain the latest for that workflow/event/branch at the exact head.
+Job inventory likewise requires its total_count to equal the returned array
+length, with at most 100 entries. Exceeding either bound is UNKNOWN; this
+version does not silently credit the first page.
+
+For a completed run, the actual job-name set must exactly equal the policy
+set. Each job must bind the same run/attempt/head, and all named steps must be
+present exactly once in the declared order. Timestamps must be well formed,
+ordered within the job/run and not in the future. A source symlink/gitlink,
+truncated tree, missing job, missing detector step, ambiguous name or changed
+run/attempt cannot pass. The run and inventory are fetched again after job
+collection. Relevant identity/status/time fields in each selected inventory
+entry must equal the corresponding standalone run snapshot, even if its ID
+and attempt stayed the same. Decision time is captured after the final GET;
+expiry and freshness are checked again after actual kernel execution. The
+result is retained only if the observation list is unchanged. The collection
+bound is five minutes and the maximum result age is one day.
+
+These are bounded observations, not an atomic snapshot of GitHub. A change
+after the last read or between unobserved instants is not a recorded history.
+A transferred repository, rerun or deleted result observed by the collection
+refuses; independent revocation authority must still withhold a superseded
+policy digest. No external revocation service is claimed.
+
+== Results and trust
+
+[cols="1,1,3",options="header"]
+|===
+| Receipt | CLI exit | Meaning
+| PASSED | 0 | Every mandatory observation in this named execution policy passed
+the checked route, and the actual kernel returned Passed.
+| FAILED | 1 | A required job/step has an observed execution failure. Its kernel
+admission remains unverified and the kernel blocks.
+| PENDING | 2 | A bound run is still nonterminal; the kernel blocks.
+| UNKNOWN | 2 | Missing, malformed, stale, skipped, unsupported or unavailable
+evidence; the kernel blocks when it could be built.
+|===
+
+FAILED is not a claim of a proved counterexample, a discovered vulnerability
+or a semantic scanner finding. The receipt retains each step's reported
+status/conclusion so provisioning and check failures remain visible.
+GitHub job metadata does not expose every subprocess exit, binary identity
+or failure hidden inside a command. The independently reviewed workflow
+contract is therefore part of the trusted boundary.
+
+AdmissionVerified is constructed internally only for the supported,
+successfully checked execution route. JSON constructor names cannot grant it.
+A valid GitHub execution receipt does not prove the underlying tool's
+soundness, attest hardware, prove the truth of a finding, or certify all
+repository branch requirements. In particular, this finite policy is not
+discovered required-context closure and gives no merge or training authority.
+
+The trusted base includes GitHub/TLS and gh, the runner clock and filesystem,
+jq, the reviewed collector/policy, and the source-provisioned compiler/runtime.
+The workflow fetches Idris2 source
+27780073c8631826d846499840b3857d9b9a4fd5 (0.7.0) and checks that checkout.
+The CLI records the compiler version and expected source but does not call a
+local version string an attestation. Ubuntu/Chez and other build dependencies
+retain the existing canary's reproducibility limits.
+
+The code performs GET requests only. It neither executes target-repository
+code nor changes refs, approvals, protections or policy. Receipt artifacts
+contain public subject identifiers and step metadata, not job logs or secrets.
+
+== Authored controls and hosted execution
+
+tests/assurance-github.sh builds the actual executable once and uses the same
+collector with a transport fixture. Its authored matrix has 15 native wire/raw
+JSON controls, 59 collector cases, and one separate compiler-absence control.
+Those counts describe source, not a passing run. Positive controls bracket
+negative controls. Expected refusal reasons are checked, so an unrelated jq
+syntax failure cannot satisfy a malformed-input or source-binding control.
+
+The matrix includes same/mixed-shape duplicate keys, incomplete JSON,
+multiple documents, escaped aliases, incorrect policy digest, unsupported
+events, wrong repository/head/source, symlink/gitlink parents, incomplete
+inventories, superseding runs, reruns/deletion, missing/ambiguous jobs,
+missing/reordered/skipped steps, provisioning/check failure, queued work,
+stale/future evidence, same-attempt inventory changes and expiry both during
+collection and after executable work.
+
+Pull requests touching these files run the existing Assurance kernel
+(Idris2 canary) workflow. It first validates shell/jq syntax, bootstraps the
+same pinned compiler, retains the three contradictory-proof controls, then
+runs the new executable/collector controls. There is no locally claimed
+compiler, syntax, fixture or runtime success for this candidate.
+
+The first hosted attempt at d625f3f9ecf13cf527d6e0214766df999476fb99,
+https://github.com/hyperpolymath/proven-cicd/actions/runs/41931852680/job/126930445366[job 126930445366],
+bootstrapped the pinned Idris2 compiler, compiled the unchanged kernel and
+rejected all three named contradictory theorems. The bridge then failed to
+compile: GitHubMain could not resolve Language.JSON.Data.JSON. Its direct
+Language.JSON import is added by this follow-up; the executable/collector
+controls and both live consumer receipts still require a fresh successful
+hosted run. The unrelated manual run on default main checked the old kernel
+only and provides no qualification for this bridge.
+
+The independent Code Hygiene closure check also exposed the canonical import's
+retained legacy composite pins. Its source identity now recognizes exactly
+hyperpolymath/cicd-suite and hyperpolymath/proven-cicd when the checkout is one
+of those repositories. Both populations still inspect their pinned commits and
+current action trees, and absence of any examined self pin still fails.
+Twenty authored fixture controls cover both names, unrelated identities,
+missing history, stale trees and retained lock coverage. These controls await
+hosted execution; consumer pins and native lock bytes are unchanged.
+
+A manual workflow_dispatch on the published candidate branch additionally
+runs tests/assurance-real-canaries.sh. The existing workflow already exists
+on default main, so this uses its established dispatch surface without new
+inputs or an unrelated workflow. The harness checks two fixed policy digests,
+performs read-only live collection, and retains both consumer receipts as
+separate artifacts. It fails if a generic UNKNOWN replaces the expected
+defective observation. The existing native lock remains untouched; this
+workflow retains its declared immutable, full-SHA scope.
+
+== Exact real subjects and before/after qualification
+
+The following baselines were read from the actual GitHub run/job APIs.
+The new bridge has not yet executed against them.
+
+[cols="2,3,3",options="header"]
+|===
+| Subject | Observed before | Required new observation
+| proven-cicd a96b85e9d869142757adb9f6a2eb2d40c423d850
+| https://github.com/hyperpolymath/proven-cicd/actions/runs/41924671510[push run 41924671510]:
+one successful job, 18 successful steps; no reusable workflows.
+| PASSED for exactly that finite execution policy; pending hosted execution.
+| echidna 3f475120eaefffec9c964f433e26d9f6a85bb526
+| https://github.com/hyperpolymath/echidna/actions/runs/41927253291[push run 41927253291]:
+overall success, three successful jobs and one failed real-Chapel job
+126916004595. Across 43 steps, one failed and two skipped.
+| FAILED with kernel Blocked, retaining the actual failed job/steps.
+This is a defective real consumer, not a proof counterexample.
+|===
+
+The workflow source blobs are respectively
+9c1ae3a84c1a8bfab0a2f8d68a36e64b7271d1ff and
+41d6048e0c1ba2c6933e4836759343829f547eb9.
+Their policies include all actual job/step names; the skipped work is not
+silently exempted. A passing negative-control harness does not change
+Echidna's stored consumer verdict to PASSED.
+
+The committed policy digests are:
+
+* config/assurance-canaries/suite-a96.json:
+  8b7690f38d1b89a97399db96537fe37311e56cc73dc2828f7fe6f82ec2b7d9c6
+* config/assurance-canaries/echidna-3f-chapel.json:
+  cfe90f04a14f6937a7ca41ee39119c256926058e96f3827b07f9e3570b033fd9
+
+Both expire at 2026-11-05T22:55:11Z; data freshness can refuse earlier.
+A later run needs a newly reviewed exact policy/digest and actual evidence.
+The harness must not extend expiry, substitute another head or update the
+expected result merely to become green. A repaired Chapel successor may
+supply a separately reviewed passing after-subject once its actual jobs finish.
+
+GOVERNANCE.adoc still requires real before/after results for at least two
+repositories before adopting a changed gate. The authored fixtures are not
+that evidence. These real subjects provide a concrete qualification route;
+their after receipts, exact compiler/source receipt, independent source
+review and ordinary CI gates remain pending. No estate-wide rollout,
+enforcement promotion or recovery of the lost adapter is claimed.
