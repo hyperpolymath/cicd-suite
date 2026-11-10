@@ -74,6 +74,129 @@ on a narrowly reviewed current-source canary; add a regression for any remaining
 established cause before changing shared tooling. Do not weaken proof checks
 or reinterpret the skipped proof step as success.
 
+== Fleet scanner observation: 2026-11-10
+
+This section adds a later observation. The 2026-10-31 table and snapshot above
+are unchanged. Exact SHAs, the Git commands used and every probe that was not
+available are in link:external-progress-2026-11-10.json[the 2026-11-10 snapshot].
+For fleet, this observation read Git objects only. It read no GitHub API
+record of gitbot-fleet: no run, job, check or branch rule. Run records were
+read for this repository and for pons-asinorum. Nothing was changed in fleet
+or in any other consumer.
+
+=== Read from Git
+
+* Fleet PR 632 is merged as `51298a97b0a322b0b175331b1aa4a61348b253fe` (parent
+  `83e35bcf...`, 2026-10-31T22:43:29Z). Fleet PR 631 is merged as
+  `7bf2fd6d9aa3c121877de9d6a0d32e3707a002f2`, its direct child
+  (2026-10-31T22:43:48Z). This supersedes the OPEN and BLOCKED entries for 631
+  and 632 above.
+* From `51298a97...` to `8906f47f...` the fleet caller used
+  `hyperpolymath/cicd-suite/.github/workflows/secret-scanner-reusable.yml@4404c3c0474e17753fe7689f3485c02890aac113`
+  with `fast-pr: false`, `contents: read` and no `secrets:` line.
+* Fleet PR 656 is merged as `a57cb94088f0fd23e66bd0f0aa833425f90eb64f`
+  (2026-11-10T01:36:15Z). It moved the caller to
+  `hyperpolymath/proven-cicd/.github/workflows/secret-scanner-reusable.yml@03e858b6015e67cc1f9bc31ac1e29ddc1b6fd409`.
+  Fleet `main` (`bf0e2558...`) keeps that pin and the same three settings.
+* Fleet represents the job-level reusable edge outside `actions.lock`, where
+  the entry for `secret-scanner.yml` is `[]` by design. The edge is a
+  source-authenticated row in `scripts/lib/pinned-reusable-sources.json` (blob
+  `b75b630a...`) and a reviewed row in `scripts/lib/lock-closure-receipts.tsv`
+  for `actions/checkout@3d3c42e5...`. The blob and its SHA-256 equal the Git
+  object in this suite. The empty lock entry is not a defect.
+* `4404c3c...` is an ancestor of this repository's `main`. The publication
+  guard for it exited 2: unavailable, not rejected. The guard for
+  `proven-cicd` at `03e858b...` exited 0.
+
+=== Repository names
+
+* `hyperpolymath/cicd-suite` now resolves to this repository,
+  `hyperpolymath/proven-cicd-and-workflows`: both names return the same head.
+* `hyperpolymath/proven-cicd` is a separate repository. The two histories split
+  at `b931e8e...`. Since then `proven-cicd` has 10 commits of its own and this
+  repository has 21; 47 files differ between the two `main` trees.
+* The scanner at `4404c3c...` admits only a `cicd-suite` caller. The current
+  scanner, which is the same blob here and at `proven-cicd` `03e858b...`,
+  admits `cicd-suite` and `proven-cicd`. Neither it nor the publication guard
+  admits `proven-cicd-and-workflows`.
+* Calls to a reusable workflow under the former name now end with no jobs.
+  This repository's own caller, `secret-scanner.yml`, uses
+  `hyperpolymath/cicd-suite/...@a12b2b46...`. Its run 42408029451 had three
+  jobs and succeeded on 2026-11-07. Run 42597552987 on 2026-11-09 and the
+  scheduled run 42749630980 on 2026-11-10 failed with no jobs. Between them
+  only one line of `README.adoc` changed. On pons-asinorum the two callers of
+  `cicd-suite@bf7dd95c...` succeeded on 2026-11-07 and ended with no jobs on
+  2026-11-10 (runs 42836648255 and 42836648268), with no workflow file
+  changed. The API gives no reason. This agrees with fleet's record that a
+  reusable `uses:` does not follow a repository rename. A run with no jobs is
+  not a pass: a required context that never reports is absent, not green.
+* Step-level action references under the former name still ran: the Central
+  Estate CI/CD Audit run 42597553230 succeeded on 2026-11-09.
+* The owner stated on 2026-11-10 that the two repositories are intended to be
+  one, named `proven-cicd-and-workflows`. This record does not merge them.
+
+=== What this does not establish
+
+Verified scanner consumer deployments remain *one*. Fleet is merged, and its
+own committed evidence reports a successful `main` scanner run (42539733415 at
+`8906f47f...`, on the `4404c3c...` pin). The suite did not read that run, so
+no fleet receipt is added to `catalogue/assurance.json` and the generated
+matrix is unchanged. The result of the three contexts on fleet `main` at the
+`proven-cicd` pin is not established here. Fleet's caller states that the
+old-pin canary does not attest the new pin.
+
+=== Fleet-reported handoff status
+
+These rows restate fleet's committed files at `a57cb940...`
+(`docs/migrations/secret-scanner-cicd-suite/`). They are fleet's statements,
+not suite observations.
+
+[cols="2,5",options="header"]
+|===
+|Item |Fleet record
+|Merge-bound runs 41249456040 and 41249455852 |Cancelled; the supplemental jobs then failed receipt verification. Supersession by the next `main` push is an inference. No cancellation actor or reason was read.
+|Real lock regeneration |Run with `gh-actions-lock` v0.4.1 (runs 42607340376 and 42609545584). The generator does not lock job-level reusables; the candidate was not applied.
+|Live canary receipt |Recorded for unified-dataset-vocab run 41199623322 at the `4404c3c...` pin. None exists for the `03e858b...` pin.
+|Runtime dependencies |Outside the receipt: the suite scripts, the checksum-checked Gitleaks download and the runner tools.
+|Rollback pin |`standards@75bd5994...`, recorded as not known-good.
+|===
+
+=== Open items by owner
+
+Fleet proposes and reviews its own changes. No change to fleet is requested
+from this repository.
+
+Fleet:
+
+. Establish the three scanner contexts on fleet `main` at the pin it now uses.
+  Fleet records an earlier run at that pin (42611087892) that failed on the
+  Rust supplement.
+. Record a live canary for that pin before it relies on one.
+. Review the policy difference between the two pins: `03e858b...` adds an
+  exact `your-key-here` allowlist for `curl-auth-header`; `4404c3c...` has none.
+. Keep the required contexts, `fast-pr: false`, `contents: read` and the
+  absence of `secrets: inherit`.
+
+Suite:
+
+. Restore this repository's own scanner. It has had no jobs since
+  2026-11-09, and its caller uses the former name. The repair needs a published
+  scanner that admits the name the caller will use, and then a caller pin to
+  that published commit. This record changes no workflow.
+. Every consumer that calls a suite reusable workflow as `cicd-suite` is
+  expected to fail in the same way. Only this repository and pons-asinorum
+  were read. An inventory of callers is needed before any claim about others.
+. Decide the single caller coordinate. If it is this repository, the order
+  matters: bring across the 10 `proven-cicd` commits, admit the
+  `proven-cicd-and-workflows` name in the scanner caller check and the
+  publication guard, publish, and only then ask fleet to move with a canary.
+  A caller of a name the scanner does not admit stops before it scans.
+. With an authorised read credential, read a fleet `main` scanner run and its
+  jobs. Only then add a fleet receipt to `catalogue/assurance.json` and
+  regenerate the matrix.
+. The corpus canary manifest still pins suite `41f8a3...` against fleet
+  `83e35bcf...`. It remains an offline audit and is unchanged.
+
 == Suite lock-map finding — investigation, not a completed fix
 
 At the inspected suite source:
