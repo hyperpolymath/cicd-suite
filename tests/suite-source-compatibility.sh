@@ -12,6 +12,7 @@ sha=0123456789abcdef0123456789abcdef01234567
 other_sha=ffffffffffffffffffffffffffffffffffffffff
 legacy=hyperpolymath/cicd-suite
 canonical=hyperpolymath/proven-cicd
+renamed=hyperpolymath/proven-cicd-and-workflows
 caller=hyperpolymath/source-control
 caller_file=.github/workflows/caller.yml
 
@@ -59,7 +60,7 @@ for workflow in rust-ci.yml creusot-gate.yml spark-gate.yml kanren-gate.yml secr
             .with["persist-credentials"] == false)
         ' "$tmp/workflow.json" >/dev/null
 
-        for repository in "$legacy" "$canonical"; do
+        for repository in "$legacy" "$canonical" "$renamed"; do
             ref="$repository/.github/workflows/$workflow@$sha"
             stage_ref "$ref"
             run_case 0 'admitted coordinate' "$repository"
@@ -146,7 +147,7 @@ done
 git -C "$checkout" add actions
 git -C "$checkout" -c user.name='CI control' -c user.email='ci-control@example.invalid' commit -qm 'source checkout fixture'
 actual=$(git -C "$checkout" rev-parse HEAD)
-for repository in "$legacy" "$canonical"; do
+for repository in "$legacy" "$canonical" "$renamed"; do
     EXPECTED=$actual EXPECTED_REPOSITORY=$repository SUITE_DIR=$checkout \
         bash "$root/scripts/verify-suite-checkout.sh" >/dev/null
 done
@@ -178,7 +179,7 @@ printf '%s\n' "$*" >> "$PLAN_PROBE_LOG"
 echo identical
 MOCK
 chmod +x "$plan/mocks/gh"
-for selected in "$legacy" "$canonical" __omitted__ __null__ __false__ '' untrusted/proven-cicd hyperpolymath/proven-cicd-extra; do
+for selected in "$legacy" "$canonical" "$renamed" __omitted__ __null__ __false__ '' untrusted/proven-cicd hyperpolymath/proven-cicd-extra; do
     jq -n --arg repository "$selected" --arg sha "$sha" '
       {schema_version:1,suite_sha:$sha,subjects:[{repository:"hyperpolymath/source-control",sha:$sha}]} |
       if $repository == "__omitted__" then .
@@ -195,7 +196,7 @@ for selected in "$legacy" "$canonical" __omitted__ __null__ __false__ '' untrust
       PLAN_EXPECTED_REPOSITORY=$expected_repository PLAN_EXPECTED_SHA=$sha \
       GITHUB_OUTPUT="$plan/outputs" bash plan.sh) > "$tmp/log" 2>&1 || rc=$?
     case "$selected" in
-      "$legacy"|"$canonical"|__omitted__)
+      "$legacy"|"$canonical"|"$renamed"|__omitted__)
         [[ "$rc" -eq 0 && -s "$plan/probes" ]]
         grep -Fxq "suite_repository=$expected_repository" "$plan/outputs"
         grep -Fxq "suite_sha=$sha" "$plan/outputs"

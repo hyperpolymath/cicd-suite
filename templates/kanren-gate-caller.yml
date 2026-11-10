@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MPL-2.0
 # miniKanren Gate — thin caller of the estate's relational-code gate in
-# hyperpolymath/cicd-suite. Relational sources (Scheme family, Rust kanren
+# hyperpolymath/proven-cicd-and-workflows. Relational sources (Scheme family, Rust kanren
 # crates) must have a goal-level test, every relational test is EXECUTED
 # with the interpreter its dialect names, impure operators (conda, condu,
 # project, …) are listed, and a miniKanren claim with no relations behind it
@@ -27,7 +27,7 @@ permissions:
 
 jobs:
   kanren:
-    uses: hyperpolymath/cicd-suite/.github/workflows/kanren-gate.yml@__CICD_SUITE_SHA__ # cicd-suite main
+    uses: hyperpolymath/proven-cicd-and-workflows/.github/workflows/kanren-gate.yml@__CICD_SUITE_SHA__ # cicd-suite main
     # Inputs (optional):
     #   interpreters: "guile chez"       # what the sources need
     #   enforce_purity: true             # conda/condu/project/… fail

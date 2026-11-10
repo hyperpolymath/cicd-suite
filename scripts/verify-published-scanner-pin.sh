@@ -7,7 +7,7 @@ pin=${1:-}
 repository=${2-hyperpolymath/cicd-suite}
 [[ $pin =~ ^[0-9a-f]{40}$ ]] || { echo 'scanner pin must be a full SHA' >&2; exit 2; }
 case "$repository" in
-    hyperpolymath/cicd-suite|hyperpolymath/proven-cicd) ;;
+    hyperpolymath/cicd-suite|hyperpolymath/proven-cicd|hyperpolymath/proven-cicd-and-workflows) ;;
     *) echo 'scanner source repository is not admitted' >&2; exit 2 ;;
 esac
 status=$(gh api "repos/$repository/compare/$pin...main" --jq .status) \

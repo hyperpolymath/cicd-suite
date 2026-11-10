@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MPL-2.0
 # Rust CI — thin caller of the estate's strict Rust gate, which lives in
-# hyperpolymath/cicd-suite as a reusable workflow. Do not copy its jobs in
+# hyperpolymath/proven-cicd-and-workflows as a reusable workflow. Do not copy its jobs in
 # here: a copy freezes at one cicd-suite commit and never receives a fix.
 #
 # The job id MUST stay `rust-ci`: the contexts `rust-ci / Cargo check +
@@ -36,7 +36,7 @@ permissions:
 
 jobs:
   rust-ci:
-    uses: hyperpolymath/cicd-suite/.github/workflows/rust-ci.yml@__CICD_SUITE_SHA__ # cicd-suite main
+    uses: hyperpolymath/proven-cicd-and-workflows/.github/workflows/rust-ci.yml@__CICD_SUITE_SHA__ # cicd-suite main
     # Inputs (all optional; defaults are the strict ones):
     #   working_directory: crates/cli   # sub-crate / monorepo
     #   toolchain: "1.85.0"             # default "auto": rust-toolchain.toml, else stable

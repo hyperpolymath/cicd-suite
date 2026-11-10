@@ -35,7 +35,7 @@ arrived. The caller is one line to move, and the track bot moves it.
 
 == Two ways a reusable reaches its scripts
 
-The estate audit pins each composite as `+uses: hyperpolymath/cicd-suite/actions/x@<sha>+`,
+The estate audit pins each composite as `+uses: hyperpolymath/proven-cicd-and-workflows/actions/x@<sha>+`,
 which is why `+tests/lock-transitive-closure.sh+` insists the pinned commit
 serves the current `+actions/+` tree — a cure landed here was inert downstream
 until a repin commit followed. The language gates avoid the second pin: every

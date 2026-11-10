@@ -38,7 +38,7 @@ jobs:
           git diff --exit-code -- tests/fixtures/creusot-live
   creusot:
     needs: fixture
-    uses: hyperpolymath/cicd-suite/.github/workflows/creusot-gate.yml@6c6d772ebe82605ba22254db528faf54faec9f49 # published PR70 repair
+    uses: hyperpolymath/proven-cicd-and-workflows/.github/workflows/creusot-gate.yml@6c6d772ebe82605ba22254db528faf54faec9f49 # published PR70 repair
     with:
       working_directory: tests/fixtures/creusot-live
       creusot_version: '0.14.0'

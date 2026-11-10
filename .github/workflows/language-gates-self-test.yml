@@ -135,7 +135,7 @@ jobs:
         run: |
           set -euo pipefail
           for t in templates/rust-ci-caller.yml templates/creusot-gate-caller.yml templates/spark-gate-caller.yml templates/kanren-gate-caller.yml; do
-            grep -qE 'uses: hyperpolymath/cicd-suite/\.github/workflows/[a-z-]+\.yml@__CICD_SUITE_SHA__' "$t" \
+            grep -qE 'uses: hyperpolymath/proven-cicd-and-workflows/\.github/workflows/[a-z-]+\.yml@__CICD_SUITE_SHA__' "$t" \
               || { echo "$t does not call a cicd-suite reusable at __CICD_SUITE_SHA__"; exit 1; }
             ! grep -qE '^\s*secrets:' "$t" || { echo "$t hands secrets to a reusable that consumes none"; exit 1; }
           done
