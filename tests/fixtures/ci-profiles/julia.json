@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "stage": "proposal",
+  "repository": "example/Library.jl",
+  "mother": "julia-library-v1",
+  "lifecycles": ["validate", "maintenance"],
+  "capabilities": [
+    {"id": "secret-scan", "obligation": "required"},
+    {"id": "spdx-license", "obligation": "required"}
+  ],
+  "slots": {"root": ".", "julia_versions": ["1.9", "1.11"]}
+}

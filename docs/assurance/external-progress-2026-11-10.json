@@ -1,0 +1,437 @@
+{
+  "observed_on": "2026-11-10",
+  "method": "Git objects read from anonymous clones and from this checkout. GitHub API records were read for hyperpolymath/proven-cicd-and-workflows and hyperpolymath/pons-asinorum only. No GitHub API record of hyperpolymath/gitbot-fleet was read; see unavailable. Entries under fleet_reported are copied from files committed in gitbot-fleet and were not read by the suite.",
+  "git_commands": [
+    {
+      "purpose": "name resolution",
+      "command": "git ls-remote https://github.com/hyperpolymath/<name> HEAD refs/heads/main",
+      "names": [
+        "cicd-suite",
+        "proven-cicd-and-workflows",
+        "proven-cicd"
+      ]
+    },
+    {
+      "purpose": "pin 4404c3c is on suite main",
+      "command": "git merge-base --is-ancestor 4404c3c0474e17753fe7689f3485c02890aac113 origin/main",
+      "result": "exit 0"
+    },
+    {
+      "purpose": "commits behind suite main",
+      "command": "git rev-list --count 4404c3c0474e17753fe7689f3485c02890aac113..origin/main",
+      "result": "87"
+    },
+    {
+      "purpose": "fetch the separate repository",
+      "command": "git fetch https://github.com/hyperpolymath/proven-cicd main",
+      "result": "FETCH_HEAD 03e858b6015e67cc1f9bc31ac1e29ddc1b6fd409"
+    },
+    {
+      "purpose": "merge base of the two mains",
+      "command": "git merge-base FETCH_HEAD origin/main",
+      "result": "b931e8e126644516e292601bc644f480a7b2a5a0"
+    },
+    {
+      "purpose": "commits only in proven-cicd",
+      "command": "git rev-list --count b931e8e126644516e292601bc644f480a7b2a5a0..FETCH_HEAD",
+      "result": "10"
+    },
+    {
+      "purpose": "commits only in this repository",
+      "command": "git rev-list --count b931e8e126644516e292601bc644f480a7b2a5a0..origin/main",
+      "result": "21"
+    },
+    {
+      "purpose": "files that differ between the two mains",
+      "command": "git diff --stat FETCH_HEAD origin/main",
+      "result": "47 files changed"
+    },
+    {
+      "purpose": "blob of a pinned workflow",
+      "command": "git rev-parse <sha>:.github/workflows/secret-scanner-reusable.yml"
+    },
+    {
+      "purpose": "SHA-256 of a pinned workflow",
+      "command": "git show <sha>:.github/workflows/secret-scanner-reusable.yml | sha256sum"
+    },
+    {
+      "purpose": "fleet history",
+      "command": "git clone --shallow-since=2026-10-29 --single-branch https://github.com/hyperpolymath/gitbot-fleet; git log --format='%H %P %cI %s'"
+    },
+    {
+      "purpose": "fleet pull request heads",
+      "command": "git fetch origin refs/pull/<number>/head; git rev-parse FETCH_HEAD"
+    },
+    {
+      "purpose": "fleet scanner caller at a commit",
+      "command": "git show <commit>:.github/workflows/secret-scanner.yml"
+    }
+  ],
+  "suite": {
+    "repository": "hyperpolymath/proven-cicd-and-workflows",
+    "former_name": "hyperpolymath/cicd-suite",
+    "name_resolution": {
+      "command": "git ls-remote <url> HEAD",
+      "former_name_head": "3120495390635096552935d904652789253938e8",
+      "current_name_head": "3120495390635096552935d904652789253938e8"
+    },
+    "main": "3120495390635096552935d904652789253938e8",
+    "separate_repository": {
+      "repository": "hyperpolymath/proven-cicd",
+      "main": "03e858b6015e67cc1f9bc31ac1e29ddc1b6fd409",
+      "merge_base_with_suite_main": "b931e8e126644516e292601bc644f480a7b2a5a0",
+      "commits_only_in_proven_cicd": 10,
+      "commits_only_in_suite": 21,
+      "files_differing_between_mains": 47
+    },
+    "pins": [
+      {
+        "repository": "hyperpolymath/cicd-suite",
+        "sha": "4404c3c0474e17753fe7689f3485c02890aac113",
+        "path": ".github/workflows/secret-scanner-reusable.yml",
+        "blob": "81b2ba1dfb074f6f8913baa81eb6768b7497cc2a",
+        "content_sha256": "4745e9318346b1a3eae2e0bf65c6732f73d2ead78ef29de9e20659a71f8057d8",
+        "admitted_caller_repositories": [
+          "hyperpolymath/cicd-suite"
+        ],
+        "jobs": [
+          "gitleaks",
+          "supplemental-results"
+        ],
+        "contexts": [
+          "scan / gitleaks",
+          "scan / rust-secrets",
+          "scan / shell-secrets"
+        ],
+        "ancestor_of_suite_main": true,
+        "commits_behind_suite_main": 87,
+        "publication_guard": {
+          "command": "scripts/verify-published-scanner-pin.sh 4404c3c0474e17753fe7689f3485c02890aac113 hyperpolymath/cicd-suite",
+          "exit": 2,
+          "meaning": "unavailable, not rejected",
+          "http_status": 403
+        }
+      },
+      {
+        "repository": "hyperpolymath/proven-cicd",
+        "sha": "03e858b6015e67cc1f9bc31ac1e29ddc1b6fd409",
+        "path": ".github/workflows/secret-scanner-reusable.yml",
+        "blob": "b75b630ab6bee9943573502f0ace580078ef92ae",
+        "content_sha256": "02e34046c20f25c6b1e9ada99bd46294e33cc90a792fefa427f09aef098dcad9",
+        "admitted_caller_repositories": [
+          "hyperpolymath/cicd-suite",
+          "hyperpolymath/proven-cicd"
+        ],
+        "jobs": [
+          "gitleaks",
+          "supplemental-results"
+        ],
+        "contexts": [
+          "scan / gitleaks",
+          "scan / rust-secrets",
+          "scan / shell-secrets"
+        ],
+        "is_main_head_of_its_repository": true,
+        "same_blob_as_suite_main": true,
+        "publication_guard": {
+          "command": "scripts/verify-published-scanner-pin.sh 03e858b6015e67cc1f9bc31ac1e29ddc1b6fd409 hyperpolymath/proven-cicd",
+          "exit": 0,
+          "meaning": "published on its main"
+        }
+      }
+    ],
+    "former_name_reusable_calls": {
+      "summary": "Workflows that call a reusable workflow under hyperpolymath/cicd-suite ended with no jobs from 2026-11-09. The same workflows had jobs and succeeded on 2026-11-07. The caller files did not change. The API gives no reason.",
+      "observations": [
+        {
+          "repository": "hyperpolymath/proven-cicd-and-workflows",
+          "caller": ".github/workflows/secret-scanner.yml",
+          "uses": "hyperpolymath/cicd-suite/.github/workflows/secret-scanner-reusable.yml@a12b2b4644db1a1250bc50b58fd24c99f89f564e",
+          "last_run_with_jobs": {
+            "run": 42408029451,
+            "head_sha": "2dbe6e9c2da71fbce336079f8e016c2de0b90111",
+            "created_at": "2026-11-07T19:49:02Z",
+            "conclusion": "success",
+            "jobs": 3
+          },
+          "runs_without_jobs": [
+            {
+              "run": 42597552987,
+              "event": "push",
+              "head_sha": "3120495390635096552935d904652789253938e8",
+              "created_at": "2026-11-09T09:59:32Z",
+              "conclusion": "failure",
+              "jobs": 0
+            },
+            {
+              "run": 42749630980,
+              "event": "schedule",
+              "head_sha": "3120495390635096552935d904652789253938e8",
+              "created_at": "2026-11-10T03:28:05Z",
+              "conclusion": "failure",
+              "jobs": 0
+            }
+          ],
+          "change_between": "README.adoc only, one line"
+        },
+        {
+          "repository": "hyperpolymath/pons-asinorum",
+          "callers": [
+            ".github/workflows/main-estate-audit.yml",
+            ".github/workflows/creusot-gate.yml"
+          ],
+          "uses": "hyperpolymath/cicd-suite/.github/workflows/{main-estate-audit,creusot-gate}.yml@bf7dd95cf49733019343ff485c2f45c6b261839c",
+          "last_runs_with_jobs": {
+            "runs": [
+              42400643588,
+              42400643729
+            ],
+            "head_sha": "612145d805c6ec519d60fc65e406e9c091462848",
+            "created_at": "2026-11-07T18:18:41Z",
+            "conclusion": "success"
+          },
+          "runs_without_jobs": [
+            {
+              "run": 42836648255,
+              "event": "push",
+              "head_sha": "d4adad08293aa8d0edb1409bb28bb2b4e3d3d0d5",
+              "created_at": "2026-11-10T14:41:31Z",
+              "conclusion": "failure",
+              "jobs": 0
+            },
+            {
+              "run": 42836648268,
+              "event": "push",
+              "head_sha": "d4adad08293aa8d0edb1409bb28bb2b4e3d3d0d5",
+              "created_at": "2026-11-10T14:41:31Z",
+              "conclusion": "failure",
+              "jobs": 0
+            }
+          ],
+          "change_between": "no workflow file changed"
+        }
+      ],
+      "step_level_action_calls": {
+        "note": "Workflows whose steps use actions under the former name still ran with jobs after the first failure above.",
+        "runs": [
+          {
+            "run": 42597553230,
+            "workflow": "Central Estate CI/CD Audit",
+            "event": "push",
+            "head_sha": "3120495390635096552935d904652789253938e8",
+            "created_at": "2026-11-09T09:59:32Z",
+            "conclusion": "success"
+          },
+          {
+            "run": 42839265385,
+            "workflow": "Central Estate CI/CD Audit",
+            "event": "pull_request",
+            "head_sha": "769088de0492ec8ab5c6570ee98de3acdc9fd83e",
+            "created_at": "2026-11-10T14:56:53Z",
+            "jobs": {
+              "governance": "success",
+              "hygiene": "success",
+              "manifests": "success",
+              "languages": "success",
+              "advisory": "success"
+            }
+          }
+        ],
+        "uses_example": "hyperpolymath/cicd-suite/actions/required-files-check@c519c452"
+      }
+    },
+    "open_repair": {
+      "url": "https://github.com/hyperpolymath/proven-cicd-and-workflows/pull/94",
+      "title": "Admit the renamed repository and call it by its new name",
+      "state": "OPEN",
+      "headRefOid": "7e066e8d08ad195afd5e797a9957e0554e7e61f9",
+      "created_at": "2026-11-09T15:15:10Z",
+      "changed_files": 24,
+      "read": "GitHub API record and file list, 2026-11-10. Not merged. Its statements about other callers (91 repositories, 106 workflow files) were not read here."
+    }
+  },
+  "fleet": {
+    "repository": "hyperpolymath/gitbot-fleet",
+    "main": "bf0e25587eb9f98c4e1a1d412cdd1c618c2e072c",
+    "pull_requests": [
+      {
+        "url": "https://github.com/hyperpolymath/gitbot-fleet/pull/632",
+        "headRefOid": "2811e196a456d0bfb186764a4a2d3226a966f42c",
+        "mergeCommit": "51298a97b0a322b0b175331b1aa4a61348b253fe",
+        "mergeCommitParents": [
+          "83e35bcfd04d43960d635fec5397da8dfa344268"
+        ],
+        "mergeCommitDate": "2026-10-31T22:43:29Z",
+        "state": "merged per Git history; API state not read"
+      },
+      {
+        "url": "https://github.com/hyperpolymath/gitbot-fleet/pull/631",
+        "headRefOid": "b97b51e6f2b8334d5b87d25836f4cc7ae2b43028",
+        "mergeCommit": "7bf2fd6d9aa3c121877de9d6a0d32e3707a002f2",
+        "mergeCommitParents": [
+          "51298a97b0a322b0b175331b1aa4a61348b253fe"
+        ],
+        "mergeCommitDate": "2026-10-31T22:43:48Z",
+        "state": "merged per Git history; API state not read"
+      },
+      {
+        "url": "https://github.com/hyperpolymath/gitbot-fleet/pull/656",
+        "headRefOid": "f597f2a211a2963f35ce833a8ccc9053e7eb9eeb",
+        "mergeCommit": "a57cb94088f0fd23e66bd0f0aa833425f90eb64f",
+        "mergeCommitParents": [
+          "8906f47f945d4675d7375eb78898ed0f1c48cc95"
+        ],
+        "mergeCommitDate": "2026-11-10T01:36:15Z",
+        "state": "merged per Git history; API state not read"
+      }
+    ],
+    "scanner_caller_history": [
+      {
+        "commit": "83e35bcfd04d43960d635fec5397da8dfa344268",
+        "uses": "hyperpolymath/standards/.github/workflows/secret-scanner-reusable.yml@75bd5994470661a099df562d6d5ad2fe744dbd66"
+      },
+      {
+        "commit": "51298a97b0a322b0b175331b1aa4a61348b253fe",
+        "uses": "hyperpolymath/cicd-suite/.github/workflows/secret-scanner-reusable.yml@4404c3c0474e17753fe7689f3485c02890aac113"
+      },
+      {
+        "commit": "8906f47f945d4675d7375eb78898ed0f1c48cc95",
+        "uses": "hyperpolymath/cicd-suite/.github/workflows/secret-scanner-reusable.yml@4404c3c0474e17753fe7689f3485c02890aac113"
+      },
+      {
+        "commit": "a57cb94088f0fd23e66bd0f0aa833425f90eb64f",
+        "uses": "hyperpolymath/proven-cicd/.github/workflows/secret-scanner-reusable.yml@03e858b6015e67cc1f9bc31ac1e29ddc1b6fd409"
+      },
+      {
+        "commit": "bf0e25587eb9f98c4e1a1d412cdd1c618c2e072c",
+        "uses": "hyperpolymath/proven-cicd/.github/workflows/secret-scanner-reusable.yml@03e858b6015e67cc1f9bc31ac1e29ddc1b6fd409"
+      }
+    ],
+    "scanner_caller_at_main": {
+      "path": ".github/workflows/secret-scanner.yml",
+      "fast_pr": false,
+      "secrets_line": false,
+      "job_permissions": "contents: read",
+      "triggers": [
+        "pull_request",
+        "push to main"
+      ]
+    },
+    "closure_at_main": {
+      "actions_lock_entry": "'.github/workflows/secret-scanner.yml': []",
+      "pinned_source": {
+        "file": "scripts/lib/pinned-reusable-sources.json",
+        "repository": "hyperpolymath/proven-cicd",
+        "commit": "03e858b6015e67cc1f9bc31ac1e29ddc1b6fd409",
+        "blob": "b75b630ab6bee9943573502f0ace580078ef92ae",
+        "content_sha256": "02e34046c20f25c6b1e9ada99bd46294e33cc90a792fefa427f09aef098dcad9",
+        "role": "active",
+        "blob_and_sha256_match_suite_git": true
+      },
+      "receipt_row": {
+        "file": "scripts/lib/lock-closure-receipts.tsv",
+        "repository": "hyperpolymath/proven-cicd",
+        "commit": "03e858b6015e67cc1f9bc31ac1e29ddc1b6fd409",
+        "edge": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
+      }
+    },
+    "fleet_reported": {
+      "read_by_suite": false,
+      "source_commit": "a57cb94088f0fd23e66bd0f0aa833425f90eb64f",
+      "source_files": [
+        "docs/migrations/secret-scanner-cicd-suite/2026-11-09-fleet-evidence.md",
+        "docs/migrations/secret-scanner-cicd-suite/2026-11-09-repair-notes.md",
+        "docs/migrations/secret-scanner-cicd-suite/canary/receipt.json"
+      ],
+      "items": [
+        {
+          "claim": "Main scanner run with all three jobs successful, at the cicd-suite pin 4404c3c",
+          "subject_sha": "8906f47f945d4675d7375eb78898ed0f1c48cc95",
+          "run": 42539733415
+        },
+        {
+          "claim": "Merge-bound Secret Scanner and Lock Sync Gate runs were cancelled; the supplemental jobs then failed receipt verification. Supersession by the next main push is an inference; no cancellation actor or reason was read.",
+          "subject_sha": "51298a97b0a322b0b175331b1aa4a61348b253fe",
+          "runs": [
+            41249456040,
+            41249455852
+          ]
+        },
+        {
+          "claim": "The next main push runs succeeded",
+          "subject_sha": "7bf2fd6d9aa3c121877de9d6a0d32e3707a002f2",
+          "runs": [
+            41249478795,
+            41249478405
+          ]
+        },
+        {
+          "claim": "Live canary receipt: three contexts successful on unified-dataset-vocab at suite pin 4404c3c, full mode, no secrets passed",
+          "subject_sha": "4921ac0d161d5619c3186b2e916ed3f6e2c8c89f",
+          "run": 41199623322,
+          "measured_at": "2026-11-09T11:08:00Z"
+        },
+        {
+          "claim": "Real gh-actions-lock v0.4.1 regeneration. The regenerated vendor lock lacked three SHA-keyed records; the scoped regeneration changed only the caller reference and left the vendor lock byte-identical.",
+          "runs": [
+            42607340376,
+            42609545584
+          ]
+        },
+        {
+          "claim": "A fleet run at the proven-cicd pin 03e858b started all three contexts and failed: the Rust supplement flagged four upstream-pinned Echidnabot lines. The commit was pushed before authorisation and reverted.",
+          "subject_sha": "9e27c0744130357c7ba0165f33dc8bc9383781d9",
+          "run": 42611087892
+        },
+        {
+          "claim": "The receipt covers the reusable workflow and its actions/checkout edge only. Suite scripts, the Gitleaks download and runner tools are outside it."
+        },
+        {
+          "claim": "Historical rollback pin, recorded as not known-good",
+          "uses": "hyperpolymath/standards/.github/workflows/secret-scanner-reusable.yml@75bd5994470661a099df562d6d5ad2fe744dbd66"
+        }
+      ]
+    },
+    "not_established": [
+      "The result of the three scanner contexts on fleet main after the move to proven-cicd@03e858b (commits a57cb940 and bf0e2558)",
+      "A live canary for the proven-cicd pin 03e858b. The fleet caller states that the old-pin canary does not attest the new pin."
+    ]
+  },
+  "unavailable": [
+    {
+      "probe": "GitHub API fields of gitbot-fleet pull requests 632, 631 and 656 (state, merge_commit_sha)",
+      "reason": "no API credential for gitbot-fleet in this session; the request for one was denied",
+      "http_status": null
+    },
+    {
+      "probe": "scripts/inspect-pr-ci.sh hyperpolymath/gitbot-fleet 632",
+      "reason": "not run; it needs the same API",
+      "http_status": null
+    },
+    {
+      "probe": "Workflow runs, attempts, jobs and step conclusions for the fleet merge commits and main",
+      "reason": "no API credential for gitbot-fleet in this session",
+      "http_status": null
+    },
+    {
+      "probe": "Check-run producer of the scanner contexts",
+      "reason": "no API credential for gitbot-fleet in this session",
+      "http_status": null
+    },
+    {
+      "probe": "Branch rules and required contexts of fleet main",
+      "reason": "no API credential for gitbot-fleet in this session",
+      "http_status": null
+    },
+    {
+      "probe": "Raw runner logs and artifacts",
+      "reason": "no API credential for gitbot-fleet in this session",
+      "http_status": null
+    },
+    {
+      "probe": "Publication guard for hyperpolymath/cicd-suite at 4404c3c",
+      "reason": "GitHub API access under the former repository name is not enabled for this session; ancestry was verified with Git instead",
+      "http_status": 403
+    }
+  ]
+}

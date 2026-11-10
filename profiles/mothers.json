@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "stage": "proposal",
+  "mothers": [
+    {
+      "id": "docs-data-v1",
+      "adapter": "docs-data",
+      "required_capabilities": ["secret-scan", "spdx-license"],
+      "required_slots": ["root", "documents"],
+      "adapter_state": "unimplemented"
+    },
+    {
+      "id": "julia-library-v1",
+      "adapter": "julia-pkg",
+      "required_capabilities": ["secret-scan", "spdx-license"],
+      "required_slots": ["root", "julia_versions"],
+      "adapter_state": "unimplemented"
+    },
+    {
+      "id": "rust-library-v1",
+      "adapter": "rust-cargo",
+      "required_capabilities": ["secret-scan", "spdx-license", "rust-ci"],
+      "required_slots": ["root", "msrv"],
+      "adapter_state": "unqualified"
+    }
+  ]
+}
