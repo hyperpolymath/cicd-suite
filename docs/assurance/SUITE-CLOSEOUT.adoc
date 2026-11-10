@@ -134,7 +134,8 @@ or in any other consumer.
   Estate CI/CD Audit run 42597553230 succeeded on 2026-11-09, and run
   42839265385 on 2026-11-10 completed its five jobs with success.
 * The owner stated on 2026-11-10 that the two repositories are intended to be
-  one, named `proven-cicd-and-workflows`. This record does not merge them.
+  one, named `proven-cicd-and-workflows`. The same pull request then merged
+  the `proven-cicd` history; see "Merge of the proven-cicd history" below.
 
 === What this does not establish
 
@@ -181,9 +182,12 @@ Fleet:
 Suite:
 
 . Restore this repository's own scanner. It has had no jobs since
-  2026-11-09, and its caller uses the former name. The repair needs a published
-  scanner that admits the name the caller will use, and then a caller pin to
-  that published commit. This record changes no workflow.
+  2026-11-09, and its caller on `main` uses the former name. The merge below
+  moves the caller to `hyperpolymath/proven-cicd` at `a12b2b46...`, a name
+  that the scanner at that commit admits. That removes the dead name but
+  makes this repository depend on `proven-cicd`. The lasting repair is a
+  published scanner that admits this repository's name, and then a caller pin
+  to that published commit.
 . Open pull request
   https://github.com/hyperpolymath/proven-cicd-and-workflows/pull/94[94] in
   this repository admits the `proven-cicd-and-workflows` name and moves the
@@ -193,16 +197,56 @@ Suite:
   expected to fail in the same way. Only this repository and pons-asinorum
   were read here. Pull request 94 reports 91 repositories and 106 workflow
   files; that inventory was not read here.
-. Decide the single caller coordinate. If it is this repository, the order
-  matters: bring across the 10 `proven-cicd` commits, publish the admission of
-  the `proven-cicd-and-workflows` name (pull request 94), and only then ask
-  fleet to move with a canary. A caller of a name the scanner does not admit
-  stops before it scans.
+. Complete the move to one caller coordinate. The 10 `proven-cicd` commits
+  are merged by this pull request. The order of the remaining steps matters:
+  publish the admission of the `proven-cicd-and-workflows` name (pull request
+  94), pin this repository's own callers to that published commit, and only
+  then ask fleet to move with a canary. A caller of a name the scanner does
+  not admit stops before it scans. Do not archive `proven-cicd` before fleet
+  and this repository's scanner caller have moved.
 . With an authorised read credential, read a fleet `main` scanner run and its
   jobs. Only then add a fleet receipt to `catalogue/assurance.json` and
   regenerate the matrix.
 . The corpus canary manifest still pins suite `41f8a3...` against fleet
   `83e35bcf...`. It remains an offline audit and is unchanged.
+
+=== Merge of the proven-cicd history
+
+Later on 2026-11-10, at the owner's request, the same pull request merged
+`hyperpolymath/proven-cicd` `main` (`03e858b6015e67cc1f9bc31ac1e29ddc1b6fd409`)
+into this repository. The observations above describe both `main` branches
+before that merge.
+
+* The merge keeps the 10 commits with their identities, so `03e858b...` is an
+  ancestor of the merged branch.
+* Four files had conflicts. `rust-ci.yml` keeps `taiki-e/install-action`
+  v2.90.0, the newer pin. `README.adoc` keeps this repository's title, and a
+  note marks the imported migration section as a dated record. In
+  `actions/creusot-check`, both sides had taught the gate the Why3find
+  single-file report. The merge keeps `has_proved_files` from this `main`,
+  which requires the success marker, and removes the `proven-cicd` function
+  `has_proof_report`, which accepted a line with no marker and has no caller
+  left. The test keeps this `main`'s controls for the real format and takes
+  the `proven-cicd` change that stops when a fixture commit fails.
+* Creusot gate controls: 93 pass on `main`, 89 on `proven-cicd`, and 93 on the
+  merged tree. The execution-attribution controls pass 53 of 53 on each.
+* Local test comparison on x86_64 Linux, `main` `3120495...` against the merged
+  tree: no test that passes on `main` fails on the merged tree. 23 tests pass
+  on both. 13 fail on both with the same last line of output; they were not
+  diagnosed here. Of the 8 tests that the merge adds, 5 pass. The other 3 gave
+  no result locally: one needs Idris 2, one needs an output directory
+  argument, and `tests/lock-self-source-controls.sh` fails in the same way on
+  unmerged `proven-cicd`. The machine has no mikefarah `yq`, so the hosted
+  checks are the authority for the `yq`-based tests.
+* `.github/workflows/secret-scanner.yml` now calls
+  `hyperpolymath/proven-cicd/.github/workflows/secret-scanner-reusable.yml@a12b2b4644db1a1250bc50b58fd24c99f89f564e`,
+  as `proven-cicd` `main` does.
+* Not changed by the merge: the 21 composite pins in `main-estate-audit.yml`
+  and the caller in `creusot-live-canary.yml` still name `cicd-suite`. The
+  self-pin section of `tests/lock-transitive-closure.sh` admits `cicd-suite`
+  and `proven-cicd` as this suite's names, not `proven-cicd-and-workflows`.
+  Pull request 94 addresses these names. It was written against `main`
+  without the merge and needs an update after either one lands.
 
 == Suite lock-map finding — investigation, not a completed fix
 
