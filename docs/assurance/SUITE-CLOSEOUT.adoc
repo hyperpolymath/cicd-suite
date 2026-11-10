@@ -130,8 +130,9 @@ or in any other consumer.
   changed. The API gives no reason. This agrees with fleet's record that a
   reusable `uses:` does not follow a repository rename. A run with no jobs is
   not a pass: a required context that never reports is absent, not green.
-* Step-level action references under the former name still ran: the Central
-  Estate CI/CD Audit run 42597553230 succeeded on 2026-11-09.
+* Step-level action references under the former name still ran. The Central
+  Estate CI/CD Audit run 42597553230 succeeded on 2026-11-09, and run
+  42839265385 on 2026-11-10 completed its five jobs with success.
 * The owner stated on 2026-11-10 that the two repositories are intended to be
   one, named `proven-cicd-and-workflows`. This record does not merge them.
 
@@ -183,14 +184,20 @@ Suite:
   2026-11-09, and its caller uses the former name. The repair needs a published
   scanner that admits the name the caller will use, and then a caller pin to
   that published commit. This record changes no workflow.
+. Open pull request
+  https://github.com/hyperpolymath/proven-cicd-and-workflows/pull/94[94] in
+  this repository admits the `proven-cicd-and-workflows` name and moves the
+  self-calls and templates to it. It is not merged. It states that two
+  self-callers need a second pin, to its merge commit, before they start.
 . Every consumer that calls a suite reusable workflow as `cicd-suite` is
   expected to fail in the same way. Only this repository and pons-asinorum
-  were read. An inventory of callers is needed before any claim about others.
+  were read here. Pull request 94 reports 91 repositories and 106 workflow
+  files; that inventory was not read here.
 . Decide the single caller coordinate. If it is this repository, the order
-  matters: bring across the 10 `proven-cicd` commits, admit the
-  `proven-cicd-and-workflows` name in the scanner caller check and the
-  publication guard, publish, and only then ask fleet to move with a canary.
-  A caller of a name the scanner does not admit stops before it scans.
+  matters: bring across the 10 `proven-cicd` commits, publish the admission of
+  the `proven-cicd-and-workflows` name (pull request 94), and only then ask
+  fleet to move with a canary. A caller of a name the scanner does not admit
+  stops before it scans.
 . With an authorised read credential, read a fleet `main` scanner run and its
   jobs. Only then add a fleet receipt to `catalogue/assurance.json` and
   regenerate the matrix.
