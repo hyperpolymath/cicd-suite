@@ -30,9 +30,9 @@ tmp=$(mktemp -d)
 trap 'rm -rf -- "$tmp"' EXIT
 
 report() { # OUTCOME CLASS [FINDINGS_JSON]
-  local findings=${3:-[]}
+  local outcome=$1 class=$2 findings=${3:-[]}
   if [[ -n ${RUNNER_TEMP:-} ]]; then
-    jq -cn --arg outcome "$1" --arg class "$2" --argjson findings "$findings" \
+    jq -cn --arg outcome "$outcome" --arg class "$class" --argjson findings "$findings" \
       --arg repo "${GITHUB_REPOSITORY:-}" --arg sha "${GITHUB_SHA:-}" \
       --arg run "${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-}/actions/runs/${GITHUB_RUN_ID:-}" \
       --arg attempt "${GITHUB_RUN_ATTEMPT:-}" --arg suite_sha "$(git -C "$suite" rev-parse HEAD 2>/dev/null || true)" \
@@ -44,9 +44,10 @@ report() { # OUTCOME CLASS [FINDINGS_JSON]
   fi
 }
 finish() { # EXIT CLASS OUTCOME [FINDINGS_JSON]
-  report "$3" "$2" "${4:-[]}"
-  echo "PROVEN_LOCK_CLASS=$2"
-  exit "$1"
+  local code=$1 class=$2 outcome=$3 findings=${4:-[]}
+  report "$outcome" "$class" "$findings"
+  echo "PROVEN_LOCK_CLASS=$class"
+  exit "$code"
 }
 
 [[ -d $workspace && -n $stamped ]] || finish 2 not_run:usage not_run

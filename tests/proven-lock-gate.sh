@@ -53,7 +53,8 @@ rc=0; out=$(env -i PATH="$PATH" PROVEN_SHA=not-a-sha RUNNER_TEMP="$tmp/rt" bash 
 
 # --- gate end to end, with this checkout as the suite
 workspace() { # FIXTURE -> $tmp/ws with the stamped gate installed
-  rm -rf -- "$tmp/ws"; cp -R "$root/tests/fixtures/proven-lock/$1/repo" "$tmp/ws"
+  local fixture=$1
+  rm -rf -- "$tmp/ws"; cp -R "$root/tests/fixtures/proven-lock/$fixture/repo" "$tmp/ws"
   mv "$tmp/ws/dot-github" "$tmp/ws/.github"
   cp "$template" "$tmp/ws/.github/workflows/proven-lock-gate.yml"
 }
