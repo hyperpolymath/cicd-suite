@@ -38,10 +38,10 @@ rules have no Hypatia id.
 * `cicd-squabbler` at `09e6790`: `crates/squabble-core/data/first-line-rules.tsv`, which holds 45 SQ ids, and ADR 0004, section "Mapping to Hypatia's `ci_failure_triage` ids".
 * `hypatia` at `89b406c`: `hypatia_rules_praxis.deed`, which holds 181 distinct A5 ids by the test's extraction.
 * ADR 0004 names the triage ids without a module. They are written here as `hypatia/ci_failure_triage/<name>`, after `lib/rules/ci_failure_triage.ex`.
-* *Finding:* none of the 26 `ci_failure_triage` ids is in the praxis registry, although that module is on Hypatia `main` (hypatia#1064). The ids the experiment owner uses as stable keys are therefore not yet registered. This has been reported to the Hypatia owner.
-* `api_rate_limit`: ADR 0004 gives SQ-PIN-03 and then SQ-RUN-01. The row takes SQ-PIN-03, and SQ-RUN-01 is `squabbler-only`.
+* *Finding:* none of the 26 `ci_failure_triage` ids is in the praxis registry, although that module is on Hypatia `main` (hypatia#1064). The ids the experiment owner uses as stable keys are therefore not yet registered. Cause, from the Hypatia owner: the generator recognises the module but was not re-run after hypatia#1064. Hypatia's "Validate Documentation" check catches it, but that check is not required. hypatia#1075 regenerates the registry. After it merges, the `praxis` column moves to `present`.
+* `api_rate_limit` maps to SQ-RUN-01, the generic rate-limit rerun, as the squabbler owner ruled on 2026-11-13. SQ-PIN-03, the setup-bun root-cause fix, takes precedence when the failed step is setup-bun. The note records that precedence, and SQ-PIN-03 is `squabbler-only`.
 * `generated_file_stale`: ADR 0004 gives no squabbler rule, only a referral, so the row is `hypatia-only`.
-* The kernel reason `Illegal` has no agreed squabbler rule yet. Its row says `unassigned`, which is allowed only for kernel-reason rows and printed as a warning.
+* The kernel reason `Illegal` (`../`, job-level `$/`) has no squabbler rule, on purpose: it is a referral. The squabbler owner declined to put an unproven repair at the first line while the `$/` measurement is disputed. The row says `unassigned`, which is allowed only for kernel-reason rows and printed as a warning, until the owner rules.
 
 Row counts: 25 `mapped`, 1 `hypatia-only`, 23 `squabbler-only` and 17
 `kernel-reason`, 66 in all.

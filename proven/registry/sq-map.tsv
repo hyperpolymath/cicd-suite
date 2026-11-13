@@ -4,7 +4,7 @@ hypatia/ci_failure_triage/actions_lock_missing_ref	SQ-LOCK-02	mapped	absent	ADR0
 hypatia/ci_failure_triage/actions_lock_stale	SQ-LOCK-02	mapped	absent	ADR0004 mapping table: one fix, four signatures
 hypatia/ci_failure_triage/actions_lock_unresolvable_pin	SQ-LOCK-02	mapped	absent	ADR0004 mapping table: one fix, four signatures
 hypatia/ci_failure_triage/always_after_cancel	SQ-GEN-03	mapped	absent	ADR0004 mapping table: WF029, static fix
-hypatia/ci_failure_triage/api_rate_limit	SQ-PIN-03	mapped	absent	ADR0004 mapping table: ADR lists SQ-PIN-03 then SQ-RUN-01; first taken, advice that defers to both
+hypatia/ci_failure_triage/api_rate_limit	SQ-RUN-01	mapped	absent	ADR0004 mapping table, squabbler owner 2026-11-13: SQ-PIN-03 first when the failed step is setup-bun, else SQ-RUN-01
 hypatia/ci_failure_triage/api_server_error	SQ-RUN-03	mapped	absent	ADR0004 mapping table: one re-run
 hypatia/ci_failure_triage/app_key_wrong_format	SQ-OWN-10	mapped	absent	ADR0004 mapping table: owner
 hypatia/ci_failure_triage/bench_regression	SQ-OWN-11	mapped	absent	ADR0004 mapping table: owner
@@ -41,11 +41,11 @@ hypatia/ci_failure_triage/uuid_conformance	SQ-OWN-14	mapped	absent	ADR0004 mappi
 -	SQ-PERM-01	squabbler-only	-	first-line-rules.tsv
 -	SQ-PIN-01	squabbler-only	-	first-line-rules.tsv
 -	SQ-PIN-02	squabbler-only	-	first-line-rules.tsv
+-	SQ-PIN-03	squabbler-only	-	first-line-rules.tsv; takes precedence over SQ-RUN-01 for api_rate_limit when the failed step is setup-bun
 -	SQ-PIN-04	squabbler-only	-	first-line-rules.tsv
 -	SQ-PIN-05	squabbler-only	-	first-line-rules.tsv
 -	SQ-REF-06	squabbler-only	-	first-line-rules.tsv
 -	SQ-REF-08	squabbler-only	-	first-line-rules.tsv
--	SQ-RUN-01	squabbler-only	-	first-line-rules.tsv; ADR api_rate_limit defers to it after SQ-PIN-03
 -	SQ-RUN-02	squabbler-only	-	first-line-rules.tsv
 -	SQ-TOOL-01	squabbler-only	-	first-line-rules.tsv
 -	SQ-LOCK-01	kernel-reason	-	SelfShaLeaf
