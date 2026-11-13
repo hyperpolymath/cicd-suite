@@ -69,6 +69,29 @@ done
 
 [[ $count -gt 0 ]] || { echo "FAIL: no fixture cases found" >&2; exit 1; }
 
+# --json (the squabbler executor contract) must agree with the text verdict on
+# every fixture: same exit code, every line valid JSON, one finding object per
+# REASON line, and a final status object naming the same verdict.
+json_agrees() { # CASE_ROOT ORACLE
+  local root=$1 oracle=$2 args=("$1") trc jrc text json
+  [[ -n $oracle ]] && args+=(--oracle "$oracle")
+  "$repo/scripts/extract-lock-facts.sh" "${args[@]}" > "$tmp/facts.json" 2>/dev/null || return 0
+  text=$("$verdict" "$tmp/facts.json" 2>/dev/null) && trc=0 || trc=$?
+  json=$("$verdict" --json "$tmp/facts.json" 2>/dev/null) && jrc=0 || jrc=$?
+  [[ $trc == "$jrc" ]] || { echo "exit $trc vs $jrc"; return 1; }
+  jq -e . >/dev/null <<<"$json" || { echo "invalid JSON"; return 1; }
+  [[ $(jq -sr 'last.verdict' <<<"$json") == "$(head -n 1 <<<"$text")" ]] || { echo "verdict differs"; return 1; }
+  [[ $(jq -s '[.[] | select(has("reason"))] | length' <<<"$json") == "$(grep -c '^REASON' <<<"$text" || true)" ]] || { echo "finding count differs"; return 1; }
+}
+for dir in "$fixtures"/*/; do
+  name=$(basename "$dir")
+  [[ -d $dir/repo && -f $dir/expected ]] || continue
+  rm -rf -- "$tmp/case"; cp -R "$dir/repo" "$tmp/case"
+  [[ -d $tmp/case/dot-github ]] && mv "$tmp/case/dot-github" "$tmp/case/.github"
+  oracle=; [[ -f $dir/oracle.json ]] && oracle="$dir/oracle.json"
+  if why=$(json_agrees "$tmp/case" "$oracle"); then echo "ok json $name"; else echo "FAIL json $name: $why"; fail=1; fi
+done
+
 # The repository's own lock must be consistent.
 self=$(observe "$repo")
 if [[ $(printf '%s\n' "$self" | head -n 1) == CONSISTENT ]]; then
