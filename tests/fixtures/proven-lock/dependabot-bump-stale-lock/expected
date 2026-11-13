@@ -1,0 +1,3 @@
+INCONSISTENT
+REASON	MissingTransitiveEdge	.github/workflows/ci.yml	actions/checkout@v7.1.0
+REASON	StaleRef	.github/workflows/ci.yml	actions/checkout@v7.0.1
