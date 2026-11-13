@@ -41,9 +41,14 @@ authoritative) and in Hypatia's ruleset. Both key their entries by rule id at a
 pinned SHA of this registry. If this repository held dispatch, it would be
 directing referrals, which R1 gives to Hypatia.
 
-This repository ships one conformance test that the squabbler and Hypatia both
-run. It checks that every registry id has exactly one dispatch entry in each of
-them, and that neither has an entry without a registry id. Moving dispatch here
+This repository holds the one map between the two id spaces (agreed with the
+squabbler owner, 2026-11-13): one row per A5 id, naming exactly one squabbler id
+or `hypatia-only`. The squabbler's own table carries no A5 column, because the
+squabbler is not Hypatia-dependent and the mapping is many to one (three A5 lock
+rules map to SQ-LOCK-02). A squabbler id may have zero or more A5 ids, and is
+either mapped or listed `squabbler-only`. The conformance test that both run
+checks exactly that, so it can pass on day one: 21 of the 45 squabbler rules
+have no log matcher, and many OWNER rows have no Hypatia id. Moving dispatch here
 would need an explicit supersession of ADR 0004, and that is the owner's call.
 
 The executors, meaning the applier in standards and the squabbler's FIX
@@ -56,8 +61,12 @@ proven/registry/<module>/<name>/rule.json   identity, signature, version, proof 
 proven/registry/<module>/<name>/fixtures/   pos/ neg/ incidents/ (scrubbed)
 proven/content/<artifact>/                  the stamped bodies and the vendored gate
 proven/manifest.json                        artifact -> latest version + body sha256
-proven/kernel/                              Idris2 model, proofs, verdict
-proven/extract/                             bash+jq fact extractors (graph, lock, oracle)
+src/Proven/Lock/                             Idris2 model, proofs, verdict, trusted base (Axioms.idr)
+proven-lock.ipkg                            builds proven-lock-verdict
+scripts/extract-lock-facts.sh               bash+jq fact extractor (graph, lock)
+tests/proven-lock-proofs.sh                 compiler controls and the trusted-base guard
+tests/fixtures/proven-lock/<case>/          repo/ (workflows under dot-github/), expected
+proven/registry/sq-map.tsv                  A5 id -> SQ id or hypatia-only
 proven/conformance/                         registry <-> dispatch conformance test
 proven/feedback/                            run reports, ingested by PR
 ....
@@ -72,7 +81,9 @@ Each stamped file has three regions:
 
 . The *stamp line*:
   `# proven-cicd: <artifact>@<version> sha256:<hash of the hashed region>`.
-. The *hashed region*: the body this repository proves.
+. The *hashed region*: the body this repository proves. It must hold nothing
+  that Hypatia's secret or UUID scanners flag, such as a key header or a
+  UUID-shaped literal. A sha256 hex string is fine.
 . The *local region*: values that legitimately differ per repository. This
   holds former `workflow_call` inputs, and every third-party `uses:` SHA that
   Dependabot may move. The local region is outside the hash.
@@ -92,7 +103,11 @@ There are two judgements, and they come from two places:
   in `proven/manifest.json` at the published SHA of this repository. The
   applier's sweep judges this, never the copy. It is the guard against the
   failure recorded in `ARCHITECTURE.adoc`: "a copy froze at whatever commit its
-  lock held, so fixes made here never arrived".
+  lock held, so fixes made here never arrived". Detection comes first, as a
+  read-only `BEHIND-CONTENT` token in the applier's existing census, with its
+  own known-answer control. Rewriting a stale copy is a separate applier mode,
+  with its own flag, controls and PR branch, and it waits for the owner's review
+  of a standards PR.
 
 Inlined jobs lose two things the reusable call used to give them, and the
 content restores both:
@@ -111,7 +126,7 @@ content restores both:
 The gate follows the split this repository already uses for
 `scripts/assurance-github.sh` and `src/Assurance/GitHubMain.idr`:
 
-* *Extractors* (`proven/extract/`, bash and jq) only extract facts. They emit
+* *Extractors* (`scripts/extract-lock-facts.sh`, bash and jq) only extract facts. They emit
   JSON for three things:
 ** the workflow graph: step `uses:`, job-level `uses:`, local composites and the
    nested `uses` records;
@@ -119,34 +134,45 @@ The gate follows the split this repository already uses for
    `commit`, `owner_id`, `repo_id` and `uses`;
 ** an oracle snapshot: `owner_id` and `repo_id` per repository, and the tags and
    branches at each SHA.
-* *The verdict* is the total Idris2 function `consistent`. Its value is either
-  Consistent or a non-empty list of typed reasons:
-** SelfShaLeaf
-** BlindEmptyEntry
-** OwnerIdDrift
-** MissingTransitiveEdge
-** DanglingRecord
-** StaleRef
-** Moved
-** DeadRef
-** Illegal
-** Tracking
+* *The verdict* is the total Idris2 function `judge`. It returns CONSISTENT only
+  with a certificate for every managed workflow and every record. Otherwise it
+  returns a non-empty list of typed reasons (MissingTransitiveEdge,
+  BlindEmptyEntry, StaleRef, StaleEntry, DuplicateEntry, KeyMalformed, Tracking,
+  SelfShaLeaf, RefMissing, CommitMismatch, IdsMissing, BadUses, DanglingRecord,
+  UnusedRecord, OwnerIdDrift, Moved, Illegal), or NOT RUN. DeadRef needs
+  reachability evidence and is not modelled yet.
+
+Runner semantics are taken from measured evidence, not assumed:
+
+* A job-level reusable ref may be absent from the caller's entry. The callee is
+  validated against its own lock at the pinned commit (standards#968).
+* Step-level `$/x` is a same-repository composite: this repository's
+  `code-hygiene-self-test.yml` uses it and ran green (run 42860149575).
+  Job-level `$/` and `../` are illegal.
+* A tag-keyed record is valid, because its `commit` pins it. "Lock keys must be
+  SHAs" is canon policy and a separate rule.
 
 The theorems state their assumptions about the oracle: the snapshot is true,
 and nothing changes between relock and check. The four properties to prove:
 
-. *Walk completeness.* Every remote action reached through a composite or a
-  job-level reusable appears under each workflow that reaches it.
-. *Empty entries.* A `[]` entry is admissible if and only if that workflow's
-  closure is empty.
+. *Walk completeness.* Every remote action a workflow reaches by steps,
+  directly or through same-repository composites, appears in its entry, and
+  every listed key is reached or is a job-level call. Proved, in
+  `src/Proven/Lock/Model.idr`.
+. *Empty entries.* A `[]` entry is admissible if and only if that workflow
+  reaches nothing by steps. Proved.
 . *Relock soundness.* Whenever relock does not refuse, its output is
   `consistent`.
 . *Relock idempotence.* Relocking a relocked lock changes nothing.
 
+The relock properties are not proved yet. The trusted base is two named axioms
+about primitive String equality (`src/Proven/Lock/Axioms.idr`), the assumption
+`DecEq String` already makes.
+
 Conformance testing covers only the extractor, because that is where bash
 breaks. The fixtures enumerate concrete `uses:` syntax: `./local`,
 `docker://`, subpaths, letter case, quoting, nested composites, the `.yml` and
-`.yaml` forms, and the illegal `../` and `$/` forms. Every historical incident
+`.yaml` forms, and the illegal `../` and job-level `$/` forms. Every historical incident
 in the ledger is a fixed case.
 
 === Distribution and the honest label
