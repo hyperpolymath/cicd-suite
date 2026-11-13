@@ -1,0 +1,211 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Proven CI/CD programme: inventory ledger, 2026-11-13
+
+This ledger merges what six estate sessions reported on 2026-11-13 between
+15:55 and 15:59 UTC. Nobody re-surveyed for it. Each row names its source. A
+row is a report, not a verification: where a source said "not read" or
+"unexamined", this ledger says so too.
+
+Sources:
+
+* *EXP*: the rule reconciliation experiment (cases CASE-001 to CASE-042).
+* *TB*: Tsunami-breaker, which owns the squabbler. Its 45 rules are in
+  `cicd-squabbler` `crates/squabble-core/data/first-line-rules.tsv` at `09e6790`.
+* *HYP*: Extended Hypatia (hypatia PRs #1061 to #1071, and
+  `hypatia_rules_praxis.deed`).
+* *COV*: the coverage thread (`hypatia` `docs/reports/coverage-matrix/matrix.json`,
+  the 75 rows with route `first-line`).
+* *D16*: the Doctrine 16 sweep, a red census of 35 repositories taken from
+  default-branch heads at about 15:20 UTC.
+* *WAVE*: the template upgrade wave.
+
+== Classes
+
+[cols="1,5"]
+|===
+| a | A fix exists but is not merged. The owner merges.
+| b | No fix exists.
+| c | Owner only: a setting, a secret, a security decision or credits.
+| d | Should become proven content in this repository.
+|===
+
+A row can carry more than one class. "d" is added wherever a rule or template
+that this repository should own would prevent the failure from coming back.
+
+== Lock and pin (the first slice)
+
+[cols="2,3,3,2,1",options="header"]
+|===
+| Item | Signature | Where | Fix state | Class
+
+| CASE-005, SQ-LOCK-01, `hypatia/ci_failure_triage/actions_lock_invalid_pin`
+| `invalid lockfile pin`: a record keyed `owner/repo@<40-hex>` whose `ref:` repeats the SHA (self-SHA leaf)
+| EpistemicTypes.jl, ResidualEvidenceTypes.jl and 16 more (EXP)
+| The squabbler has a static detector. standards#1503 (composite self-SHA repair, anchored transitive reusable-edge walk) is *open* (TB). The Hypatia rule is in hypatia#1064, which is open, has conflicts and has changes requested.
+| a, d
+
+| CASE-006, SQ-LOCK-02, `hypatia/ci_failure_triage/actions_lock_missing_ref`
+| `lockfile missing pin for` / `refs missing from the lockfile` / `Unable to resolve action … invalid lockfile pin`
+| this-ssg (`slsa-framework/slsa-github-generator@f7dd8c5…`), Protoctist.jl, ResidualEvidenceTypes.jl build (Pages) `actions/upload-artifact@bbbca2dd…` (D16, EXP)
+| No repo fix. The rule is in hypatia#1064 (open). D16's lock PRs were closed under R5.
+| b, d
+
+| CASE-032 (no rule yet), candidate `actions_lock_stale`
+| Lock Sync Gate red after a Dependabot action bump
+| rsr-template-repo#314, autoformal-fidelity (EXP); fumble#3, hottchpotch#7 (D16, logs not read)
+| None
+| b, d: the Dependabot-versus-lock rule
+
+| SQ-LOCK-03 (no matcher)
+| Zero jobs: the lock records the callee's old `owner_id` after a transfer (standards 6759885 → 297579217)
+| Applier census class MOVED (TB)
+| The applier repoints and relocks; merged (standards#1497, #1498)
+| d: proof that the relock is sound
+
+| Blind `[]` workflow entry
+| `gh actions-lock` ≤ 0.1.6 writes an empty entry for a job-level reusable caller
+| Applier (TB)
+| Handled by the applier on main
+| d
+
+| SQ-PIN-05 (no matcher)
+| A cross-repository job-level `uses:` ends with 0 jobs on every push
+| autoformal-fidelity `main-estate-audit.yml` (30 of 30 runs), bofj-kitt governance, hypatia-scan, secret-scanner (TB)
+| Recipe: replace the caller with the inline form from rsr-template-repo
+| d: inline-form content and a 0-jobs lint
+
+| Canon lockstep (CASE-008)
+| `canon lockstep broken — the template does not implement the canon at HEAD`
+| EpistemicTypes.jl, ResidualEvidenceTypes.jl; dictask (ruled R10)
+| Rule in hypatia#1064 (open); the template pin is stale
+| a, d
+|===
+
+== Toolchain, retry, concurrency
+
+[cols="2,3,3,2,1",options="header"]
+|===
+| Item | Signature | Where | Fix state | Class
+
+| CASE-001, CASE-003, `toolchain_segfault`
+| `Segmentation fault` in `hypatia-cli.sh scan` / `mix hypatia.rsr_score` (OTP 28 miscompile of `PinSites.walk/4`)
+| bactrian, quintessence, zig-dnssec (D16)
+| hypatia#1062 is open with auto-merge on. hypatia#1061 (oracle default OTP 27.3.4.19) is merged.
+| a, d: the OTP pin lives in one place (R2)
+
+| CASE-002, `upstream_artifact_missing`
+| `Artifact not found for name: hypatia-findings`, after the scan crash
+| bactrian, quintessence
+| Clears when CASE-001 clears
+| a
+
+| CASE-012, SQ-PIN-03, `api_rate_limit`
+| `setup-bun` 403 / `API rate limit exceeded`
+| standards
+| Fixed at source (standards#1504, #1505)
+| d: the Bun pin in the pins file
+
+| CASE-028, WH007 defers to WF021
+| `cancel-in-progress` cancels main runs
+| mathesis
+| hypatia#1069 open
+| a, d: the concurrency rule
+
+| CASE-011, `runner_cancelled`
+| `(deed=cancelled)` on a superseded run
+| rsr-template-repo#337
+| Noise
+| d: the retry and rerun policy
+
+| SQ-GEN-03, WF029, `always_after_cancel`
+| `if: always()` job downloads an artifact that a cancelled run never uploaded
+| cicd-squabbler (fixed by #157)
+| Squabbler has a static detector; the Hypatia rule is in hypatia#1064
+| a, d
+
+| CASE-030 (no rule yet)
+| A bot PR behind main fails checks that main already fixed
+| journalism-commons#1, rsr-template-repo#314, bofj-kitt#105
+| None (candidate: `@dependabot rebase`, else update-branch)
+| b, d
+
+| CASE-042
+| `bun test` timeout at 5004 ms, passed on rerun
+| standards#1514
+| One-off
+| d: retry evidence only
+|===
+
+== Generated files and formats
+
+[cols="2,3,3,2,1",options="header"]
+|===
+| Item | Signature | Where | Fix state | Class
+
+| CASE-009, SQ-GEN-01
+| `committed REPOSITORY-MAP.adoc is stale`
+| dictask
+| Rule in hypatia#1064; no repo fix
+| b
+
+| SQ-GEN-04, `kyaml_format`
+| `kyaml-format: build/container/compose.yaml is not KYAML`
+| quintessence
+| No repo fix; needs mikefarah yq
+| b, d: the yq pin
+
+| CASE-024, SQ-TOOL-02
+| `bun.lock but no package-lock.json`
+| MetaManifold-WebUI
+| Fixed in MetaManifold-WebUI#330 (not yet re-run)
+| a
+|===
+
+== Owner only
+
+[cols="3,3,2",options="header"]
+|===
+| Item | Where | Class
+
+| Pages not enabled (CASE-007) | xmlpull-zig, sholes | c
+| Ruleset blocks the badge branch push, HTTP 409 | Apodeixis.jl | c
+| Non-v8 UUID, re-mint forbidden before J11 (A7) | Apodeixis.jl | c
+| Hypatia reported 3 critical findings (CASE-004) | puggle | c
+| SonarQube not authorized (token binding) | lithoglyph | c
+| SonarCloud security rating C on new code | occupancy-types | c
+| CodeRabbit and Codex credits (CASE-021) | every PR | c
+| bofj-kitt#105 blocked on approval and code owner (CASE-039) | bofj-kitt | c
+| Scratch repo `hyperpolymath/ci-lab` for live replays | experiment owner | c
+| estate-rescan 401 token (hypatia#1066 context) | hypatia | c
+|===
+
+== Not yet classified
+
+Nobody has read these logs (D16):
+
+* CoprocessorRuntime.jl: six red checks.
+* fumble: about five red checks. Dependabot PR #3 is blocked with 51 failing checks.
+* hottchpotch: about 28 red checks. Dependabot PR #7 is blocked.
+* Protoctist.jl: canon lockstep and build.
+
+Further open items: puggle capnp E0451 (generator and crate out of step);
+unified-api-adapter bench ratio 2.285x (CASE-010, possibly noise); CASE-014,
+CASE-016, CASE-031, CASE-036, CASE-041.
+
+The coverage matrix has 75 first-line rows. 35 have a fix recipe, 1 has a real
+log and 74 have static evidence only. About 40 are catalogue-level rows that
+fall under (b) or (c) (COV). They are not expanded here. They map to rule ids as
+the experiment owner re-keys them.
+
+== Open fix PRs the owner can merge (class a)
+
+hypatia#1062 (auto-merge on; its last required check was queued), hypatia#1064
+(conflicts and changes requested; it holds every `ci_failure_triage` rule),
+hypatia#1066, hypatia#1068 (auto-merge on), hypatia#1069, standards#1503.
+
+== Rule ids
+
+The stable key is the A5 string `hypatia/<module>/<name>` (HYP, EXP). Short
+codes such as WF029 and WH007 stay as aliases, and so do squabbler ids
+`SQ-<FAMILY>-NN`. CASE-NNN numbers identify experiments, not rules. New ids are
+minted through chora-registry with the A5 string as the key (V9).
