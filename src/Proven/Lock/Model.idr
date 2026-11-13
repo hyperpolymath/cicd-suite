@@ -16,6 +16,7 @@ import Data.List
 import Data.List.Elem
 import Data.List.Quantifiers
 import Data.So
+import Decidable.Equality
 
 %default total
 
@@ -115,7 +116,7 @@ Closed : List (String, Node) -> List String -> List String -> Type
 Closed g vs ss =
   All (\c => (m : Node ** (resolve c g = Just m, NodeIn vs ss m))) vs
 
-export
+public export
 allElem : {0 p : a -> Type} -> All p xs -> Elem x xs -> p x
 allElem (px :: _) Here = px
 allElem (_ :: pxs) (There e) = allElem pxs e
@@ -125,7 +126,7 @@ justInj Refl = Refl
 
 ||| Walk completeness. If (`vs`, `ss`) is closed and contains `n`'s own
 ||| contribution, then every key reachable from `n` is in `ss`.
-export
+public export
 complete : Closed g vs ss -> NodeIn vs ss n -> Reach g n k -> Elem k ss
 complete cl (_, dirs) (ByStep e) = allElem dirs e
 complete cl (locs, dirs) (ByComposite ec lk r) =
@@ -156,7 +157,7 @@ record EdgesExact (g : List (String, Node)) (n : Node) (calls : List String)
 
 ||| An exact certificate follows from a closed walk whose keys are all listed,
 ||| plus an admissibility proof for each listed key.
-export
+public export
 exact : Closed g vs ss -> NodeIn vs ss n -> Sub ss entry ->
         All (Allowed g n calls) entry -> EdgesExact g n calls entry
 exact cl nin sub ok =
@@ -164,18 +165,85 @@ exact cl nin sub ok =
 
 ||| A `[]` entry is admissible only for a workflow that reaches nothing by
 ||| steps. (Job-level calls may be absent from an entry; see `Workflow`.)
-export
+public export
 emptyMeansNothingReached : {k : String} -> EdgesExact g n calls [] -> Reach g n k -> Void
 emptyMeansNothingReached ex r = absurd (listsAll ex k r)
 
 ||| ...and it is always admissible for one that reaches nothing.
-export
+public export
 nothingReachedAdmitsEmpty : ((k : String) -> Reach g n k -> Void) ->
                             EdgesExact g n calls []
 nothingReachedAdmitsEmpty none = MkEdgesExact (\k, r => absurd (none k r)) []
 
 ------------------------------------------------------------------------
 -- Record representation
+
+||| Transparent list helpers. The standard library's `break`, `nub`, `union`
+||| and `isJust` are not public export, so terms built from them do not reduce
+||| in types, and the compile-time controls could not evaluate the judge.
+public export
+splitAtChar : Char -> List Char -> (List Char, List Char)
+splitAtChar c [] = ([], [])
+splitAtChar c (x :: xs) =
+  if x == c then ([], x :: xs)
+  else let (a, b) = splitAtChar c xs in (x :: a, b)
+
+public export
+dedupFrom : List String -> List String -> List String
+dedupFrom seen [] = []
+dedupFrom seen (x :: xs) =
+  if elem x seen then dedupFrom seen xs else x :: dedupFrom (x :: seen) xs
+
+public export
+dedup : List String -> List String
+dedup = dedupFrom []
+
+public export
+mergeKeys : List String -> List String -> List String
+mergeKeys xs ys = xs ++ filter (\y => not (elem y xs)) (dedup ys)
+
+public export
+has : Maybe a -> Bool
+has Nothing = False
+has (Just _) = True
+
+public export
+firstWhere : (a -> Bool) -> List a -> Maybe a
+firstWhere p [] = Nothing
+firstWhere p (x :: xs) = if p x then Just x else firstWhere p xs
+
+||| Transparent decision procedures (the standard library's `isElem` and
+||| `choose` do not reduce in types).
+public export
+chooseSo : (b : Bool) -> Either (So b) (So (not b))
+chooseSo True = Left Oh
+chooseSo False = Right Oh
+
+||| TRUSTED BASE. The two facts below about primitive String equality are
+||| the only axioms in the kernel. The standard library's `DecEq String` rests
+||| on the same assumption through an unnamed `believe_me`; here it is named,
+||| so a reviewer can see the whole trusted base in one place.
+public export
+stringEqSound : (x, y : String) -> So (x == y) -> x = y
+stringEqSound x _ _ = believe_me (the (x = x) Refl)
+
+public export
+stringEqRefl : (x : String) -> So (x == x)
+stringEqRefl _ = believe_me Oh
+
+soNot : So b -> So (not b) -> Void
+soNot Oh nb = absurd nb
+
+public export
+elemDec : (x : String) -> (xs : List String) -> Dec (Elem x xs)
+elemDec x [] = No absurd
+elemDec x (y :: xs) = case chooseSo (x == y) of
+  Left eq => Yes (replace {p = \z => Elem x (z :: xs)} (stringEqSound x y eq) Here)
+  Right ne => case elemDec x xs of
+    Yes e => Yes (There e)
+    No nin => No (\e => case e of
+                          Here => soNot (stringEqRefl x) ne
+                          There e' => nin e')
 
 public export
 isLowerHex : Char -> Bool
@@ -188,14 +256,14 @@ isSha40 s = let cs = unpack s in length cs == 40 && all isLowerHex cs
 ||| The ref part of a well-formed `owner/repo@ref` key.
 public export
 keyRef : String -> Maybe String
-keyRef s = case break (== '@') (unpack s) of
+keyRef s = case splitAtChar '@' (unpack s) of
   (repo@(_ :: _), '@' :: ref@(_ :: _)) =>
     if elem '@' ref || not (elem '/' repo) then Nothing else Just (pack ref)
   _ => Nothing
 
 public export
 keyRepo : String -> Maybe String
-keyRepo s = case break (== '@') (unpack s) of
+keyRepo s = case splitAtChar '@' (unpack s) of
   (repo@(_ :: _), '@' :: _ :: _) => Just (pack repo)
   _ => Nothing
 
@@ -214,6 +282,6 @@ public export
 data RefOk : (calls : List String) -> LockRecord -> Type where
   NamedRef : ref r = Just x -> So (not (isSha40 x)) -> So (x /= "") ->
              RefOk calls r
-  CallerEdge : ref r = Just x -> keyRef (key r) = Just x -> So (isSha40 x) ->
+  CallerEdge : ref r = Just x -> So (keyRef (key r) == Just x) -> So (isSha40 x) ->
                Elem (key r) calls -> So (notMalformed (uses r)) ->
                RefOk calls r

@@ -106,7 +106,10 @@ queue=()
 shopt -s nullglob
 for wf in "$wfdir"/*.yml "$wfdir"/*.yaml; do
   rel=".github/workflows/$(basename "$wf")"
-  n=$(node_of "$(uses_of "$wf" workflow)" "$rel")
+  # die() inside a command substitution exits only the subshell, so the
+  # status is checked here: an unparsable workflow is NOT RUN, never dropped.
+  u=$(uses_of "$wf" workflow) || exit 2
+  n=$(node_of "$u" "$rel") || exit 2
   jq -c --arg p "$rel" '{path: $p, direct, locals, job_calls}' <<<"$n" >> "$tmp/workflows.jsonl"
   jq -c '.illegal[]' <<<"$n" >> "$tmp/illegal.jsonl"
   while IFS= read -r l; do queue+=("$l"); done < <(jq -r '.locals[]' <<<"$n")
@@ -125,7 +128,8 @@ while [[ ${#queue[@]} -gt 0 ]]; do
     [[ -f $root/$id/$name ]] && { meta=$root/$id/$name; break; }
   done
   [[ -n $meta ]] || continue   # absent: the kernel refuses (NOT RUN)
-  n=$(node_of "$(uses_of "$meta" composite)" "$id")
+  u=$(uses_of "$meta" composite) || exit 2
+  n=$(node_of "$u" "$id") || exit 2
   jq -c --arg id "$id" '{id: $id, direct, locals}' <<<"$n" >> "$tmp/composites.jsonl"
   jq -c '.illegal[]' <<<"$n" >> "$tmp/illegal.jsonl"
   while IFS= read -r l; do queue+=("$l"); done < <(jq -r '.locals[]' <<<"$n")

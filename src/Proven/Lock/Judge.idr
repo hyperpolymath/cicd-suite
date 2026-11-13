@@ -39,7 +39,7 @@ data Reason
   | Moved String String
   | Illegal String String
 
-export
+public export
 Show Reason where
   show (MissingEdge w k) = "MissingTransitiveEdge\t" ++ w ++ "\t" ++ k
   show (BlindEmptyEntry w) = "BlindEmptyEntry\t" ++ w
@@ -62,19 +62,21 @@ Show Reason where
 ------------------------------------------------------------------------
 -- Deciders that return proofs
 
-export
+public export
 decSub : (xs, ys : List String) -> Maybe (Sub xs ys)
 decSub [] ys = Just []
-decSub (x :: xs) ys = case isElem x ys of
+decSub (x :: xs) ys = case elemDec x ys of
   Yes e => map (e ::) (decSub xs ys)
   No _ => Nothing
 
+public export
 decNodeIn : (vs, ss : List String) -> (n : Node) -> Maybe (NodeIn vs ss n)
 decNodeIn vs ss n = do
   l <- decSub (locals n) vs
   d <- decSub (direct n) ss
   Just (l, d)
 
+public export
 decClosedOver : (g : List (String, Node)) -> (vs, ss, cs : List String) ->
   Maybe (All (\c => (m : Node ** (resolve c g = Just m, NodeIn vs ss m))) cs)
 decClosedOver g vs ss [] = Just []
@@ -85,7 +87,7 @@ decClosedOver g vs ss (c :: cs) with (resolve c g) proof p
         rest <- decClosedOver g vs ss cs
         Just ((m ** (p, nin)) :: rest)
 
-export
+public export
 decClosed : (g : List (String, Node)) -> (vs, ss : List String) ->
             Maybe (Closed g vs ss)
 decClosed g vs ss = decClosedOver g vs ss vs
@@ -94,6 +96,7 @@ decClosed g vs ss = decClosedOver g vs ss vs
 -- The walk
 
 ||| One round: add what every visited composite contributes.
+public export
 step : List (String, Node) -> (List String, List String) ->
        (List String, List String)
 step g (vs, ss) = foldl add (vs, ss) vs
@@ -101,35 +104,38 @@ step g (vs, ss) = foldl add (vs, ss) vs
     add : (List String, List String) -> String -> (List String, List String)
     add (v, s) c = case resolve c g of
       Nothing => (v, s)
-      Just m => (union v (locals m), union s (direct m))
+      Just m => (mergeKeys v (locals m), mergeKeys s (direct m))
 
+public export
 iter : Nat -> List (String, Node) -> (List String, List String) ->
        (List String, List String)
 iter Z _ acc = acc
 iter (S f) g acc = iter f g (step g acc)
 
 ||| The candidate closure. It is only trusted after `decClosed` succeeds.
-export
+public export
 walk : List (String, Node) -> Node -> (List String, List String)
-walk g n = iter (S (length g)) g (nub (locals n), nub (direct n))
+walk g n = iter (S (length g)) g (dedup (locals n), dedup (direct n))
 
 ------------------------------------------------------------------------
 -- Reach search (sound by construction; fuel only limits it)
 
+public export
 withElems : (xs : List a) -> List (x : a ** Elem x xs)
 withElems [] = []
 withElems (x :: xs) = (x ** Here) :: map (\(y ** e) => (y ** There e)) (withElems xs)
 
 mutual
-  export
+  public export
   findReach : Nat -> (g : List (String, Node)) -> (n : Node) -> (k : String) ->
               Maybe (Reach g n k)
-  findReach fuel g n k = case isElem k (direct n) of
+  findReach fuel g n k = case elemDec k (direct n) of
     Yes e => Just (ByStep e)
     No _ => case fuel of
       Z => Nothing
       S f => tryAll f g n k (withElems (locals n))
 
+  public export
   tryAll : Nat -> (g : List (String, Node)) -> (n : Node) -> (k : String) ->
            List (c : String ** Elem c (locals n)) -> Maybe (Reach g n k)
   tryAll f g n k [] = Nothing
@@ -137,10 +143,12 @@ mutual
     Just (m ** (p, r)) => Just (ByComposite e p r)
     Nothing => tryAll f g n k rest
 
+  public export
   viaOne : Nat -> (g : List (String, Node)) -> (k : String) -> (c : String) ->
            Maybe (m : Node ** (resolve c g = Just m, Reach g m k))
   viaOne f g k c = viaMaybe f g k c (resolve c g) Refl
 
+  public export
   viaMaybe : Nat -> (g : List (String, Node)) -> (k : String) -> (c : String) ->
              (found : Maybe Node) -> resolve c g = found ->
              Maybe (m : Node ** (resolve c g = Just m, Reach g m k))
@@ -149,11 +157,12 @@ mutual
     Nothing => Nothing
     Just r => Just (m ** (p, r))
 
+public export
 allowedAll : Nat -> (g : List (String, Node)) -> (n : Node) -> (calls : List String) ->
              (ks : List String) -> Maybe (All (Allowed g n calls) ks)
 allowedAll f g n calls [] = Just []
 allowedAll f g n calls (k :: ks) = do
-  a <- case isElem k calls of
+  a <- case elemDec k calls of
          Yes e => Just (Called e)
          No _ => map Reached (findReach f g n k)
   rest <- allowedAll f g n calls ks
@@ -168,12 +177,12 @@ data EdgeResult : List (String, Node) -> Node -> List String -> List String -> T
   Wrong : List Reason -> EdgeResult g n calls e
   Refused : String -> EdgeResult g n calls e
 
-export
+public export
 judgeEdges : (path : String) -> (g : List (String, Node)) -> (n : Node) ->
              (calls, e : List String) -> EdgeResult g n calls e
 judgeEdges path g n calls e =
   let (vs, ss) = walk g n
-      unresolved = filter (\c => isNothing (resolve c g)) vs
+      unresolved = filter (\c => not (has (resolve c g))) vs
    in case unresolved of
         (c :: _) => Refused ("composite metadata missing: " ++ c ++ " (from " ++ path ++ ")")
         [] => case decClosed g vs ss of
@@ -198,27 +207,29 @@ judgeEdges path g n calls e =
 ------------------------------------------------------------------------
 -- Records
 
-export
+public export
 decRefOk : (calls : List String) -> (r : LockRecord) -> Either Reason (RefOk calls r)
 decRefOk calls r with (ref r) proof pr
   _ | Nothing = Left (RefMissing (key r))
-  _ | Just x = case choose (isSha40 x) of
-      Right notSha => case choose (x /= "") of
+  _ | Just x = case chooseSo (isSha40 x) of
+      Right notSha => case chooseSo (x /= "") of
         Left nonEmpty => Right (NamedRef pr notSha nonEmpty)
         Right _ => Left (RefMissing (key r))
-      Left sha => case decEq (keyRef (key r)) (Just x) of
-        No _ => Left (SelfShaLeaf (key r))
-        Yes kr => case isElem (key r) calls of
+      Left sha => case chooseSo (keyRef (key r) == Just x) of
+        Right _ => Left (SelfShaLeaf (key r))
+        Left kr => case elemDec (key r) calls of
           No _ => Left (SelfShaLeaf (key r))
-          Yes call => case choose (notMalformed (uses r)) of
+          Yes call => case chooseSo (notMalformed (uses r)) of
             Left ok => Right (CallerEdge pr kr sha call ok)
             Right _ => Left (BadUses (key r))
 
+public export
 validCommit : String -> Bool
 validCommit c = case unpack c of
   ('s' :: 'h' :: 'a' :: '1' :: '-' :: rest) => isSha40 (pack rest)
   _ => False
 
+public export
 recordReasons : LockRecord -> List Reason
 recordReasons r =
   let k = key r in
@@ -232,20 +243,22 @@ recordReasons r =
            if not (validCommit c) || (isSha40 kr && c /= "sha1-" ++ kr)
               then [CommitMismatch k] else []
          Nothing => [CommitMismatch k]) ++
-      (if isJust r.ownerId && isJust r.repoId then [] else [IdsMissing k]) ++
+      (if has r.ownerId && has r.repoId then [] else [IdsMissing k]) ++
       (case uses r of
          UsesMalformed => [BadUses k]
          _ => [])
 
+public export
 nested : LockRecord -> List String
 nested r = case uses r of
   UsesList ks => ks
   _ => []
 
+public export
 oracleReasons : List Identity -> LockRecord -> List Reason
 oracleReasons ids r = case keyRepo (key r) of
   Nothing => []
-  Just rp => case find (\i => i.repo == rp) ids of
+  Just rp => case firstWhere (\i => i.repo == rp) ids of
     Nothing => []
     Just i =>
       (if i.canonical /= rp then [Moved (key r) i.canonical] else []) ++
@@ -254,6 +267,7 @@ oracleReasons ids r = case keyRepo (key r) of
            if o /= i.ownerId || rid /= i.repoId then [OwnerIdDrift (key r)] else []
          _ => [])
 
+public export
 decAllRefOk : (calls : List String) -> (rs : List LockRecord) ->
               Either (List Reason) (All (RefOk calls) rs)
 decAllRefOk calls [] = Right []
@@ -268,11 +282,11 @@ decAllRefOk calls (r :: rs) = case (decRefOk calls r, decAllRefOk calls rs) of
 
 public export
 entryOf : Facts -> Workflow -> List String
-entryOf f w = maybe [] keys (find (\e => path e == path w) (entries f))
+entryOf f w = maybe [] keys (firstWhere (\e => path e == path w) (entries f))
 
 public export
 isManaged : Facts -> Workflow -> Bool
-isManaged f w = isJust (find (\e => path e == path w) (entries f))
+isManaged f w = has (firstWhere (\e => path e == path w) (entries f))
 
 public export
 allCalls : Facts -> List String
@@ -289,6 +303,7 @@ data Outcome : Facts -> Type where
   Inconsistent : List Reason -> (unjudged : List String) -> Outcome f
   NotRun : List String -> Outcome f
 
+public export
 edgesAll : (f : Facts) -> (ws : List Workflow) ->
   (List String, List Reason,
    Maybe (All (\w => EdgesExact (composites f) (node w) (jobCalls w) (entryOf f w)) ws))
@@ -302,6 +317,7 @@ edgesAll f (w :: ws) =
 
 ||| Keys an unmanaged workflow names whose ref is not a full SHA. In a managed
 ||| workflow the lock record's `commit` pins a tag ref, so it is not tracking.
+public export
 trackingReasons : Workflow -> List Reason
 trackingReasons w =
   map (Tracking (path w))
@@ -309,21 +325,23 @@ trackingReasons w =
 
 ||| Records nothing names (no entry and no nested `uses:`), and names that no
 ||| record keys.
+public export
 closureReasons : Facts -> List Reason
 closureReasons f =
-  let named = nub (concatMap keys (entries f) ++ concatMap nested (records f))
+  let named = dedup (concatMap keys (entries f) ++ concatMap nested (records f))
       keyed = map key (records f)
    in map DanglingRecord (filter (\k => not (elem k keyed)) named) ++
       map UnusedRecord (filter (\k => not (elem k named)) keyed)
 
+public export
 entryReasons : Facts -> List Reason
 entryReasons f =
   let paths = map path (entries f)
       wpaths = map path (workflows f)
    in map StaleEntry (filter (\p => not (elem p wpaths)) paths) ++
-      map DuplicateEntry (nub (filter (\p => length (filter (== p) paths) > 1) paths))
+      map DuplicateEntry (dedup (filter (\p => length (filter (== p) paths) > 1) paths))
 
-export
+public export
 judge : (f : Facts) -> Outcome f
 judge f =
   case records f of
@@ -349,7 +367,7 @@ judge f =
               (Nothing, Right _, []) =>
                 NotRun ["edge certificate missing without a reason (kernel defect)"]
 
-export
+public export
 isConsistent : Outcome f -> Bool
 isConsistent (Consistent _ _ _) = True
 isConsistent _ = False
