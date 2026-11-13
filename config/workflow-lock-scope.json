@@ -52,6 +52,11 @@
       "reason": "Full-SHA source references outside the existing lock map; remote closure is not certified by this scope guard."
     },
     {
+      "path": ".github/workflows/proven-lock-gate.yml",
+      "mode": "immutable",
+      "reason": "First canary of the stamped proven lock gate (templates/proven-lock-gate.yml); full-SHA actions, suite pinned by PROVEN_SHA, no lock-map onboarding."
+    },
+    {
       "path": ".github/workflows/rust-ci.yml",
       "mode": "immutable",
       "reason": "Full-SHA source references outside the existing lock map; remote closure is not certified by this scope guard."
