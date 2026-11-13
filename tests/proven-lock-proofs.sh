@@ -88,4 +88,8 @@ reject counterfeitGoodRejected \
 reject counterfeitEmptyLockPasses \
   'isConsistent (judge (MkFacts Controls.probe [Controls.wf] [MkEntry ".github/workflows/a.yml" []] [] [] Nothing)) = True' \
   'Refl'
+# Relock cannot be made to drop the composite-reached key.
+reject counterfeitRelockDropsKey \
+  '(case relockEntry Controls.probe Controls.wf of { Right (e ** _) => e; Left _ => [] }) = [Controls.checkoutKey]' \
+  'Refl'
 echo "proven-lock-proofs: all controls held"

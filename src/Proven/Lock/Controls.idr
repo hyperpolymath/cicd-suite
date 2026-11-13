@@ -102,3 +102,12 @@ selfShaLeafHasNoCertificate (CallerEdge _ _ _ call _) = absurd call
 public export
 callerEdgeCertified : RefOk [Controls.leafKey] (Controls.leaf Controls.shaB)
 callerEdgeCertified = CallerEdge Refl Oh Oh Here Oh
+
+||| Relock of the run-35786094563 shape gives exactly the repaired entry:
+||| the direct key and the key reached only through the composite.
+public export
+relockRepairsDropped :
+  (case relockEntry Controls.probe Controls.wf of
+     Right (e ** _) => e
+     Left _ => []) = [Controls.checkoutKey, Controls.leafKey]
+relockRepairsDropped = Refl
