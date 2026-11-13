@@ -9,3 +9,9 @@ actions/code-hygiene-check/check.sh
 actions/code-hygiene-check/test.sh
 actions/required-files-check/action.yml
 actions/affirmation-check/check.sh
+
+# The proven lock kernel's trusted base: two named axioms about primitive
+# String equality (the assumption DecEq String already makes). Isolated in one
+# module; tests/proven-lock-proofs.sh enforces exactly two believe_me there and
+# no escape hatch in any other kernel module.
+src/Proven/Lock/Axioms.idr

@@ -1,0 +1,11 @@
+version: 'v0.0.2'
+workflows:
+    '.github/workflows/ci.yml':
+        - 'other/repo@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+dependencies:
+    'other/repo@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb':
+        ref: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+        commit: 'sha1-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+        owner_id: 1
+        repo_id: 2
+        uses: []

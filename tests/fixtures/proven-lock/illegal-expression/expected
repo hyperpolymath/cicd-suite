@@ -1,0 +1,2 @@
+INCONSISTENT
+REASON	Illegal	.github/workflows/ci.yml	actions/checkout@${{ inputs.ref }}

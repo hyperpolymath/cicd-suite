@@ -1,0 +1,12 @@
+version: 'v0.0.2'
+workflows:
+    '.github/workflows/ci.yml':
+        - 'actions/upload-pages-artifact@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+dependencies:
+    'actions/upload-pages-artifact@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa':
+        ref: 'v3'
+        commit: 'sha1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        owner_id: 1
+        repo_id: 2
+        uses:
+            - 'actions/upload-artifact@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'

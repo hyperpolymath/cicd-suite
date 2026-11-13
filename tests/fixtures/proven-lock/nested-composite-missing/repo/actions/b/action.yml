@@ -1,0 +1,6 @@
+name: b
+description: composite
+runs:
+  using: composite
+  steps:
+    - uses: x/deep@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
