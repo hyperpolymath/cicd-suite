@@ -90,7 +90,10 @@ refuse() {
   fi
   echo "ok: refused $name: $(head -n 1 "$tmp/out")"
 }
-edit_json() { jq "$1" "$tmp/r/proven/manifest.json" > "$tmp/m" && mv "$tmp/m" "$tmp/r/proven/manifest.json"; }
+edit_json() {
+  local filter=$1
+  jq "$filter" "$tmp/r/proven/manifest.json" > "$tmp/m" && mv "$tmp/m" "$tmp/r/proven/manifest.json"
+}
 
 fresh; printf '# hand edit\n' >> "$tmp/r/templates/proven-lock-gate.yml"
 refuse 'template body edited without restamping' 1
