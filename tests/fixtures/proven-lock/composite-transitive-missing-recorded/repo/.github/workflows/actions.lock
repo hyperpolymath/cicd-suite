@@ -1,0 +1,15 @@
+version: 'v0.0.2'
+workflows:
+    '.github/workflows/ci.yml':
+        - 'actions/checkout@v7.0.1'
+dependencies:
+    'actions/checkout@v7.0.1':
+        ref: 'v7.0.1'
+        commit: 'sha1-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        owner_id: 1
+        repo_id: 2
+    'x/leaf@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb':
+        ref: 'v1'
+        commit: 'sha1-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+        owner_id: 1
+        repo_id: 2

@@ -1,0 +1,9 @@
+name: ci
+on: push
+jobs:
+  call:
+    uses: other/repo/.github/workflows/x.yml@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
