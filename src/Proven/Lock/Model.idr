@@ -17,6 +17,7 @@ import Data.List.Elem
 import Data.List.Quantifiers
 import Data.So
 import Decidable.Equality
+import Proven.Lock.Axioms
 
 %default total
 
@@ -218,18 +219,6 @@ public export
 chooseSo : (b : Bool) -> Either (So b) (So (not b))
 chooseSo True = Left Oh
 chooseSo False = Right Oh
-
-||| TRUSTED BASE. The two facts below about primitive String equality are
-||| the only axioms in the kernel. The standard library's `DecEq String` rests
-||| on the same assumption through an unnamed `believe_me`; here it is named,
-||| so a reviewer can see the whole trusted base in one place.
-public export
-stringEqSound : (x, y : String) -> So (x == y) -> x = y
-stringEqSound x _ _ = believe_me (the (x = x) Refl)
-
-public export
-stringEqRefl : (x : String) -> So (x == x)
-stringEqRefl _ = believe_me Oh
 
 soNot : So b -> So (not b) -> Void
 soNot Oh nb = absurd nb

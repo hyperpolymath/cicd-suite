@@ -18,20 +18,24 @@ cd "$root"
 idris2 --version
 idris2 --build proven-lock.ipkg
 
-# The trusted base is exactly the two named axioms. Any other escape hatch in
-# the kernel sources fails this test.
-hatches=$(grep -nE 'believe_me|assert_total|assert_smaller|idris_crash|%unsafe|unsafePerformIO' \
-            src/Proven/Lock/*.idr \
-          | grep -vE '^[^:]+:[0-9]+:(\|\|\||--)' \
-          | sed -E 's/^([^:]+):[0-9]+:/\1:/' \
-          | grep -vxF -e 'src/Proven/Lock/Model.idr:stringEqSound x _ _ = believe_me (the (x = x) Refl)' \
-                      -e 'src/Proven/Lock/Model.idr:stringEqRefl _ = believe_me Oh' || true)
-if [[ -n $hatches ]]; then
-  echo "FAIL: escape hatch outside the named axioms:" >&2
-  echo "$hatches" >&2
+# The trusted base is exactly the two named axioms in Axioms.idr: exactly two
+# believe_me there, and no escape hatch in any other kernel module.
+hatch='believe_me|assert_total|assert_smaller|idris_crash|%unsafe|unsafePerformIO'
+code() { grep -vE '^[[:space:]]*(\|\|\||--)' "$1"; }
+axioms=$(code src/Proven/Lock/Axioms.idr | grep -cE "$hatch" || true)
+if [[ $axioms != 2 ]] || code src/Proven/Lock/Axioms.idr | grep -E "$hatch" | grep -qv believe_me; then
+  echo "FAIL: Axioms.idr must hold exactly two believe_me and nothing else (found $axioms)" >&2
   exit 1
 fi
-echo "ok: trusted base is stringEqSound and stringEqRefl only"
+for f in src/Proven/Lock/*.idr; do
+  [[ $f == src/Proven/Lock/Axioms.idr ]] && continue
+  if code "$f" | grep -qE "$hatch"; then
+    echo "FAIL: escape hatch outside the trusted base in $f" >&2
+    code "$f" | grep -nE "$hatch" >&2
+    exit 1
+  fi
+done
+echo "ok: trusted base is the two named axioms in Axioms.idr"
 
 tmp="$(mktemp -d)"
 trap 'rm -rf -- "$tmp"' EXIT

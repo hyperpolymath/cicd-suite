@@ -17,7 +17,7 @@ command -v jq >/dev/null || notrun "jq is not installed"
 command -v yq >/dev/null || notrun "yq is not installed"
 yq --version 2>/dev/null | grep -q mikefarah || notrun "mikefarah yq v4 is required"
 
-(cd "$repo" && idris2 --build proven-lock.ipkg >/dev/null) || notrun "kernel build failed"
+(cd "$repo" && idris2 --build proven-lock.ipkg >/dev/null) || { echo "FAIL: the kernel does not build" >&2; exit 1; }
 verdict="$repo/build/exec/proven-lock-verdict"
 [[ -x $verdict ]] || notrun "kernel binary missing"
 

@@ -3,6 +3,6 @@ package proven-lock
 version = 0.1.0
 depends = contrib
 sourcedir = "src"
-modules = Assurance.Verdict, Assurance.GitHub, Proven.Lock.Model, Proven.Lock.Judge, Proven.Lock.Controls
+modules = Assurance.Verdict, Assurance.GitHub, Proven.Lock.Axioms, Proven.Lock.Model, Proven.Lock.Judge, Proven.Lock.Controls
 main = Proven.Lock.Main
 executable = proven-lock-verdict
