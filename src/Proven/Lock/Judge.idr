@@ -39,6 +39,28 @@ data Reason
   | Moved String String
   | Illegal String String
 
+||| The executor contract (agreed with the squabbler owner): the reason's
+||| name, the lock record it concerns and the workflow file it concerns.
+public export
+fields : Reason -> (String, Maybe String, Maybe String)
+fields (MissingEdge w k) = ("MissingTransitiveEdge", Just k, Just w)
+fields (BlindEmptyEntry w) = ("BlindEmptyEntry", Nothing, Just w)
+fields (ExtraEdge w k) = ("StaleRef", Just k, Just w)
+fields (StaleEntry w) = ("StaleEntry", Nothing, Just w)
+fields (DuplicateEntry w) = ("DuplicateEntry", Nothing, Just w)
+fields (KeyMalformed k) = ("KeyMalformed", Just k, Nothing)
+fields (Tracking w k) = ("Tracking", Just k, Just w)
+fields (SelfShaLeaf k) = ("SelfShaLeaf", Just k, Nothing)
+fields (RefMissing k) = ("RefMissing", Just k, Nothing)
+fields (CommitMismatch k) = ("CommitMismatch", Just k, Nothing)
+fields (IdsMissing k) = ("IdsMissing", Just k, Nothing)
+fields (BadUses k) = ("BadUses", Just k, Nothing)
+fields (DanglingRecord k) = ("DanglingRecord", Just k, Nothing)
+fields (UnusedRecord k) = ("UnusedRecord", Just k, Nothing)
+fields (OwnerIdDrift k) = ("OwnerIdDrift", Just k, Nothing)
+fields (Moved k _) = ("Moved", Just k, Nothing)
+fields (Illegal at _) = ("Illegal", Nothing, Just at)
+
 public export
 Show Reason where
   show (MissingEdge w k) = "MissingTransitiveEdge\t" ++ w ++ "\t" ++ k

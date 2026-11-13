@@ -20,6 +20,13 @@ on:
       - "tests/proven-lock.sh"
       - "tests/proven-lock-proofs.sh"
       - "tests/fixtures/proven-lock/**"
+      - "dist/proven-lock/**"
+      - "scripts/build-proven-lock.sh"
+      - "tests/proven-lock-dist.sh"
+      - "templates/proven-lock-gate.yml"
+      - "scripts/proven-lock-gate.sh"
+      - "scripts/proven-stamp.sh"
+      - "tests/proven-lock-gate.sh"
       - ".github/workflows/assurance-kernel.yml"
   workflow_dispatch:
 
@@ -50,6 +57,12 @@ jobs:
           actual="$(git rev-parse HEAD)"
           test "$actual" = "$EXPECTED_SHA"
           printf 'Assurance compiler subject: `%s`\n' "$actual" >> "$GITHUB_STEP_SUMMARY"
+      - name: Probe the stock runner image for gmp.h (consumers need it to build the lock verdict)
+        run: |
+          set -euo pipefail
+          if printf '#include <gmp.h>\n' | gcc -x c -fsyntax-only - 2>/dev/null; then found=present; else found=absent; fi
+          echo "gmp.h on the stock ${ImageOS:-unknown} image ${ImageVersion:-unknown}: $found"
+          printf 'gmp.h on the stock `%s` image `%s`: **%s**\n' "${ImageOS:-unknown}" "${ImageVersion:-unknown}" "$found" >> "$GITHUB_STEP_SUMMARY"
       - name: Install Chez Scheme and Idris2 build dependencies
         run: |
           set -euo pipefail
@@ -84,6 +97,10 @@ jobs:
         run: bash tests/proven-lock-proofs.sh
       - name: Lock kernel fixture corpus and this repository's own lock
         run: bash tests/proven-lock.sh
+      - name: Lock kernel distribution (shipped C is the proven source; its gcc build passes the corpus)
+        run: bash tests/proven-lock-dist.sh
+      - name: Lock gate consumer template (stamp, NOT RUN fails the job, self-test refuses a counterfeit)
+        run: bash tests/proven-lock-gate.sh
       - name: Compile and exercise the new finite GitHub bridge
         run: bash tests/assurance-github.sh
       - name: Observe passing and defective real consumers
