@@ -33,6 +33,14 @@ Consumers call the reusable workflow at a full SHA. They do not copy its steps.
 A copy froze at whatever commit its lock held, so fixes made here never
 arrived. The caller is one line to move, and the track bot moves it.
 
+That holds for the existing audit and language gates. New proven content
+(`docs/proven/ARCHITECTURE.adoc`, owner ruling 2026-11-13) instead ships as
+stamped inline copies, because cross-repository job-level calls end in "0 jobs"
+when their pin dies or their owner moves. Those copies do not repeat the
+freezing failure above: each one carries a content version, and the applier's
+sweep reports any copy BEHIND the manifest published here and re-stamps it.
+The copy's own stamp check detects edits only, never staleness.
+
 == Two ways a reusable reaches its scripts
 
 The estate audit pins each composite as `+uses: hyperpolymath/proven-cicd-and-workflows/actions/x@<sha>+`,
