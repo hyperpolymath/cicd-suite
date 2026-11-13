@@ -1,0 +1,210 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Proven content: architecture
+
+Status: proposed, 2026-11-13. This document records the owner's rulings of
+2026-11-13 and an independent design review. It describes content that does
+not exist yet. Nothing here claims a gate is proven until the evidence named
+below exists.
+
+== Owner rulings this design follows
+
+. Proven content ships as *stamped inline copies*. The source lives in this
+  repository. Each copy in an estate repository carries a hash and version
+  stamp. Copies are not cross-repository `jobs.<id>.uses:` calls.
+. "Proven" means a fixture or replayed-log test, a bench, and a formal proof of
+  the lock and pin gate logic.
+. The first slice is the lock and pin gates.
+
+Standing estate rulings that bound it: ADR 0003 and R1 (the squabbler is the
+first-line fixer, Hypatia directs referrals), R2 (OTP 27.3.4.19 until
+hypatia#1062), R4 (per-repository order: pins and lock, then the template wave,
+then Dependabot rebases), R12 (only the squabbler owner changes rulesets), and
+V9 (new ids are minted through chora-registry).
+
+== What this repository owns, and what it does not
+
+This repository is the registry for each rule's *identity and evidence*:
+
+* the rule id;
+* its signature;
+* its fixtures;
+* its content version;
+* its proof reference.
+
+These must change together with the content they describe, so they live with
+it.
+
+It does *not* own dispatch: a rule's class (FIX, ACT, REFER, OWNER, NOISE), its
+recipe and its sequencing. Dispatch stays in the squabbler's rule table
+(`crates/squabble-core/data/first-line-rules.tsv`, which ADR 0004 makes
+authoritative) and in Hypatia's ruleset. Both key their entries by rule id at a
+pinned SHA of this registry. If this repository held dispatch, it would be
+directing referrals, which R1 gives to Hypatia.
+
+This repository ships one conformance test that the squabbler and Hypatia both
+run. It checks that every registry id has exactly one dispatch entry in each of
+them, and that neither has an entry without a registry id. Moving dispatch here
+would need an explicit supersession of ADR 0004, and that is the owner's call.
+
+The executors, meaning the applier in standards and the squabbler's FIX
+actions, are not built here. They consume content from here at a pinned SHA.
+
+== Layout
+
+....
+proven/registry/<module>/<name>/rule.json   identity, signature, version, proof ref
+proven/registry/<module>/<name>/fixtures/   pos/ neg/ incidents/ (scrubbed)
+proven/content/<artifact>/                  the stamped bodies and the vendored gate
+proven/manifest.json                        artifact -> latest version + body sha256
+proven/kernel/                              Idris2 model, proofs, verdict
+proven/extract/                             bash+jq fact extractors (graph, lock, oracle)
+proven/conformance/                         registry <-> dispatch conformance test
+proven/feedback/                            run reports, ingested by PR
+....
+
+Rule ids take the A5 form `hypatia/<module>/<name>`. That string is the stable
+key. Squabbler ids (`SQ-<FAMILY>-NN`) and short codes (WF029, WH007) are
+aliases recorded in `rule.json`. CASE numbers are experiments, not rules.
+
+== The stamp, drift and staleness
+
+Each stamped file has three regions:
+
+. The *stamp line*:
+  `# proven-cicd: <artifact>@<version> sha256:<hash of the hashed region>`.
+. The *hashed region*: the body this repository proves.
+. The *local region*: values that legitimately differ per repository. This
+  holds former `workflow_call` inputs, and every third-party `uses:` SHA that
+  Dependabot may move. The local region is outside the hash.
+
+The local region exists because Dependabot rewrites `uses:` SHAs. If those
+SHAs were hashed, every Dependabot bump would turn the drift gate red across
+the estate. Stamped files are also excluded from Dependabot where the third-party
+pin cannot be lifted out of the body. The Dependabot-versus-lock rule covers
+the other half of that interaction.
+
+There are two judgements, and they come from two places:
+
+* *Drift.* The body no longer matches its stamp. The copy itself checks this
+  on every run. A copy that checks itself can only detect edits, because
+  whoever edits the body can also edit the stamp.
+* *Staleness (BEHIND).* The stamp's version is older than the latest version
+  in `proven/manifest.json` at the published SHA of this repository. The
+  applier's sweep judges this, never the copy. It is the guard against the
+  failure recorded in `ARCHITECTURE.adoc`: "a copy froze at whatever commit its
+  lock held, so fixes made here never arrived".
+
+Inlined jobs lose two things the reusable call used to give them, and the
+content restores both:
+
+* *Check names.* A required check named `caller / inner` would become `inner`.
+  Rulesets are not ours to change, so every inlined job sets an explicit
+  `name:` that reproduces the old context byte for byte, including any matrix
+  suffix. This is its own rule with fixtures. Without it, every consumer PR
+  would wait forever on an "Expected" check. Propagation therefore canaries one
+  repository before any other.
+* *Token permissions.* The caller's token cap is lost, so every inlined job
+  declares explicit `permissions:`.
+
+== Lock and pin gate: facts in bash, verdict in Idris2
+
+The gate follows the split this repository already uses for
+`scripts/assurance-github.sh` and `src/Assurance/GitHubMain.idr`:
+
+* *Extractors* (`proven/extract/`, bash and jq) only extract facts. They emit
+  JSON for three things:
+** the workflow graph: step `uses:`, job-level `uses:`, local composites and the
+   nested `uses` records;
+** the lock: the `workflows` map and the dependency records, with `ref`,
+   `commit`, `owner_id`, `repo_id` and `uses`;
+** an oracle snapshot: `owner_id` and `repo_id` per repository, and the tags and
+   branches at each SHA.
+* *The verdict* is the total Idris2 function `consistent`. Its value is either
+  Consistent or a non-empty list of typed reasons:
+** SelfShaLeaf
+** BlindEmptyEntry
+** OwnerIdDrift
+** MissingTransitiveEdge
+** DanglingRecord
+** StaleRef
+** Moved
+** DeadRef
+** Illegal
+** Tracking
+
+The theorems state their assumptions about the oracle: the snapshot is true,
+and nothing changes between relock and check. The four properties to prove:
+
+. *Walk completeness.* Every remote action reached through a composite or a
+  job-level reusable appears under each workflow that reaches it.
+. *Empty entries.* A `[]` entry is admissible if and only if that workflow's
+  closure is empty.
+. *Relock soundness.* Whenever relock does not refuse, its output is
+  `consistent`.
+. *Relock idempotence.* Relocking a relocked lock changes nothing.
+
+Conformance testing covers only the extractor, because that is where bash
+breaks. The fixtures enumerate concrete `uses:` syntax: `./local`,
+`docker://`, subpaths, letter case, quoting, nested composites, the `.yml` and
+`.yaml` forms, and the illegal `../` and `$/` forms. Every historical incident
+in the ledger is a fixed case.
+
+=== Distribution and the honest label
+
+Installing an Idris2 toolchain on every consumer run is too slow. The candidate
+is to compile the verdict with the Idris2 node backend and vendor the output as
+stamped content. Before that output is hashed, a test must show that building
+it twice gives byte-identical files. If it does not, the fallback is a prebuilt
+binary checked by sha256, and the run accepts the fetch.
+
+Until the compiled verdict is the gate that consumers actually run, the tier
+label is *model-proven, conformance-tested*. It is not "proven".
+
+For the lock and pin gate, the gate scripts are *vendored and stamped*, not
+checked out at run time. A gate that needs a cross-repository fetch cannot
+report its own dead pin. Heavier suites keep the existing checkout-and-verify
+pattern, and `scripts/verify-suite-checkout.sh` gains a `repo_id` assertion so
+that a renamed or transferred repository is caught as well.
+
+== Other policy rules
+
+Each policy below becomes registry rules with fixtures, one PR per topic:
+
+* *Retry and rerun.* HTTP 403 rate limits, 502 errors, merge races and
+  cancelled runs get at most one rerun per job, which matches ADR 0004 guard 2.
+* *Concurrency.* WF021 wins over WH007, and publishers never set
+  `cancel-in-progress`.
+* *Toolchain pins in one file:* OTP 27.3.4.19 (R2), Bun 1.4.2, Nickel 1.18.0
+  and yq v4.53.3.
+* *Dependabot versus the lock.* A bump must regenerate the lock in the same PR,
+  or it is referred.
+* *Hooks.*
+
+== Propagation and feedback
+
+The applier and the squabbler's FIX actions copy content from this repository
+at a published SHA, write the stamp and relock. Hypatia referrals use its
+current findings schema until the Bustfile response shape is built.
+
+Every propagation run reports one JSON line with these fields:
+
+* `run_url`, `repo` and `head_sha`;
+* `rule_id` and `content_version`;
+* `attempt`;
+* `decided_by`: fixed, referred or skipped;
+* `outcome`: pass, fail, refused or not_run;
+* `signature_hash` and `normalised_signature`;
+* `pr_url`.
+
+Logs are untrusted and may contain secrets. They are scrubbed before any part
+of one becomes a committed fixture.
+
+The reports are ingested by PR, and each outcome changes the registry:
+
+* *No rule matches.* The report becomes a candidate fixture, class (b) in the
+  ledger.
+* *A rule matched but its fix failed.* The report becomes a regression fixture,
+  and the rule's version is bumped.
+* *It passed.* The rule's evidence count goes up.
+
+A failed check is a referral, never a green.
