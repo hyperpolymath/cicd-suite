@@ -97,35 +97,97 @@ facts v = do
              (req "entries" (list entry) v) (req "records" (list lockRecord) v)
              (req "illegal" (list illegalAt) v) (req "oracle" oracleOf v) |]
 
+||| JSON string literal. Escapes the quote, the backslash and every control
+||| character, so any key, path or reason text is emitted as one valid string.
+jsonString : String -> String
+jsonString s = "\"" ++ concatMap esc (unpack s) ++ "\""
+  where
+    hex : Int -> String
+    digit : Int -> Char
+    digit d = chr (if d < 10 then 48 + d else 87 + d)
+    hex n = pack [digit (div n 16), digit (mod n 16)]
+    esc : Char -> String
+    esc '"' = "\\\""
+    esc '\\' = "\\\\"
+    esc '\n' = "\\n"
+    esc '\t' = "\\t"
+    esc '\r' = "\\r"
+    esc c = if ord c < 32 then "\\u00" ++ hex (ord c) else pack [c]
+
+opt : Maybe String -> String
+opt Nothing = "null"
+opt (Just s) = jsonString s
+
+detail : Reason -> Maybe String
+detail (Moved _ c) = Just c
+detail (Illegal _ u) = Just u
+detail _ = Nothing
+
+||| One finding, in the executor contract: {reason, record_key, workflow_file,
+||| line, detail}. `line` is null until the extractor carries positions.
+finding : Reason -> String
+finding r = let (name, k, w) = fields r in
+  "{\"reason\":" ++ jsonString name ++ ",\"record_key\":" ++ opt k ++
+  ",\"workflow_file\":" ++ opt w ++ ",\"line\":null,\"detail\":" ++ opt (detail r) ++ "}"
+
+jsonList : List String -> String
+jsonList xs = "[" ++ concat (intersperse "," (map jsonString xs)) ++ "]"
+
+||| The last line in --json mode: the verdict, what was not judged, and why a
+||| run did not happen. Exit codes are the same in both modes.
+status : String -> List String -> List String -> String
+status v unjudged whys =
+  "{\"verdict\":" ++ jsonString v ++ ",\"unjudged\":" ++ jsonList unjudged ++ ",\"why\":" ++ jsonList whys ++ "}"
+
+public export
+data Output = Text | Json
+
 covering
-notRun : List String -> IO ()
-notRun whys = do
+notRun : Output -> List String -> IO ()
+notRun Text whys = do
   putStrLn "NOT_RUN"
   traverse_ (\w => putStrLn ("WHY\t" ++ w)) whys
   exitWith (ExitFailure 2)
+notRun Json whys = do
+  putStrLn (status "NOT_RUN" [] whys)
+  exitWith (ExitFailure 2)
 
 covering
-report : (f : Facts) -> Outcome f -> IO ()
-report f (Consistent _ _ unjudged) = do
+report : Output -> (f : Facts) -> Outcome f -> IO ()
+report Text f (Consistent _ _ unjudged) = do
   putStrLn "CONSISTENT"
   traverse_ (\u => putStrLn ("UNJUDGED\t" ++ u)) unjudged
-report f (Inconsistent whys unjudged) = do
+report Json f (Consistent _ _ unjudged) =
+  putStrLn (status "CONSISTENT" unjudged [])
+report Text f (Inconsistent whys unjudged) = do
   putStrLn "INCONSISTENT"
   traverse_ (\r => putStrLn ("REASON\t" ++ show r)) whys
   traverse_ (\u => putStrLn ("UNJUDGED\t" ++ u)) unjudged
   exitWith (ExitFailure 1)
-report f (NotRun whys) = notRun whys
+report Json f (Inconsistent whys unjudged) = do
+  traverse_ (putStrLn . finding) whys
+  putStrLn (status "INCONSISTENT" unjudged [])
+  exitWith (ExitFailure 1)
+report mode f (NotRun whys) = notRun mode whys
 
+covering
+run : Output -> String -> IO ()
+run mode path = do
+  input <- readFile path
+  case input of
+    Left _ => notRun mode ["facts file unreadable"]
+    Right raw => case the (Maybe Facts) (strictJSON raw >>= facts) of
+      Nothing => notRun mode ["facts are not valid proven-cicd/lock-facts/v1"]
+      Just f => report mode f (judge f)
+
+||| proven-lock-verdict [--json] FACTS_JSON
+||| --json: one object per finding {reason, record_key, workflow_file, line,
+||| detail}, then one status object {verdict, unjudged, why}. Same exit codes.
 covering
 main : IO ()
 main = do
   args <- getArgs
   case args of
-    [_, path] => do
-      input <- readFile path
-      case input of
-        Left _ => notRun ["facts file unreadable"]
-        Right raw => case the (Maybe Facts) (strictJSON raw >>= facts) of
-          Nothing => notRun ["facts are not valid proven-cicd/lock-facts/v1"]
-          Just f => report f (judge f)
-    _ => notRun ["usage: proven-lock-verdict FACTS_JSON"]
+    [_, "--json", path] => run Json path
+    [_, path] => run Text path
+    _ => notRun Text ["usage: proven-lock-verdict [--json] FACTS_JSON"]
