@@ -12,13 +12,21 @@ fixtures="$here/fixtures/proven-lock"
 export PATH="$HOME/.idris2/bin:$PATH"
 
 notrun() { printf 'proven-lock tests: %s; NOT RUN\n' "$1" >&2; exit 2; }
-command -v idris2 >/dev/null || notrun "idris2 is not installed"
+if [[ -z ${PROVEN_LOCK_VERDICT:-} ]]; then
+  command -v idris2 >/dev/null || notrun "idris2 is not installed"
+fi
 command -v jq >/dev/null || notrun "jq is not installed"
 command -v yq >/dev/null || notrun "yq is not installed"
 yq --version 2>/dev/null | grep -q mikefarah || notrun "mikefarah yq v4 is required"
 
-(cd "$repo" && idris2 --build proven-lock.ipkg >/dev/null) || { echo "FAIL: the kernel does not build" >&2; exit 1; }
-verdict="$repo/build/exec/proven-lock-verdict"
+# PROVEN_LOCK_VERDICT runs the corpus against a prebuilt binary, such as the
+# gcc build of the shipped C (tests/proven-lock-dist.sh).
+if [[ -n ${PROVEN_LOCK_VERDICT:-} ]]; then
+  verdict=$PROVEN_LOCK_VERDICT
+else
+  (cd "$repo" && idris2 --build proven-lock.ipkg >/dev/null) || { echo "FAIL: the kernel does not build" >&2; exit 1; }
+  verdict="$repo/build/exec/proven-lock-verdict"
+fi
 [[ -x $verdict ]] || notrun "kernel binary missing"
 
 tmp=$(mktemp -d)
@@ -68,6 +76,42 @@ for dir in "$fixtures"/*/; do
 done
 
 [[ $count -gt 0 ]] || { echo "FAIL: no fixture cases found" >&2; exit 1; }
+
+# --json (the squabbler executor contract) must agree with the text verdict on
+# every fixture: same exit code, every line valid JSON, one finding object per
+# REASON line, and a final status object naming the same verdict.
+json_agrees() { # CASE_ROOT ORACLE
+  local oracle=$2 args=("$1") trc jrc text json
+  [[ -n $oracle ]] && args+=(--oracle "$oracle")
+  "$repo/scripts/extract-lock-facts.sh" "${args[@]}" > "$tmp/facts.json" 2>/dev/null || return 0
+  text=$("$verdict" "$tmp/facts.json" 2>/dev/null) && trc=0 || trc=$?
+  json=$("$verdict" --json "$tmp/facts.json" 2>/dev/null) && jrc=0 || jrc=$?
+  [[ $trc == "$jrc" ]] || { echo "exit $trc vs $jrc"; return 1; }
+  jq -e . >/dev/null <<<"$json" || { echo "invalid JSON"; return 1; }
+  [[ $(jq -sr 'last.verdict' <<<"$json") == "$(head -n 1 <<<"$text")" ]] || { echo "verdict differs"; return 1; }
+  [[ $(jq -s '[.[] | select(has("reason"))] | length' <<<"$json") == "$(grep -c '^REASON' <<<"$text" || true)" ]] || { echo "finding count differs"; return 1; }
+  # Contents, not only counts (CodeRabbit on #100): the text REASON lines,
+  # mapped independently to the executor contract, must equal the JSON
+  # findings field by field. A swapped key/path or a misnamed reason fails.
+  local want got
+  want=$(grep -a '^REASON' <<<"$text" | awk -F'\t' 'BEGIN{OFS="\t"}
+    function out(r,k,w,d){ print r, k, w, d }
+    $2=="MissingTransitiveEdge"||$2=="StaleRef"||$2=="Tracking" { out($2,$4,$3,"-"); next }
+    $2=="BlindEmptyEntry"||$2=="StaleEntry"||$2=="DuplicateEntry" { out($2,"-",$3,"-"); next }
+    $2=="Moved" { out($2,$3,"-",$4); next }
+    $2=="Illegal" { out($2,"-",$3,$4); next }
+    { out($2,$3,"-","-") }' | LC_ALL=C sort)
+  got=$(jq -r 'select(has("reason")) | [.reason, (.record_key // "-"), (.workflow_file // "-"), (.detail // "-")] | @tsv' <<<"$json" | LC_ALL=C sort)
+  [[ $want == "$got" ]] || { echo "finding fields differ: $(diff <(echo "$want") <(echo "$got") | tr '\n' ' ')"; return 1; }
+}
+for dir in "$fixtures"/*/; do
+  name=$(basename "$dir")
+  [[ -d $dir/repo && -f $dir/expected ]] || continue
+  rm -rf -- "$tmp/case"; cp -R "$dir/repo" "$tmp/case"
+  [[ -d $tmp/case/dot-github ]] && mv "$tmp/case/dot-github" "$tmp/case/.github"
+  oracle=; [[ -f $dir/oracle.json ]] && oracle="$dir/oracle.json"
+  if why=$(json_agrees "$tmp/case" "$oracle"); then echo "ok json $name"; else echo "FAIL json $name: $why"; fail=1; fi
+done
 
 # The repository's own lock must be consistent.
 self=$(observe "$repo")
