@@ -12,13 +12,21 @@ fixtures="$here/fixtures/proven-lock"
 export PATH="$HOME/.idris2/bin:$PATH"
 
 notrun() { printf 'proven-lock tests: %s; NOT RUN\n' "$1" >&2; exit 2; }
-command -v idris2 >/dev/null || notrun "idris2 is not installed"
+if [[ -z ${PROVEN_LOCK_VERDICT:-} ]]; then
+  command -v idris2 >/dev/null || notrun "idris2 is not installed"
+fi
 command -v jq >/dev/null || notrun "jq is not installed"
 command -v yq >/dev/null || notrun "yq is not installed"
 yq --version 2>/dev/null | grep -q mikefarah || notrun "mikefarah yq v4 is required"
 
-(cd "$repo" && idris2 --build proven-lock.ipkg >/dev/null) || { echo "FAIL: the kernel does not build" >&2; exit 1; }
-verdict="$repo/build/exec/proven-lock-verdict"
+# PROVEN_LOCK_VERDICT runs the corpus against a prebuilt binary, such as the
+# gcc build of the shipped C (tests/proven-lock-dist.sh).
+if [[ -n ${PROVEN_LOCK_VERDICT:-} ]]; then
+  verdict=$PROVEN_LOCK_VERDICT
+else
+  (cd "$repo" && idris2 --build proven-lock.ipkg >/dev/null) || { echo "FAIL: the kernel does not build" >&2; exit 1; }
+  verdict="$repo/build/exec/proven-lock-verdict"
+fi
 [[ -x $verdict ]] || notrun "kernel binary missing"
 
 tmp=$(mktemp -d)
