@@ -50,7 +50,13 @@ for dir in "$fixtures"/*/; do
   count=$((count + 1))
   oracle=
   [[ -f $dir/oracle.json ]] && oracle="$dir/oracle.json"
-  observe "$dir/repo" "$oracle" > "$tmp/got"
+  # Fixture trees store their workflows under dot-github/, never .github/: they
+  # are deliberately defective inputs, and at a .github/workflows path every
+  # workflow scanner (SonarCloud, CodeQL, Hypatia) would read them as live.
+  rm -rf -- "$tmp/case"
+  cp -R "$dir/repo" "$tmp/case"
+  [[ -d $tmp/case/dot-github ]] && mv "$tmp/case/dot-github" "$tmp/case/.github"
+  observe "$tmp/case" "$oracle" > "$tmp/got"
   { head -n 1 "$dir/expected"; tail -n +2 "$dir/expected" | LC_ALL=C sort; } > "$tmp/want"
   if diff -u "$tmp/want" "$tmp/got" > "$tmp/diff"; then
     echo "ok $name"

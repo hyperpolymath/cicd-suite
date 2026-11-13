@@ -21,7 +21,7 @@ idris2 --build proven-lock.ipkg
 # The trusted base is exactly the two named axioms in Axioms.idr: exactly two
 # believe_me there, and no escape hatch in any other kernel module.
 hatch='believe_me|assert_total|assert_smaller|idris_crash|%unsafe|unsafePerformIO'
-code() { grep -vE '^[[:space:]]*(\|\|\||--)' "$1"; }
+code() { local file=$1; grep -vE '^[[:space:]]*(\|\|\||--)' "$file"; }
 axioms=$(code src/Proven/Lock/Axioms.idr | grep -cE "$hatch" || true)
 if [[ $axioms != 2 ]] || code src/Proven/Lock/Axioms.idr | grep -E "$hatch" | grep -qv believe_me; then
   echo "FAIL: Axioms.idr must hold exactly two believe_me and nothing else (found $axioms)" >&2

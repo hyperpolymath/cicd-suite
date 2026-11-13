@@ -93,11 +93,12 @@ uses_of() {
 }
 
 node_of() { # CLASSIFIED_JSON LOCATION -> {direct, locals, job_calls, illegal}
-  jq -c --arg at "$2" '{
+  local classified=$1 location=$2
+  jq -c --arg at "$location" '{
     direct: ([.[] | .remote // empty] | unique),
     locals: ([.[] | .local // empty] | unique),
     job_calls: ([.[] | .call // empty] | unique),
-    illegal: [.[] | .illegal // empty | {at: $at, uses: .}] }' <<<"$1"
+    illegal: [.[] | .illegal // empty | {at: $at, uses: .}] }' <<<"$classified"
 }
 
 : > "$tmp/workflows.jsonl"
@@ -122,7 +123,10 @@ while [[ ${#queue[@]} -gt 0 ]]; do
   [[ -n ${seen[$id]:-} ]] && continue
   seen[$id]=1
   # Containment: a composite id must resolve inside ROOT.
-  case "/$id/" in */../*) printf '%s\n' "$(jq -cn --arg u "./$id" '{at: "composite", uses: $u}')" >> "$tmp/illegal.jsonl"; continue ;; esac
+  case "/$id/" in
+    */../*) printf '%s\n' "$(jq -cn --arg u "./$id" '{at: "composite", uses: $u}')" >> "$tmp/illegal.jsonl"; continue ;;
+    *) ;;
+  esac
   meta=
   for name in action.yml action.yaml; do
     [[ -f $root/$id/$name ]] && { meta=$root/$id/$name; break; }
