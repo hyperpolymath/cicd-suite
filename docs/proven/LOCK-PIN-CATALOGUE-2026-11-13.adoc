@@ -1,0 +1,145 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Lock and pin checkers across the estate, 2026-11-13
+
+This catalogue is the evidence base for the first proven slice. It was built
+by reading file headers, messages and test names in four repositories:
+
+* `metadatastician/standards` at `c58aa72` (S);
+* this repository at `24b244a` (P);
+* `hyperpolymath/gitbot-fleet` at `7fc2778` (G);
+* `hyperpolymath/cicd-squabbler` at `09e6790` (Q).
+
+No script was run. The reason codes are the ones in `ARCHITECTURE.adoc` in this
+directory, and no checker uses them as identifiers. Mapping each checker to a
+code was a judgement, and a row marked "unclear" was not resolved.
+
+== The finding that shapes the slice
+
+The same defect is decided by several implementations, and they disagree.
+
+* *Lock sync: three copies.*
+** S `scripts/check-lock-sync.sh` checks the exact set of `uses:`, including
+   job-level calls. It requires `[]` for a workflow with no remote actions, and
+   flags records that nothing uses.
+** G `scripts/check-lock-sync.sh` reads step-level `uses:` only, and accepts a
+   missing job-level ref.
+** Q `scripts/check-lock-sync.sh` is an older copy of the same script.
++
+gitbot-fleet's own audit (`audits/lock-closure-2026-10-31/REPORT.md`, item M9)
+records the split: G's copy was green while five reusable callers ended with
+zero jobs.
+
+* *Self-SHA leaf: seven implementations with different exemptions.*
+** S `scripts/check-lock-pin-contract.sh` exempts a caller-side record: one
+   that carries a nested `uses:` list and is named by a job-level reusable
+   caller (standards#1290).
+** P `scripts/check-lock-pin-contract.sh` has no exemption and flags every
+   40-hex `ref`. Verified by reading both scripts on 2026-11-13.
+** Q `self_sha_lock_records` (`crates/squabble-core/src/rules.rs`) exempts a key
+   only when a job-level caller names it. A nested `uses:` list is not an
+   exemption.
+** The other four are G `fix-lock-self-sha-refs.sh`, S `lock-selfcheck.sh`,
+   G `audit-lock-closure.sh` and G's Rust `workflow-lock-audit`.
++
+The proven model must decide this exemption once, from runner evidence. Every
+copy then conforms to that decision.
+
+* *Missing transitive edge: seven implementations.*
+** S `check-lock-sync.sh` covers local composites.
+** S `check-reusable-closure.sh` checks against a reviewed baseline.
+** S `complete-job-refs.sh` and S `close-lock.sh` are writers.
+** P `tests/lock-transitive-closure.sh` covers `$/` composites only.
+** G `audit-lock-closure.sh` checks against receipts.
+** G `audit-pinned-reusable-sources.sh` checks against git objects.
+** G's Rust tool reports `MISSING-TRANSITIVE-RECORD`.
+
+* *Illegal `$/` refs.* S and P apply different policies.
+
+* *Stale ref.* The name means different things in different tools. G's Rust
+  tool uses `STALE-WORKFLOW` for a lock entry whose workflow file is absent.
+
+== Defects that no checker covers
+
+* *OwnerIdDrift.* No checker compares `owner_id` with the live owner.
+** S `check-lock-pin-contract.sh` and S `check-lock-sync.sh` only check that the
+   field is present and is a positive integer.
+** S `relock-standards-pin.sh` hard-codes `297579217` for the standards record
+   instead of looking it up.
+** Q SQ-LOCK-03 has a recipe but no detector.
+* *Moved owner, at lock level.* Moves are detected and fixed only in workflow
+  YAML (S applier, S `propagate-workflow-pins.sh`). Nothing checks that lock
+  keys and `owner_id` follow a transfer. The consumer of G
+  `scripts/lib/moved-repositories.tsv` is unclear.
+* *Moved tag.* Nothing checks that a `ref:` tag still points at the pinned SHA.
+  S `check-lock-pin-contract.sh` declares this out of scope. It was observed in
+  G's audit, item M11 (`dtolnay/rust-toolchain@v1`, two commits), and in
+  standards run 39286638218.
+* *Blind empty entry.* It is covered only implicitly, by S `check-lock-sync.sh`
+  "refs missing" and by G `audit-lock-closure.sh`. No check names it.
+
+== Implementations by repository
+
+[cols="3,1,4",options="header"]
+|===
+| Path | Role | Detects or fixes
+
+| S `scripts/check-lock-sync.sh` | checker | uses-set equals lock entry, including job-level and local-composite refs; dangling, unused or ambiguous records; `$/`
+| S `scripts/check-lock-pin-contract.sh` | checker | self-SHA leaf (caller-side exemption); commit and key mismatch; `owner_id` present
+| S `scripts/close-lock.sh` | relocker and checker | dangling records; writes records with `owner_id` and `repo_id` from the API; reusable callee closure
+| S `scripts/check-reusable-closure.sh` | checker | transitive closure across remote reusables against a reviewed baseline
+| S `scripts/lock-selfcheck.sh` | checker | whether a standards SHA is safe to pin (POISON verdict)
+| S `scripts/check-actions-lock-gate.sh` | gate wrapper | `gh actions-lock --verify-local`; tracking refs; unexamined workflows
+| S `scripts/update-actions-lock.sh` | regenerator | refresh and verify, with atomic rollback
+| S `scripts/check-lockfile-drift.sh` | checker | lock not regenerated after a Dependabot bump
+| S `scripts/check-lock-gate-pin-freshness.sh` | checker | the gate's own helper pin is stale
+| S `scripts/check-copied-lock-step.sh` | checker | a copied `gh actions-lock` verifier step
+| S `scripts/check-action-pins-resolve.sh` | online checker | dead refs (on 2026-07-28, 112 of 613 pins were dead)
+| S `scripts/relock-sha-keys.sh` | relocker | tag keys to SHA keys
+| S `scripts/complete-job-refs.sh` | fixer | adds job-level and composite refs
+| S `scripts/prune-stale.sh` | fixer | removes refs that nothing uses
+| S `scripts/relock-standards-pin.sh` | relocker | moves the lock to a new standards SHA (hard-coded `owner_id`)
+| S `scripts/regen-dependabot-locks.sh` | fixer bot | chains the fixers on Dependabot branches
+| S `scripts/apply-workflow-pins-remote.sh` | applier | FRESH, BEHIND, DEAD-REF, MOVED, TRACKING, ILLEGAL
+| P `scripts/check-lock-pin-contract.sh` | checker | self-SHA leaf (no exemption); commit and key mismatch
+| P `scripts/check-workflow-lock-scope.sh` | checker | managed and immutable scope; tracking refs; `$/`
+| P `tests/lock-transitive-closure.sh` | checker and test | `$/` composite closure (fixpoint)
+| P `scripts/generate-lock-recovery-candidate.sh` | relocker adapter | chains the S fixers
+| P `scripts/verify-published-scanner-pin.sh` | checker | scanner pin not on main (squash orphan)
+| G `scripts/check-lock-sync.sh` | checker | step-level only
+| G `scripts/audit-lock-closure.sh` | checker | dropped job-level entries; receipts; self-SHA leaf
+| G `scripts/audit-pinned-reusable-sources.sh` | checker | reusable edges against immutable git objects
+| G `scripts/audit-workflow-lock-map.sh` and the Rust `tools/workflow-lock-audit` | checker | nine finding kinds, 42 contract tests
+| G `scripts/fix-lock-self-sha-refs.sh` | fixer | self-SHA leaf (Hypatia PI006)
+| G `scripts/fix-stale-reusable-pin.sh` | fixer | stale or dead reusable pin (nested `uses` not recomputed)
+| Q `crates/squabble-core/src/rules.rs` | static checker | SQ-LOCK-01 and the SQ-LOCK-02 log matchers
+| Q `crates/squabble-cli/src/lock_verifier.rs` | wrapper | `gh actions-lock` v0.2.0 `verify-local`, read-only
+|===
+
+== Historical incidents to use as replay fixtures
+
+* metadatastician/svalinn run 40108154356, 2026-10-24, standards `fad242d3`:
+  self-SHA leaf (standards#1271, #1290). The corrected commit is `1725bebd`.
+* standards run 39286638218, 2026-10-19: a moved tag
+  (`dtolnay/rust-toolchain@v1`) was accepted.
+* cicd-squabbler run 38846539059, 2026-10-15 and 16, with hypatia#929:
+  self-SHA leaves across the estate.
+* proven-cicd run 35786094563, 2026-09-22, `fa71ac2`: a ref reached through a
+  composite was missing from the lock (`deed-ecosystem@f9d999b6`).
+* cicd-squabbler#101, commits `fe22bbc`, `cfadcf9` and `5286aa5`: dangling
+  records.
+* palimpsest-license#177, 2026-10-14: a reusable record was written as a leaf.
+* standards `mirror.yml`, 2026-09-22: zero jobs. standards `release.yml`: the
+  slsa ref was absent from the lock.
+* hypatia#723, 2026-08-25, and standards run 35700165587: lock drift after a
+  Dependabot bump.
+* gitbot-fleet audit of 2026-10-31: run 40933665365 (gate green) against runs
+  40933665219, 40933665246, 40933665259, 40933665285 and 40933665305 (zero-job
+  callers).
+* this-ssg run 43156768667: SQ-LOCK-02, `slsa-github-generator@f7dd8c54`.
+* proof-burrower#111 and #112, 2026-10-14: a copied v0.1.6 verifier step
+  against a v0.0.3 lock.
+* Pin cases:
+** affinescript tracking `@main` (2026-09-15);
+** the dead SHA in awesome-idris2;
+** the intermediate commit propagated to 70 repositories (2026-09-04);
+** the stale helper pin `317101e0` (2026-10-31).
