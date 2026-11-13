@@ -170,6 +170,32 @@ report Json f (Inconsistent whys unjudged) = do
   exitWith (ExitFailure 1)
 report mode f (NotRun whys) = notRun mode whys
 
+||| One certified entry per workflow: {workflow, managed, keys} or
+||| {workflow, managed, refused}. Exit 0 when every entry is certified, 2 if any
+||| is refused: a partial relock is never written as if it were whole.
+covering
+relock : String -> IO ()
+relock file = do
+  input <- readFile file
+  case input of
+    Left _ => notRun Json ["facts file unreadable"]
+    Right raw => case the (Maybe Facts) (strictJSON raw >>= facts) of
+      Nothing => notRun Json ["facts are not valid proven-cicd/lock-facts/v1"]
+      Just f => do
+        refused <- traverse (one f) (workflows f)
+        if any id refused then exitWith (ExitFailure 2) else pure ()
+  where
+    managedJson : Facts -> Workflow -> String
+    managedJson f w = if isManaged f w then "true" else "false"
+    one : Facts -> Workflow -> IO Bool
+    one f w = case relockEntry (composites f) w of
+      Left why => do
+        putStrLn ("{\"workflow\":" ++ jsonString (path w) ++ ",\"managed\":" ++ managedJson f w ++ ",\"refused\":" ++ jsonString why ++ "}")
+        pure True
+      Right (e ** _) => do
+        putStrLn ("{\"workflow\":" ++ jsonString (path w) ++ ",\"managed\":" ++ managedJson f w ++ ",\"keys\":" ++ jsonList e ++ "}")
+        pure False
+
 covering
 run : Output -> String -> IO ()
 run mode path = do
@@ -189,5 +215,6 @@ main = do
   args <- getArgs
   case args of
     [_, "--json", path] => run Json path
+    [_, "--relock", path] => relock path
     [_, path] => run Text path
-    _ => notRun Text ["usage: proven-lock-verdict [--json] FACTS_JSON"]
+    _ => notRun Text ["usage: proven-lock-verdict [--json | --relock] FACTS_JSON"]

@@ -50,11 +50,11 @@ that this repository should own would prevent the failure from coming back.
 | No repo fix. The rule merged in hypatia#1064. D16's lock PRs were closed under R5.
 | b, d
 
-| CASE-032 (no rule yet), candidate `actions_lock_stale`
+| CASE-032, `actions_lock_stale` (A5, maps to SQ-LOCK-02)
 | Lock Sync Gate red after a Dependabot action bump
 | rsr-template-repo#314, autoformal-fidelity (EXP); fumble#3, hottchpotch#7 (D16, logs not read)
-| None
-| b, d: the Dependabot-versus-lock rule
+| Proven content: the lock kernel names it (MissingTransitiveEdge for the bumped key, StaleRef for the old one), fixture `dependabot-bump-stale-lock`; certified relock (#104) repairs the entry. The new record's commit still has to be resolved from GitHub by the applier or `gh actions-lock`; relock does not invent it.
+| d (detection and entry repair proven); the record fetch stays with the applier
 
 | SQ-LOCK-03 (no matcher)
 | Zero jobs: the lock records the callee's old `owner_id` after a transfer (standards 6759885 → 297579217)
