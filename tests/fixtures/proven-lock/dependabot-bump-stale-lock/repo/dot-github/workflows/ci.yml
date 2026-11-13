@@ -1,0 +1,9 @@
+# CASE-032 shape (rsr-template-repo#314, autoformal-fidelity): Dependabot
+# bumped the action in the workflow and did not regenerate actions.lock.
+name: ci
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.1.0
