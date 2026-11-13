@@ -28,7 +28,10 @@
         "tests/**",
         "scripts/deonboard-estate-audit.sh",
         "scripts/deonboard-workflow.sh",
-        "proven/registry/**",
+        "proven/**",
+        "templates/**",
+        "scripts/proven-stamp.sh",
+        ".github/workflows/proven-lock-gate.yml",
         ".github/workflows/code-hygiene-self-test.yml",
         ".github/workflows/actions.lock",
         # lock-transitive-closure.sh reads the literal cicd-suite SHA pins in
@@ -57,7 +60,10 @@
         "tests/**",
         "scripts/deonboard-estate-audit.sh",
         "scripts/deonboard-workflow.sh",
-        "proven/registry/**",
+        "proven/**",
+        "templates/**",
+        "scripts/proven-stamp.sh",
+        ".github/workflows/proven-lock-gate.yml",
         ".github/workflows/code-hygiene-self-test.yml",
         ".github/workflows/actions.lock",
         # lock-transitive-closure.sh reads the literal cicd-suite SHA pins in
@@ -128,6 +134,11 @@
           # The one map between Hypatia A5 ids and squabbler ids, and the
           # negative controls that show its conformance test can fail.
           run: "bash tests/registry-sq-map.sh && bash tests/registry-sq-map-controls.sh",
+        },
+        {
+          # The published manifest of stamped artifacts, which the applier's
+          # BEHIND-CONTENT census reads, agrees with every stamped body.
+          run: "bash tests/proven-manifest.sh",
         },
       ],
     },
