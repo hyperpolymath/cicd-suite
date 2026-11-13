@@ -1,0 +1,5 @@
+name: ci
+on: push
+jobs:
+  call:
+    uses: ./.github/workflows/inner.yml

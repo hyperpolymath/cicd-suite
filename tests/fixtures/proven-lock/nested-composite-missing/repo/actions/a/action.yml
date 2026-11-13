@@ -1,0 +1,6 @@
+name: a
+description: composite
+runs:
+  using: composite
+  steps:
+    - uses: ./actions/b

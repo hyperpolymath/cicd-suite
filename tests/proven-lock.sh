@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MPL-2.0
+# Fixture runner for the proven lock kernel. Each case under
+# tests/fixtures/proven-lock/<case>/ has repo/, optional oracle.json and
+# `expected` (first line, then sorted REASON lines). UNJUDGED/WHY lines are
+# not compared. Exit: 0 all ok, 1 a case failed, 2 NOT RUN (missing tool).
+set -euo pipefail
+
+here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+repo=$(cd "$here/.." && pwd)
+fixtures="$here/fixtures/proven-lock"
+export PATH="$HOME/.idris2/bin:$PATH"
+
+notrun() { printf 'proven-lock tests: %s; NOT RUN\n' "$1" >&2; exit 2; }
+command -v idris2 >/dev/null || notrun "idris2 is not installed"
+command -v jq >/dev/null || notrun "jq is not installed"
+command -v yq >/dev/null || notrun "yq is not installed"
+yq --version 2>/dev/null | grep -q mikefarah || notrun "mikefarah yq v4 is required"
+
+(cd "$repo" && idris2 --build proven-lock.ipkg >/dev/null) || notrun "kernel build failed"
+verdict="$repo/build/exec/proven-lock-verdict"
+[[ -x $verdict ]] || notrun "kernel binary missing"
+
+tmp=$(mktemp -d)
+trap 'rm -rf -- "$tmp"' EXIT
+
+# observe ROOT [ORACLE] -> prints first line + sorted REASON lines
+observe() {
+  local root=$1 oracle=${2:-} facts="$tmp/facts.json" out rc
+  local args=("$root")
+  [[ -n $oracle ]] && args+=(--oracle "$oracle")
+  set +e
+  "$repo/scripts/extract-lock-facts.sh" "${args[@]}" > "$facts" 2>"$tmp/err"
+  rc=$?
+  if [[ $rc -eq 2 ]]; then
+    set -e; echo NOT_RUN; return 0
+  elif [[ $rc -ne 0 ]]; then
+    set -e; echo "EXTRACTOR_EXIT_$rc"; return 0
+  fi
+  out=$("$verdict" "$facts" 2>/dev/null)
+  set -e
+  printf '%s\n' "$out" | head -n 1
+  printf '%s\n' "$out" | tail -n +2 | grep -a '^REASON'$'\t' | LC_ALL=C sort || true
+}
+
+fail=0 count=0
+for dir in "$fixtures"/*/; do
+  name=$(basename "$dir")
+  [[ -d $dir/repo && -f $dir/expected ]] || continue
+  count=$((count + 1))
+  oracle=
+  [[ -f $dir/oracle.json ]] && oracle="$dir/oracle.json"
+  observe "$dir/repo" "$oracle" > "$tmp/got"
+  { head -n 1 "$dir/expected"; tail -n +2 "$dir/expected" | LC_ALL=C sort; } > "$tmp/want"
+  if diff -u "$tmp/want" "$tmp/got" > "$tmp/diff"; then
+    echo "ok $name"
+  else
+    echo "FAIL $name"
+    sed 's/^/    /' "$tmp/diff"
+    fail=1
+  fi
+done
+
+[[ $count -gt 0 ]] || { echo "FAIL: no fixture cases found" >&2; exit 1; }
+
+# The repository's own lock must be consistent.
+self=$(observe "$repo")
+if [[ $(printf '%s\n' "$self" | head -n 1) == CONSISTENT ]]; then
+  echo "ok repository-root"
+else
+  echo "FAIL repository-root"
+  printf '%s\n' "$self" | sed 's/^/    /'
+  fail=1
+fi
+
+exit "$fail"
