@@ -72,7 +72,10 @@ fi
 
 judge=$root/src/Proven/Lock/Judge.idr
 if [[ -f $judge ]]; then
-  emitted=$(grep -oE '^fields \([A-Za-z]+[^=]*= \("[A-Za-z]+"' "$judge" | grep -oE '"[A-Za-z]+"$' | tr -d '"' | sort -u)
+  # The reason names, from the kernel's Show instance (present in every kernel
+  # version). `|| true`: under pipefail a grep with no match would end the
+  # script silently; an empty result is reported as NOT RUN below instead.
+  emitted=$({ grep -oE 'show \([A-Za-z]+[^=]*= "[A-Za-z]+\\t' "$judge" || true; } | grep -oE '"[A-Za-z]+' | tr -d '"' | sort -u || true)
   [[ -n $emitted ]] || { echo "no reason names read from $judge; NOT RUN" >&2; exit 2; }
   listed=$(awk -F'\t' '$3=="kernel-reason"{print $5}' <<<"$rows" | sort -u)
   [[ $emitted == "$listed" ]] || bad "kernel-reason rows differ from the reasons the kernel emits: $(diff <(echo "$emitted") <(echo "$listed") | tr '\n' ' ')"
