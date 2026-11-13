@@ -393,3 +393,37 @@ public export
 isConsistent : Outcome f -> Bool
 isConsistent (Consistent _ _ _) = True
 isConsistent _ = False
+
+------------------------------------------------------------------------
+-- Relock: the certified entry for a workflow
+
+||| What a workflow's entry should be: the keys it reaches by steps, followed
+||| by the job-level calls it makes, which an entry may list. Returned only
+||| together with an `EdgesExact` certificate for exactly that list, so relock
+||| soundness holds by construction: a relocked entry that the judge would
+||| reject cannot be returned. Fuel bounds only the search.
+public export
+relockEntry : (g : List (String, Node)) -> (w : Workflow) ->
+              Either String (e : List String ** EdgesExact g (node w) (jobCalls w) e)
+relockEntry g w =
+  let (vs, ss) = walk g (node w)
+      e = ss ++ filter (\k => not (elem k ss)) (dedup (jobCalls w))
+   in case filter (\c => not (has (resolve c g))) vs of
+        (c :: _) => Left ("composite metadata missing: " ++ c)
+        [] => case decClosed g vs ss of
+          Nothing => Left "closure did not stabilise"
+          Just cl => case decNodeIn vs ss (node w) of
+            Nothing => Left "closure does not contain the workflow's own refs"
+            Just nin => case decSub ss e of
+              Nothing => Left "relocked entry does not contain the closure (kernel defect)"
+              Just sub => case allowedAll (S (length g)) g (node w) (jobCalls w) e of
+                Nothing => Left "no reach proof for a relocked key"
+                Just ok => Right (e ** exact cl nin sub ok)
+
+||| Relock ignores the entries it replaces: it depends only on the workflow
+||| graph, so relocking a relocked lock gives the same entries (idempotence).
+public export
+relockIgnoresEntries : (f : Facts) -> (es : List Entry) -> (w : Workflow) ->
+  relockEntry (composites f) w =
+  relockEntry (composites (MkFacts (composites f) (workflows f) es (records f) (illegal f) (oracle f))) w
+relockIgnoresEntries f es w = Refl
