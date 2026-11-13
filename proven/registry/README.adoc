@@ -1,0 +1,37 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Hypatia to squabbler rule map
+
+`sq-map.tsv` is the single map between Hypatia rule ids (A5 form
+`hypatia/<module>/<name>`) and squabbler rule ids (`SQ-<FAMILY>-NN`).
+
+== Rules
+
+* One row per A5 id that the squabbler and Hypatia share, or that is CI-failure triage.
+* Each A5 id maps to exactly one SQ id, or to the literal `hypatia-only`.
+* Every SQ id in the squabbler table with no A5 id has one row: A5 column `-`, status `squabbler-only`.
+* An SQ id may appear on several rows.
+* Lock-kernel reasons are rows with A5 column `-`, status `kernel-reason` and the reason name in the note.
+* An A5 id absent from the Hypatia praxis registry gets status `not-in-praxis`.
+* Columns: `a5_id`, `sq_id`, `status`, `note`, tab-separated. Order: A5 rows by id, then `squabbler-only` by SQ id, then `kernel-reason`.
+* `api_rate_limit` is advice that defers to SQ-PIN-03, then SQ-RUN-01; the row takes SQ-PIN-03.
+
+== Sources
+
+* `cicd-squabbler` at 09e6790: `crates/squabble-core/data/first-line-rules.tsv` (45 SQ ids) and ADR 0004, section "Mapping to Hypatia's `ci_failure_triage` ids".
+* `hypatia` at 89b406c: `hypatia_rules_praxis.deed` (191 A5 ids at this commit). None of the triage ids is in it yet; their module is `ci_failure_triage` (`lib/rules/ci_failure_triage.ex`).
+* Lock-kernel reason mappings agreed with the squabbler owner.
+
+== Row counts
+
+[cols="2,1"]
+|===
+| Status | Rows
+| mapped | 0
+| hypatia-only | 0
+| not-in-praxis | 26
+| squabbler-only | 23
+| kernel-reason | 16
+| Total | 65
+|===
+
+`generated_file_stale` has SQ column `hypatia-only` (the ADR says none, a referral) and status `not-in-praxis`.
