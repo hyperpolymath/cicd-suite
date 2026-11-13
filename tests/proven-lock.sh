@@ -90,6 +90,19 @@ json_agrees() { # CASE_ROOT ORACLE
   jq -e . >/dev/null <<<"$json" || { echo "invalid JSON"; return 1; }
   [[ $(jq -sr 'last.verdict' <<<"$json") == "$(head -n 1 <<<"$text")" ]] || { echo "verdict differs"; return 1; }
   [[ $(jq -s '[.[] | select(has("reason"))] | length' <<<"$json") == "$(grep -c '^REASON' <<<"$text" || true)" ]] || { echo "finding count differs"; return 1; }
+  # Contents, not only counts (CodeRabbit on #100): the text REASON lines,
+  # mapped independently to the executor contract, must equal the JSON
+  # findings field by field. A swapped key/path or a misnamed reason fails.
+  local want got
+  want=$(grep -a '^REASON' <<<"$text" | awk -F'\t' 'BEGIN{OFS="\t"}
+    function out(r,k,w,d){ print r, k, w, d }
+    $2=="MissingTransitiveEdge"||$2=="StaleRef"||$2=="Tracking" { out($2,$4,$3,"-"); next }
+    $2=="BlindEmptyEntry"||$2=="StaleEntry"||$2=="DuplicateEntry" { out($2,"-",$3,"-"); next }
+    $2=="Moved" { out($2,$3,"-",$4); next }
+    $2=="Illegal" { out($2,"-",$3,$4); next }
+    { out($2,$3,"-","-") }' | LC_ALL=C sort)
+  got=$(jq -r 'select(has("reason")) | [.reason, (.record_key // "-"), (.workflow_file // "-"), (.detail // "-")] | @tsv' <<<"$json" | LC_ALL=C sort)
+  [[ $want == "$got" ]] || { echo "finding fields differ: $(diff <(echo "$want") <(echo "$got") | tr '\n' ' ')"; return 1; }
 }
 for dir in "$fixtures"/*/; do
   name=$(basename "$dir")
