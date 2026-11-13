@@ -1,37 +1,47 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 = Hypatia to squabbler rule map
 
-`sq-map.tsv` is the single map between Hypatia rule ids (A5 form
-`hypatia/<module>/<name>`) and squabbler rule ids (`SQ-<FAMILY>-NN`).
+`sq-map.tsv` is the one map between Hypatia rule ids (A5 form
+`hypatia/<module>/<name>`, the stable key) and squabbler rule ids
+(`SQ-<FAMILY>-NN`). It was agreed with the squabbler owner on 2026-11-13. The
+squabbler's own table carries no A5 column, because the squabbler does not
+depend on Hypatia and the mapping is many to one. Dispatch, meaning class,
+recipe and sequencing, stays with the squabbler and Hypatia (R1, ADR 0004).
 
-== Rules
+== Columns
 
-* One row per A5 id that the squabbler and Hypatia share, or that is CI-failure triage.
-* Each A5 id maps to exactly one SQ id, or to the literal `hypatia-only`.
-* Every SQ id in the squabbler table with no A5 id has one row: A5 column `-`, status `squabbler-only`.
+Tab-separated: `a5_id`, `sq_id`, `status`, `praxis`, `note`.
+
+[cols="1,4"]
+|===
+| `status` | `mapped`: the A5 id maps to exactly one SQ id. `hypatia-only`: no squabbler rule. `squabbler-only`: an SQ id with no A5 id (`a5_id` is `-`). `kernel-reason`: a lock-kernel reason (named in `note`) and the SQ rule it serves (`a5_id` is `-`).
+| `praxis` | `present` or `absent`: whether the A5 id is in Hypatia's `hypatia_rules_praxis.deed`. `-` for rows with no A5 id.
+|===
+
+== Rules the conformance test enforces
+
+`tests/registry-sq-map.sh` enforces these rules, and both the squabbler and
+Hypatia can run it:
+
+* Every A5 id appears once and maps to exactly one SQ id, or to `hypatia-only`.
 * An SQ id may appear on several rows.
-* Lock-kernel reasons are rows with A5 column `-`, status `kernel-reason` and the reason name in the note.
-* An A5 id absent from the Hypatia praxis registry gets status `not-in-praxis`.
-* Columns: `a5_id`, `sq_id`, `status`, `note`, tab-separated. Order: A5 rows by id, then `squabbler-only` by SQ id, then `kernel-reason`.
-* `api_rate_limit` is advice that defers to SQ-PIN-03, then SQ-RUN-01; the row takes SQ-PIN-03.
+* Every SQ id in the squabbler table is in the map, and the map names no SQ id the table lacks (given `SQUABBLER_RULES`).
+* The `praxis` column matches the registry (given `HYPATIA_PRAXIS`).
+* Every `kernel-reason` row names a reason the lock kernel emits (given the kernel source).
 
-== Sources
+The rules allow `squabbler-only` and `hypatia-only` rows, so the test can pass
+on day one: 21 of the 45 squabbler rules have no log matcher, and many owner
+rules have no Hypatia id.
 
-* `cicd-squabbler` at 09e6790: `crates/squabble-core/data/first-line-rules.tsv` (45 SQ ids) and ADR 0004, section "Mapping to Hypatia's `ci_failure_triage` ids".
-* `hypatia` at 89b406c: `hypatia_rules_praxis.deed` (191 A5 ids at this commit). None of the triage ids is in it yet; their module is `ci_failure_triage` (`lib/rules/ci_failure_triage.ex`).
-* Lock-kernel reason mappings agreed with the squabbler owner.
+== Sources and open findings
 
-== Row counts
+* `cicd-squabbler` at `09e6790`: `crates/squabble-core/data/first-line-rules.tsv`, which holds 45 SQ ids, and ADR 0004, section "Mapping to Hypatia's `ci_failure_triage` ids".
+* `hypatia` at `89b406c`: `hypatia_rules_praxis.deed`, which holds 181 distinct A5 ids by the test's extraction.
+* ADR 0004 names the triage ids without a module. They are written here as `hypatia/ci_failure_triage/<name>`, after `lib/rules/ci_failure_triage.ex`.
+* *Finding:* none of the 26 `ci_failure_triage` ids is in the praxis registry, although that module is on Hypatia `main` (hypatia#1064). The ids the experiment owner uses as stable keys are therefore not yet registered. This has been reported to the Hypatia owner.
+* `api_rate_limit`: ADR 0004 gives SQ-PIN-03 and then SQ-RUN-01. The row takes SQ-PIN-03, and SQ-RUN-01 is `squabbler-only`.
+* `generated_file_stale`: ADR 0004 gives no squabbler rule, only a referral, so the row is `hypatia-only`.
+* The kernel reason `Illegal` has no agreed squabbler rule yet. Its row says `unassigned`, which is allowed only for kernel-reason rows and printed as a warning.
 
-[cols="2,1"]
-|===
-| Status | Rows
-| mapped | 0
-| hypatia-only | 0
-| not-in-praxis | 26
-| squabbler-only | 23
-| kernel-reason | 16
-| Total | 65
-|===
-
-`generated_file_stale` has SQ column `hypatia-only` (the ADR says none, a referral) and status `not-in-praxis`.
+Row counts: 25 `mapped`, 1 `hypatia-only`, 23 `squabbler-only` and 17
+`kernel-reason`, 66 in all.

@@ -28,6 +28,7 @@
         "tests/**",
         "scripts/deonboard-estate-audit.sh",
         "scripts/deonboard-workflow.sh",
+        "proven/registry/**",
         ".github/workflows/code-hygiene-self-test.yml",
         ".github/workflows/actions.lock",
         # lock-transitive-closure.sh reads the literal cicd-suite SHA pins in
@@ -56,6 +57,7 @@
         "tests/**",
         "scripts/deonboard-estate-audit.sh",
         "scripts/deonboard-workflow.sh",
+        "proven/registry/**",
         ".github/workflows/code-hygiene-self-test.yml",
         ".github/workflows/actions.lock",
         # lock-transitive-closure.sh reads the literal cicd-suite SHA pins in
@@ -121,6 +123,11 @@
           # The same script must not prune a dependency still reached by a
           # lower-case nested `uses:` edge, through either entry point.
           run: "bash tests/deonboard-estate-audit.sh",
+        },
+        {
+          # The one map between Hypatia A5 ids and squabbler ids, and the
+          # negative controls that show its conformance test can fail.
+          run: "bash tests/registry-sq-map.sh && bash tests/registry-sq-map-controls.sh",
         },
       ],
     },
