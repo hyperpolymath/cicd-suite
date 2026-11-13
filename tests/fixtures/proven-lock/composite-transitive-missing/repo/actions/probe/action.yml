@@ -1,0 +1,6 @@
+name: probe
+description: composite
+runs:
+  using: composite
+  steps:
+    - uses: x/leaf@bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb

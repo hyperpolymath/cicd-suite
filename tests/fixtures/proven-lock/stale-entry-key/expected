@@ -1,0 +1,2 @@
+INCONSISTENT
+REASON	StaleRef	.github/workflows/ci.yml	foo/bar@v1
