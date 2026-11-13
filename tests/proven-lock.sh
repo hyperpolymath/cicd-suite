@@ -73,7 +73,7 @@ done
 # every fixture: same exit code, every line valid JSON, one finding object per
 # REASON line, and a final status object naming the same verdict.
 json_agrees() { # CASE_ROOT ORACLE
-  local root=$1 oracle=$2 args=("$1") trc jrc text json
+  local oracle=$2 args=("$1") trc jrc text json
   [[ -n $oracle ]] && args+=(--oracle "$oracle")
   "$repo/scripts/extract-lock-facts.sh" "${args[@]}" > "$tmp/facts.json" 2>/dev/null || return 0
   text=$("$verdict" "$tmp/facts.json" 2>/dev/null) && trc=0 || trc=$?
