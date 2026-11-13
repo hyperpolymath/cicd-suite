@@ -44,3 +44,38 @@ printf 'version: v0.0.3\ndependencies: [\n' > "$tmp/lock.yml"
 assert_case 'malformed YAML rejected' 2
 rm "$tmp/lock.yml"
 assert_case 'missing lock is not a pass' 2
+
+# Reusable-workflow edges (standards#1290, the squabbler's self_sha_lock_records,
+# RefOk in src/Proven/Lock/Model.idr). A ref may repeat its key's SHA only when
+# a workflow beside the lock calls that key as a job-level reusable.
+edge=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+edge_lock() { # USES_YAML
+    printf 'version: v0.0.3\ndependencies:\n  other/repo@%s:\n    ref: "%s"\n    commit: "sha1-%s"\n%s' \
+        "$edge" "$edge" "$edge" "$1" > "$tmp/lock.yml"
+}
+caller() { # USES_LINE
+    printf 'on: push\njobs:\n  call:\n    uses: %s\n' "$1" > "$tmp/caller.yml"
+}
+edge_lock '    uses: []
+'
+caller "other/repo/.github/workflows/x.yml@$edge"
+assert_case 'job-level caller makes a raw-SHA ref a reusable edge' 0
+caller "Other/Repo/.github/workflows/x.yml@${edge^^}"
+assert_case 'caller matching is case-insensitive on owner, repo and SHA' 0
+edge_lock '    uses:
+      - "actions/upload-artifact@cccccccccccccccccccccccccccccccccccccccc"
+'
+rm -f "$tmp/caller.yml"
+assert_case 'a uses: list alone is a composite, not a reusable edge' 1
+caller "other/repo/.github/workflows/x.yml@dddddddddddddddddddddddddddddddddddddddd"
+assert_case 'a caller of another SHA does not exempt this key' 1
+edge_lock '    uses:
+      bad: shape
+'
+caller "other/repo/.github/workflows/x.yml@$edge"
+assert_case 'a malformed uses: never qualifies as an edge' 1
+edge_lock '    uses: []
+'
+printf 'jobs: [\n' > "$tmp/caller.yml"
+assert_case 'an unparsable workflow leaves the caller set unknown' 2
+rm -f "$tmp/caller.yml"
